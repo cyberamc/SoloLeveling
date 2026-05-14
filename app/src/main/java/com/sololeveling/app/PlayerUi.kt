@@ -166,7 +166,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Weekly Quests Banner - Only show if quests are actually due TODAY
             if (hasWeeklyQuests) {
@@ -197,7 +197,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Weekly Quests Button (always visible)
             Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
