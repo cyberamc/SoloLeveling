@@ -266,22 +266,38 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                 } else {
                     // For weekly quests, show collapsible section
                     if (weeklyQuests.isNotEmpty()) {
-                        item {
-                            TextButton(
-                                onClick = { showHiddenWeeklies = !showHiddenWeeklies },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = if (showHiddenWeeklies) "▲ Hide All Weekly Quests" else "▼ Show All Weekly Quests",
-                                    color = Color(0xFFFFD700),
-                                    fontSize = 14.sp
-                                )
-                            }
+                        // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
+                        val calendar = java.util.Calendar.getInstance()
+                        val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
+
+                        // Separate today's quests from other days
+                        val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedBy { it.completed }
+                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedBy { it.title }
+
+                        // Show today's quests ABOVE the collapsible
+                        items(todaysQuests) { quest ->
+                            QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                         }
 
-                        if (showHiddenWeeklies) {
-                            items(weeklyQuests) { quest ->
-                                QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
+                        // Show collapsible button for other days' quests
+                        if (otherDaysQuests.isNotEmpty()) {
+                            item {
+                                TextButton(
+                                    onClick = { showHiddenWeeklies = !showHiddenWeeklies },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = if (showHiddenWeeklies) "▲ Hide All Weekly Quests" else "▼ Show All Weekly Quests",
+                                        color = Color(0xFFFFD700),
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+
+                            if (showHiddenWeeklies) {
+                                items(otherDaysQuests) { quest ->
+                                    QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
+                                }
                             }
                         }
                     }
@@ -302,6 +318,7 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
                         val endpoint = if (!isCompleted) "/complete" else "/uncomplete"
                         val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
                         val fullUrl = "http://mysololeveling.ddns.net:3742$apiPath"
+
                         android.util.Log.d("QUEST_API", "Attempting: isWeekly=$isWeekly, questId=$questId, isCompleted=$isCompleted, endpoint=$endpoint, fullUrl=$fullUrl")
 
                         val url = URL(fullUrl)
@@ -389,8 +406,9 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         category = (it["category"] as? String) ?: "",
                         xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
                         goldReward = 0,
-                        completed = (it["completed"] as? Boolean) ?: false,  // ← Now reads from API
-                        streak = 0
+                        completed = (it["completed"] as? Boolean) ?: false,
+                        streak = 0,
+                        weekday = (it["weekday"] as? Number)?.toInt() ?: -1
                     )
                 } else null
             }
