@@ -92,7 +92,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             } ?: emptyList()
             weeklyQuests = weeklyQuestsList
             weekliesCompleted = (questData["weekliesCompleted"] as? Number)?.toInt() ?: 0
-            hasWeeklyQuests = (questData["hasWeeklyQuests"] as? Boolean) ?: false
+            hasWeeklyQuests = weeklyQuestsList.isNotEmpty()  // Only true if quests exist TODAY
         } catch (e: Exception) {
             error = e.message
         } finally {
@@ -122,7 +122,8 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
         ) {
             Text(text = player!!.name, fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "Level ${player!!.level} • Rank ${player!!.rank}", fontSize = 20.sp, color = Color(0xFFFFD700))
+            val displayLevel = try { player!!.level.toFloat().toInt() } catch (e: Exception) { 0 }
+            Text(text = "Level $displayLevel • Rank ${player!!.rank}", fontSize = 20.sp, color = Color(0xFFFFD700))
             Spacer(modifier = Modifier.height(24.dp))
 
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -169,11 +170,23 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             // Weekly Quests Banner
             if (hasWeeklyQuests) {
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF2a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "⚠️ Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
+                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
+
+                if (isWeeklyAllCompleted) {
+                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a472a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "✅ WEEKLY CLEAR! ✅", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80))
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = "All weekly quests completed", fontSize = 12.sp, color = Color(0xFF86EFAC))
+                        }
+                    }
+                } else {
+                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF472a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "⚠️ Weekly Quests Remaining", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
+                        }
                     }
                 }
             } else {
@@ -203,7 +216,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
     var dailiesCompletedCount by remember { mutableIntStateOf(0) }
     var weekliesCompletedCount by remember { mutableIntStateOf(0) }
     var showHiddenWeeklies by remember { mutableStateOf(false) }  // Start collapsed
-    
+
     LaunchedEffect(refreshTrigger) {
         loadAllQuests(
             onQuestsLoaded = { daily, weekly, dailiesCompleted, weekliesCompleted, hasWeekly ->
@@ -288,15 +301,26 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
                     try {
                         val endpoint = if (!isCompleted) "/complete" else "/uncomplete"
                         val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
-                        val url = URL("http://192.168.1.230:3742")
+                        val fullUrl = "http://192.168.1.230:3742$apiPath"
+
+                        android.util.Log.d("QUEST_API", "Attempting: isWeekly=$isWeekly, questId=$questId, isCompleted=$isCompleted, endpoint=$endpoint, fullUrl=$fullUrl")
+
+                        val url = URL(fullUrl)
                         val connection = url.openConnection() as HttpURLConnection
                         connection.requestMethod = "POST"
                         connection.connectTimeout = 10000
                         connection.readTimeout = 10000
-                        connection.responseCode
+                        val responseCode = connection.responseCode
+                        android.util.Log.d("QUEST_API", "POST $fullUrl -> $responseCode")
                         connection.disconnect()
-                        onCompleteToggle()
+                        if (responseCode in 200..299) {
+                            android.util.Log.d("QUEST_API", "Success! Calling onCompleteToggle()")
+                            onCompleteToggle()
+                        } else {
+                            android.util.Log.e("QUEST_API", "Failed with code $responseCode")
+                        }
                     } catch (e: Exception) {
+                        android.util.Log.e("QUEST_API", "Error: ${e.message}", e)
                         e.printStackTrace()
                     }
                 }.start()
@@ -366,7 +390,7 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         category = (it["category"] as? String) ?: "",
                         xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
                         goldReward = 0,
-                        completed = false,
+                        completed = (it["completed"] as? Boolean) ?: false,  // ← Now reads from API
                         streak = 0
                     )
                 } else null
