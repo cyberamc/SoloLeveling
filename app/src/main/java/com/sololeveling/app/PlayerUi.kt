@@ -153,7 +153,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 } else {
                     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF472a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "⚠️ Quests Remaining", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
+                            Text(text = "⚠️ Daily Quests Remaining", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(text = "$questsCompleted / $totalQuests completed", fontSize = 12.sp, color = Color(0xFFFFB566))
                         }
