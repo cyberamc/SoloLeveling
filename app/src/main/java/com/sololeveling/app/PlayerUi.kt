@@ -92,7 +92,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             } ?: emptyList()
             weeklyQuests = weeklyQuestsList
             weekliesCompleted = (questData["weekliesCompleted"] as? Number)?.toInt() ?: 0
-            hasWeeklyQuests = weeklyQuestsList.isNotEmpty()  // Only true if quests exist TODAY
+            hasWeeklyQuests = weeklyQuestsList.isNotEmpty()  // ← ONLY true if quests exist today, not from API flag
         } catch (e: Exception) {
             error = e.message
         } finally {
@@ -168,7 +168,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Weekly Quests Banner
+            // Weekly Quests Banner - Only show if quests are actually due TODAY
             if (hasWeeklyQuests) {
                 val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
 
@@ -183,7 +183,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 } else {
                     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF472a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "⚠️ Weekly Quests Remaining", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
+                            Text(text = "⚠️ Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
                         }
