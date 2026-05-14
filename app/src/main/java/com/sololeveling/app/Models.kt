@@ -26,7 +26,7 @@ data class QuestResponse(
 )
 
 suspend fun fetchFromApi(endpoint: String): String = withContext(Dispatchers.IO) {
-    val baseUrl = "http://192.168.1.230:3742"
+    val baseUrl = "http://mysololeveling.ddns.net:3742"
     val url = URL(baseUrl + endpoint)
     val connection = url.openConnection() as HttpURLConnection
     connection.requestMethod = "GET"

@@ -301,8 +301,7 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
                     try {
                         val endpoint = if (!isCompleted) "/complete" else "/uncomplete"
                         val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
-                        val fullUrl = "http://192.168.1.230:3742$apiPath"
-
+                        val fullUrl = "http://mysololeveling.ddns.net:3742$apiPath"
                         android.util.Log.d("QUEST_API", "Attempting: isWeekly=$isWeekly, questId=$questId, isCompleted=$isCompleted, endpoint=$endpoint, fullUrl=$fullUrl")
 
                         val url = URL(fullUrl)
