@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,8 +30,13 @@ import java.net.URL
 @Composable
 fun PlayerScreen() {
     var currentScreen by remember { mutableStateOf("player") }
-    var questType by remember { mutableStateOf("daily") }  // ADD THIS LINE
+    var questType by remember { mutableStateOf("daily") }
     var refreshTrigger by remember { mutableIntStateOf(0) }
+
+    // Handle back button - navigate to player screen if on quests, otherwise do nothing (let system handle exit)
+    BackHandler(enabled = currentScreen != "player") {
+        currentScreen = "player"
+    }
 
     if (currentScreen == "player") {
         PlayerStatsScreen(
@@ -49,7 +55,7 @@ fun PlayerScreen() {
             onBackToPlayer = { currentScreen = "player" },
             onQuestUpdated = { refreshTrigger++ },
             refreshTrigger = refreshTrigger,
-            questType = questType  // ADD THIS
+            questType = questType
         )
     }
 }
@@ -92,7 +98,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             } ?: emptyList()
             weeklyQuests = weeklyQuestsList
             weekliesCompleted = (questData["weekliesCompleted"] as? Number)?.toInt() ?: 0
-            hasWeeklyQuests = weeklyQuestsList.isNotEmpty()  // ← ONLY true if quests exist today, not from API flag
+            hasWeeklyQuests = weeklyQuestsList.isNotEmpty()
         } catch (e: Exception) {
             error = e.message
         } finally {
@@ -215,7 +221,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
     var error by remember { mutableStateOf<String?>(null) }
     var dailiesCompletedCount by remember { mutableIntStateOf(0) }
     var weekliesCompletedCount by remember { mutableIntStateOf(0) }
-    var showHiddenWeeklies by remember { mutableStateOf(false) }  // Start collapsed
+    var showHiddenWeeklies by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshTrigger) {
         loadAllQuests(
@@ -230,7 +236,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
         )
     }
 
-    val displayQuests = if (questType == "weekly") emptyList() else dailyQuests  // Don't show initial list for weekly
+    val displayQuests = if (questType == "weekly") emptyList() else dailyQuests
     val completedCount = if (questType == "weekly") weekliesCompletedCount else dailiesCompletedCount
     val title = if (questType == "weekly") "Weekly Quests" else "Daily Quests"
 
@@ -258,28 +264,22 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // For daily quests, show the list normally
                 if (questType == "daily") {
                     items(displayQuests) { quest ->
                         QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = false)
                     }
                 } else {
-                    // For weekly quests, show collapsible section
                     if (weeklyQuests.isNotEmpty()) {
-                        // Get current day of week (0=Sunday, 1=Monday, ..., 6=Saturday)
                         val calendar = java.util.Calendar.getInstance()
                         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
 
-                        // Separate today's quests from other days
                         val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedBy { it.completed }
                         val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedBy { it.title }
 
-                        // Show today's quests ABOVE the collapsible
                         items(todaysQuests) { quest ->
                             QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                         }
 
-                        // Show collapsible button for other days' quests
                         if (otherDaysQuests.isNotEmpty()) {
                             item {
                                 TextButton(
@@ -356,7 +356,6 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
         val response = fetchFromApi("/api/quests")
         val questData = Gson().fromJson(response, Map::class.java)
 
-        // Parse daily quests
         val dailyQuestsList = (questData["dailyQuests"] as? List<*>)?.mapNotNull {
             if (it is Map<*, *>) {
                 Quest(
@@ -372,7 +371,6 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
             } else null
         } ?: emptyList()
 
-        // Parse weekly quests (today's due quests)
         val weeklyQuestsList = (questData["weeklyQuests"] as? List<*>)?.mapNotNull {
             if (it is Map<*, *>) {
                 Quest(
@@ -388,7 +386,6 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
             } else null
         } ?: emptyList()
 
-        // Fetch ALL weekly quests (for collapsible section)
         val allWeeklyResponse = try {
             fetchFromApi("/api/weekly-quests/all")
         } catch (e: Exception) {
