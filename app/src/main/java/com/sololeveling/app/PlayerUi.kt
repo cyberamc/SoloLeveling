@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -195,7 +196,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             Spacer(modifier = Modifier.height(16.dp))
 
             // Weekly Quests Banner - Only show if quests are actually due TODAY
-            if (hasWeeklyQuests) {
+            if (hasWeeklyQuests && weeklyQuests.isNotEmpty()) {
                 val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
 
                 if (isWeeklyAllCompleted) {
@@ -329,43 +330,52 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
 
 @Composable
 fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isCompleted: Boolean, isWeekly: Boolean = false) {
+    var checked by remember { mutableStateOf(isCompleted) }
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
     Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Checkbox(
-            checked = isCompleted,
-            onCheckedChange = {
-                Thread {
-                    try {
-                        val endpoint = if (!isCompleted) "/complete" else "/uncomplete"
-                        val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
-                        val fullUrl = "https://mysololeveling.us$apiPath"
+            checked = checked,
+            enabled = !isLoading,
+            onCheckedChange = { newValue ->
+                if (!isLoading) {
+                    checked = newValue
+                    isLoading = true
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            val endpoint = if (newValue) "/complete" else "/uncomplete"
+                            val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
+                            val fullUrl = "https://mysololeveling.us$apiPath"
 
-                        android.util.Log.d("QUEST_API", "Attempting: isWeekly=$isWeekly, questId=$questId, isCompleted=$isCompleted, endpoint=$endpoint, fullUrl=$fullUrl")
+                            val url = URL(fullUrl)
+                            val connection = url.openConnection() as HttpURLConnection
+                            connection.requestMethod = "POST"
+                            connection.connectTimeout = 10000
+                            connection.readTimeout = 10000
+                            val responseCode = connection.responseCode
+                            connection.disconnect()
 
-                        val url = URL(fullUrl)
-                        val connection = url.openConnection() as HttpURLConnection
-                        connection.requestMethod = "POST"
-                        connection.connectTimeout = 10000
-                        connection.readTimeout = 10000
-                        val responseCode = connection.responseCode
-                        android.util.Log.d("QUEST_API", "POST $fullUrl -> $responseCode")
-                        connection.disconnect()
-                        if (responseCode in 200..299) {
-                            android.util.Log.d("QUEST_API", "Success! Calling onCompleteToggle()")
-                            onCompleteToggle()
-                        } else {
-                            android.util.Log.e("QUEST_API", "Failed with code $responseCode")
+                            if (responseCode in 200..299) {
+                                // Don't call onCompleteToggle() - just keep the local state
+                                // Call it after a small delay so the coroutine finishes
+                            } else {
+                                checked = !checked
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("QUEST_API", "Error: ${e.message}")
+                            checked = !checked
+                        } finally {
+                            isLoading = false
                         }
-                    } catch (e: Exception) {
-                        android.util.Log.e("QUEST_API", "Error: ${e.message}", e)
-                        e.printStackTrace()
                     }
-                }.start()
+                }
             },
             modifier = Modifier.size(24.dp)
         )
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = quest.title.replace(" - ", " @ ").replace("daily ", ""), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (isCompleted) Color.Gray else Color.White, textDecoration = if (isCompleted) TextDecoration.LineThrough else TextDecoration.None)
+            Text(text = quest.title.replace(" - ", " @ ").replace("daily ", ""), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (checked) Color.Gray else Color.White, textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None)
             Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
         }
     }
