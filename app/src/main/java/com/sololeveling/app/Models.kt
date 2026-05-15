@@ -9,8 +9,29 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 import java.security.cert.X509Certificate
 
-data class Player(val name: String, val level: Int, val xp: Int, val xpNeeded: Int, val rank: String, val statPoints: Int)
+data class Stats(
+    val STR: Int,
+    val INT: Int,
+    val VIT: Int,
+    val AGI: Int,
+    val END: Int
+)
 
+data class Player(
+    val id: Int,
+    val name: String,
+    val level: Int,
+    val xp: Int,
+    val xpInCurrentLevel: Int,
+    val xpNeededForLevel: Int,
+    val totalXp: Int,
+    val totalXpNeeded: Int,
+    val xpNeeded: Int = xpNeededForLevel,
+    val rank: String,
+    val gold: Int,
+    val statPoints: Int,
+    val stats: Stats
+)
 data class Quest(
     val id: Int,
     val title: String,

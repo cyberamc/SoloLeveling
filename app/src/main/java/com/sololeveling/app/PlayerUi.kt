@@ -157,13 +157,15 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 Text(text = "Experience", fontSize = 14.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = { (player!!.xp.toFloat() / player!!.xpNeeded.toFloat()).coerceIn(0f, 1f) },
+                    progress = { (player!!.xpInCurrentLevel.toFloat() / player!!.xpNeededForLevel.toFloat()).coerceIn(0f, 1f) },
                     modifier = Modifier.fillMaxWidth().height(16.dp),
                     color = Color(0xFFFFD700),
                     trackColor = Color(0xFF2a2a2a)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "${player!!.xp} / ${player!!.xpNeeded} XP", fontSize = 12.sp, color = Color.Gray)
+                Text(text = "${player!!.xpInCurrentLevel} / ${player!!.xpNeededForLevel} XP", fontSize = 12.sp, color = Color.Gray)
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(text = "Total: ${player!!.totalXp} / ${player!!.totalXpNeeded} XP", fontSize = 10.sp, color = Color(0xFF999999))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
