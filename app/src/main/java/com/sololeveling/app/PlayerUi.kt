@@ -26,6 +26,26 @@ import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import java.net.HttpURLConnection
 import java.net.URL
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
+import java.security.cert.X509Certificate
+import okhttp3.OkHttpClient
+
+private fun createUnsafeHttpClient(): OkHttpClient {
+    val trustAllCerts = arrayOf<X509TrustManager>(object : X509TrustManager {
+        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+    })
+
+    val sslContext = SSLContext.getInstance("SSL")
+    sslContext.init(null, trustAllCerts, java.security.SecureRandom())
+
+    return OkHttpClient.Builder()
+        .sslSocketFactory(sslContext.socketFactory, trustAllCerts[0])
+        .hostnameVerifier { _, _ -> true }
+        .build()
+}
 
 @Composable
 fun PlayerScreen() {
@@ -317,7 +337,7 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
                     try {
                         val endpoint = if (!isCompleted) "/complete" else "/uncomplete"
                         val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
-                        val fullUrl = "http://mysololeveling.ddns.net:3742$apiPath"
+                        val fullUrl = "https://mysololeveling.us$apiPath"
 
                         android.util.Log.d("QUEST_API", "Attempting: isWeekly=$isWeekly, questId=$questId, isCompleted=$isCompleted, endpoint=$endpoint, fullUrl=$fullUrl")
 
