@@ -297,8 +297,8 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
 
                         val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedBy { it.completed }
-                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedBy { it.title }
-
+                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedBy { it.weekday }
+                        
                         items(todaysQuests) { quest ->
                             QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                         }
@@ -377,7 +377,7 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
         )
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = quest.title.replace(" - ", " @ ").replace("daily ", ""), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (checked) Color.Gray else Color.White, textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None)
+            Text(text = quest.title.replaceFirst(Regex(" - (\\d+:\\d+|\\d{1,2}:\\d{2} [AP]M)"), " @ $1").replace("daily ", ""), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (checked) Color.Gray else Color.White, textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None)
             Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
         }
     }
