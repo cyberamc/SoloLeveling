@@ -298,7 +298,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
 
                         val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedBy { it.completed }
                         val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedBy { it.weekday }
-                        
+
                         items(todaysQuests) { quest ->
                             QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                         }
