@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -102,7 +103,6 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             questsCompleted = (questData["dailiesCompleted"] as? Number)?.toInt() ?: 0
             totalQuests = (questData["totalDailies"] as? Number)?.toInt() ?: 0
 
-            // Load weekly quests
             val weeklyQuestsList = (questData["weeklyQuests"] as? List<*>)?.mapNotNull {
                 if (it is Map<*, *>) {
                     Quest(
@@ -113,12 +113,14 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                         xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
                         goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
                         completed = (it["completed"] as? Boolean) ?: false,
-                        streak = (it["streak"] as? Number)?.toInt() ?: 0
+                        streak = (it["streak"] as? Number)?.toInt() ?: 0,
+                        optional = (it["optional"] as? Boolean) ?: false
                     )
                 } else null
             } ?: emptyList()
             weeklyQuests = weeklyQuestsList
-            weekliesCompleted = (questData["weekliesCompleted"] as? Number)?.toInt() ?: 0
+            val requiredWeekliesCompleted = weeklyQuestsList.filter { !it.optional }.count { it.completed }
+            weekliesCompleted = requiredWeekliesCompleted
             hasWeeklyQuests = weeklyQuestsList.isNotEmpty()
         } catch (e: Exception) {
             error = e.message
@@ -197,9 +199,9 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Weekly Quests Banner - Only show if quests are actually due TODAY
             if (hasWeeklyQuests && weeklyQuests.isNotEmpty()) {
-                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
+                val requiredWeeklies = weeklyQuests.filter { !it.optional }
+                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == requiredWeeklies.size
 
                 if (isWeeklyAllCompleted) {
                     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a472a)).padding(12.dp), contentAlignment = Alignment.Center) {
@@ -214,7 +216,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = "⚠️ Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
+                            Text(text = "$weekliesCompleted / ${requiredWeeklies.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
                         }
                     }
                 }
@@ -228,10 +230,25 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Weekly Quests Button (always visible)
             Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
                 Text("View Weekly Quests", color = Color(0xFFFFD700), fontSize = 16.sp)
             }
+        }
+    }
+}
+
+fun sortQuestsByTime(quests: List<Quest>): List<Quest> {
+    return quests.sortedBy { quest ->
+        val timeRegex = Regex("@ (\\d{1,2}):(\\d{2}) ([AP]M)|@ (\\d{1,2}) ([AP]M)")
+        val match = timeRegex.find(quest.title)
+        if (match != null) {
+            val hour = (match.groupValues[1].takeIf { it.isNotEmpty() } ?: match.groupValues[4]).toInt()
+            val minute = match.groupValues[2].takeIf { it.isNotEmpty() }?.toInt() ?: 0
+            val period = (match.groupValues[3].takeIf { it.isNotEmpty() } ?: match.groupValues[5])
+            val adjustedHour = if (period == "PM" && hour != 12) hour + 12 else if (period == "AM" && hour == 12) 0 else hour
+            adjustedHour * 60 + minute
+        } else {
+            Int.MAX_VALUE
         }
     }
 }
@@ -259,7 +276,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
         )
     }
 
-    val displayQuests = if (questType == "weekly") emptyList() else dailyQuests
+    val displayQuests = if (questType == "weekly") emptyList() else sortQuestsByTime(dailyQuests)
     val completedCount = if (questType == "weekly") weekliesCompletedCount else dailiesCompletedCount
     val title = if (questType == "weekly") "Weekly Quests" else "Daily Quests"
 
@@ -296,7 +313,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                         val calendar = java.util.Calendar.getInstance()
                         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
 
-                        val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedBy { it.completed }
+                        val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedWith(compareBy({ it.optional }, { it.completed }))
                         val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedBy { it.weekday }
 
                         items(todaysQuests) { quest ->
@@ -342,7 +359,6 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
             enabled = !isLoading,
             onCheckedChange = { newValue ->
                 if (!isLoading) {
-                    checked = newValue
                     isLoading = true
                     scope.launch(Dispatchers.IO) {
                         try {
@@ -359,16 +375,21 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
                             connection.disconnect()
 
                             if (responseCode in 200..299) {
-                                // Don't call onCompleteToggle() - just keep the local state
-                                // Call it after a small delay so the coroutine finishes
+                                scope.launch(Dispatchers.Main) {
+                                    checked = newValue
+                                    onCompleteToggle()
+                                    isLoading = false
+                                }
                             } else {
-                                checked = !checked
+                                scope.launch(Dispatchers.Main) {
+                                    isLoading = false
+                                }
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("QUEST_API", "Error: ${e.message}")
-                            checked = !checked
-                        } finally {
-                            isLoading = false
+                            scope.launch(Dispatchers.Main) {
+                                isLoading = false
+                            }
                         }
                     }
                 }
@@ -378,7 +399,12 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
 
         Column(modifier = Modifier.weight(1f)) {
             Text(text = quest.title.replaceFirst(Regex(" - (\\d+:\\d+|\\d{1,2}:\\d{2} [AP]M)"), " @ $1").replace("daily ", ""), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (checked) Color.Gray else Color.White, textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None)
-            Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
+            Row(modifier = Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
+                if (isWeekly && quest.optional) {
+                    Text(text = "Optional", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFFB0B0B0), modifier = Modifier.background(Color(0xFF2a2a2a), shape = RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
+                }
+            }
         }
     }
 }
@@ -413,7 +439,8 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                     xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
                     goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
                     completed = (it["completed"] as? Boolean) ?: false,
-                    streak = (it["streak"] as? Number)?.toInt() ?: 0
+                    streak = (it["streak"] as? Number)?.toInt() ?: 0,
+                    optional = (it["optional"] as? Boolean) ?: false
                 )
             } else null
         } ?: emptyList()
@@ -437,7 +464,8 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         goldReward = 0,
                         completed = (it["completed"] as? Boolean) ?: false,
                         streak = 0,
-                        weekday = (it["weekday"] as? Number)?.toInt() ?: -1
+                        weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
+                        optional = (it["optional"] as? Boolean) ?: false
                     )
                 } else null
             }

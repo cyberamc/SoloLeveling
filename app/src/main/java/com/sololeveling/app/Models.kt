@@ -41,7 +41,8 @@ data class Quest(
     val goldReward: Int,
     val completed: Boolean,
     val streak: Int,
-    val weekday: Int = -1  // -1 means not a weekly quest or unknown day
+    val weekday: Int = -1,
+    val optional: Boolean = false
 )
 
 data class QuestResponse(
