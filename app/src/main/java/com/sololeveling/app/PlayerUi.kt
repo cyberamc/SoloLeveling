@@ -103,25 +103,45 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             questsCompleted = (questData["dailiesCompleted"] as? Number)?.toInt() ?: 0
             totalQuests = (questData["totalDailies"] as? Number)?.toInt() ?: 0
 
-            val weeklyQuestsList = (questData["weeklyQuests"] as? List<*>)?.mapNotNull {
-                if (it is Map<*, *>) {
-                    Quest(
-                        id = (it["id"] as? Number)?.toInt() ?: 0,
-                        title = (it["title"] as? String) ?: "",
-                        type = (it["type"] as? String) ?: "weekly",
-                        category = (it["category"] as? String) ?: "",
-                        xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
-                        goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
-                        completed = (it["completed"] as? Boolean) ?: false,
-                        streak = (it["streak"] as? Number)?.toInt() ?: 0,
-                        optional = (it["optional"] as? Boolean) ?: false
-                    )
-                } else null
-            } ?: emptyList()
-            weeklyQuests = weeklyQuestsList
-            val requiredWeekliesCompleted = weeklyQuestsList.filter { !it.optional }.count { it.completed }
-            weekliesCompleted = requiredWeekliesCompleted
-            hasWeeklyQuests = weeklyQuestsList.isNotEmpty()
+            // Fetch ALL weekly quests and filter for today only
+            val allWeeklyResponse = try {
+                fetchFromApi("/api/weekly-quests/all")
+            } catch (e: Exception) {
+                "[]"
+            }
+
+            val allWeeklyQuestsList = try {
+                val allWeeklyData = Gson().fromJson(allWeeklyResponse, List::class.java)
+                allWeeklyData.mapNotNull {
+                    if (it is Map<*, *>) {
+                        Quest(
+                            id = (it["id"] as? Number)?.toInt() ?: 0,
+                            title = (it["title"] as? String) ?: "",
+                            type = "weekly",
+                            category = (it["category"] as? String) ?: "",
+                            xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
+                            goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
+                            completed = (it["completed"] as? Boolean) ?: false,
+                            streak = 0,
+                            weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
+                            optional = (it["optional"] as? Boolean) ?: false,
+                            isOverdue = (it["isOverdue"] as? Boolean) ?: false
+                        )
+                    } else null
+                }
+            } catch (e: Exception) {
+                emptyList()
+            }
+
+            // Filter for TODAY's required weekly quests only
+            val calendar = java.util.Calendar.getInstance()
+            val todayWeekday = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
+            val todaysWeeklyQuests = allWeeklyQuestsList.filter { it.weekday == todayWeekday && !it.optional }
+            val todaysWeeklyCompleted = todaysWeeklyQuests.count { it.completed }
+
+            weeklyQuests = todaysWeeklyQuests
+            weekliesCompleted = todaysWeeklyCompleted
+            hasWeeklyQuests = todaysWeeklyQuests.isNotEmpty()
         } catch (e: Exception) {
             error = e.message
         } finally {
@@ -200,8 +220,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             Spacer(modifier = Modifier.height(16.dp))
 
             if (hasWeeklyQuests && weeklyQuests.isNotEmpty()) {
-                val requiredWeeklies = weeklyQuests.filter { !it.optional }
-                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == requiredWeeklies.size
+                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
 
                 if (isWeeklyAllCompleted) {
                     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a472a)).padding(12.dp), contentAlignment = Alignment.Center) {
@@ -216,7 +235,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = "⚠️ Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "$weekliesCompleted / ${requiredWeeklies.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
+                            Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
                         }
                     }
                 }
@@ -289,8 +308,13 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = title, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "$completedCount / ${if (questType == "weekly") weeklyQuests.size else displayQuests.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
-            }
+                if (questType == "weekly") {
+                    val requiredWeeklies = weeklyQuests.filter { !it.optional }
+                    val requiredCompleted = requiredWeeklies.count { it.completed }
+                    Text(text = "$requiredCompleted / ${requiredWeeklies.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
+                } else {
+                    Text(text = "$completedCount / ${displayQuests.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
+                }            }
             Text(text = "Back", color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp).clickable { onBackToPlayer() })
         }
 
@@ -305,7 +329,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (questType == "daily") {
-                    items(displayQuests) { quest ->
+                    items(displayQuests, key = { it.id }) { quest ->
                         QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = false)
                     }
                 } else {
@@ -313,13 +337,38 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                         val calendar = java.util.Calendar.getInstance()
                         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
 
+                        // Separate overdue required quests, today's quests, and other day quests
+                        val overdueQuests = weeklyQuests.filter { !it.optional && it.isOverdue && !it.completed }
                         val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedWith(compareBy({ it.optional }, { it.completed }))
-                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedBy { it.weekday }
+                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek && !(it.isOverdue && !it.completed) }.sortedWith(compareBy({ it.completed || (it.optional && it.weekday < dayOfWeek) }, { it.weekday }))
 
-                        items(todaysQuests) { quest ->
+                        // Show overdue banner if there are overdue required quests
+                        if (overdueQuests.isNotEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF7a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(text = "⚠️ ${overdueQuests.size} OVERDUE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(text = "Past due required quests", fontSize = 12.sp, color = Color(0xFFFF9999))
+                                    }
+                                }
+                            }
+
+                            items(overdueQuests, key = { it.id }) { quest ->
+                                QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
+                            }
+
+                            item {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+
+                        // Today's quests
+                        items(todaysQuests, key = { it.id }) { quest ->
                             QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                         }
 
+                        // Collapsible section for other days
                         if (otherDaysQuests.isNotEmpty()) {
                             item {
                                 TextButton(
@@ -327,7 +376,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = if (showHiddenWeeklies) "▲ Hide All Weekly Quests" else "▼ Show All Weekly Quests",
+                                        text = if (showHiddenWeeklies) "▲ Hide Other Days" else "▼ Show Other Days",
                                         color = Color(0xFFFFD700),
                                         fontSize = 14.sp
                                     )
@@ -335,7 +384,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                             }
 
                             if (showHiddenWeeklies) {
-                                items(otherDaysQuests) { quest ->
+                                items(otherDaysQuests, key = { it.id }) { quest ->
                                     QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                                 }
                             }
@@ -349,9 +398,8 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
 
 @Composable
 fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isCompleted: Boolean, isWeekly: Boolean = false) {
-    var checked by remember { mutableStateOf(isCompleted) }
+    var checked by remember(isCompleted) { mutableStateOf(isCompleted) }  // KEY: remember(isCompleted)
     var isLoading by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Checkbox(
@@ -360,7 +408,7 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
             onCheckedChange = { newValue ->
                 if (!isLoading) {
                     isLoading = true
-                    scope.launch(Dispatchers.IO) {
+                    Thread {
                         try {
                             val endpoint = if (newValue) "/complete" else "/uncomplete"
                             val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
@@ -375,23 +423,20 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
                             connection.disconnect()
 
                             if (responseCode in 200..299) {
-                                scope.launch(Dispatchers.Main) {
-                                    checked = newValue
-                                    onCompleteToggle()
-                                    isLoading = false
-                                }
+                                checked = newValue
+                                android.util.Log.d("QUEST_API", "Quest $questId toggled to $newValue")
+                                onCompleteToggle()
                             } else {
-                                scope.launch(Dispatchers.Main) {
-                                    isLoading = false
-                                }
+                                android.util.Log.e("QUEST_API", "API returned $responseCode")
+                                checked = isCompleted  // Revert on failure
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("QUEST_API", "Error: ${e.message}")
-                            scope.launch(Dispatchers.Main) {
-                                isLoading = false
-                            }
+                            checked = isCompleted  // Revert on error
+                        } finally {
+                            isLoading = false
                         }
-                    }
+                    }.start()
                 }
             },
             modifier = Modifier.size(24.dp)
@@ -408,6 +453,8 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
         }
     }
 }
+
+
 
 suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, Boolean) -> Unit, onError: (String) -> Unit) {
     try {
@@ -465,7 +512,8 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         completed = (it["completed"] as? Boolean) ?: false,
                         streak = 0,
                         weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
-                        optional = (it["optional"] as? Boolean) ?: false
+                        optional = (it["optional"] as? Boolean) ?: false,
+                        isOverdue = (it["isOverdue"] as? Boolean) ?: false
                     )
                 } else null
             }
@@ -478,6 +526,7 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
         val hasWeekly = (questData["hasWeeklyQuests"] as? Boolean) ?: false
 
         android.util.Log.d("API_DEBUG", "Daily quests: ${dailyQuestsList.size}, Weekly quests due today: ${weeklyQuestsList.size}, All weekly quests: ${allWeeklyQuestsList.size}")
+        android.util.Log.d("QUEST_COMPLETED", "All weekly quests: ${allWeeklyQuestsList.map { "${it.title}: ${it.completed}" }.joinToString(", ")}")
 
         onQuestsLoaded(dailyQuestsList, allWeeklyQuestsList, dailiesCompleted, weekliesCompleted, hasWeekly)
     } catch (e: Exception) {

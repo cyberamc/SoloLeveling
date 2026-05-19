@@ -42,7 +42,8 @@ data class Quest(
     val completed: Boolean,
     val streak: Int,
     val weekday: Int = -1,
-    val optional: Boolean = false
+    val optional: Boolean = false,
+    val isOverdue: Boolean = false
 )
 
 data class QuestResponse(
