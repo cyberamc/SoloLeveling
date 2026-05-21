@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -120,7 +121,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                             title = (it["title"] as? String) ?: "",
                             type = "weekly",
                             category = (it["category"] as? String) ?: "",
-                            xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
+                            xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
                             goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
                             completed = (it["completed"] as? Boolean) ?: false,
                             streak = 0,
@@ -269,6 +270,20 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
                 Text("View Weekly Quests", color = Color(0xFFFFD700), fontSize = 16.sp)
+            }
+
+            // Delivery reminder for Tuesday and Wednesday
+            val calendar = java.util.Calendar.getInstance()
+            val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
+            if (dayOfWeek == 2 || dayOfWeek == 3) { // Tuesday = 2, Wednesday = 3
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "📦 DELIVERY DAY REMINDER", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4FB3D9))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "Count all packages before storing in car to prevent loss", fontSize = 11.sp, color = Color(0xFF7DD3FC), textAlign = TextAlign.Center)
+                    }
+                }
             }
         }
     }
@@ -500,8 +515,8 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                     title = (it["title"] as? String) ?: "",
                     type = (it["type"] as? String) ?: "weekly",
                     category = (it["category"] as? String) ?: "",
-                    xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
-                    goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
+                    xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
+                    goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
                     completed = (it["completed"] as? Boolean) ?: false,
                     streak = (it["streak"] as? Number)?.toInt() ?: 0,
                     optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1
@@ -524,7 +539,7 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         title = (it["title"] as? String) ?: "",
                         type = "weekly",
                         category = (it["category"] as? String) ?: "",
-                        xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
+                        xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
                         goldReward = 0,
                         completed = (it["completed"] as? Boolean) ?: false,
                         streak = 0,
