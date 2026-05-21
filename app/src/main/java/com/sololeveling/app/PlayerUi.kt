@@ -21,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -122,8 +121,8 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                             type = "weekly",
                             category = (it["category"] as? String) ?: "",
                             xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
-                            goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
-                            completed = (it["completed"] as? Boolean) ?: false,
+                            goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
+                            completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
                             streak = 0,
                             weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
                             optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1,
@@ -226,8 +225,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             Spacer(modifier = Modifier.height(16.dp))
 
             if (hasWeeklyQuests && weeklyQuests.isNotEmpty()) {
-                val requiredWeeklies = weeklyQuests.filter { !it.optional }
-                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == requiredWeeklies.size
+                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
 
                 if (isWeeklyAllCompleted) {
                     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a472a)).padding(12.dp), contentAlignment = Alignment.Center) {
@@ -242,7 +240,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = "⚠️ Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "$weekliesCompleted / ${requiredWeeklies.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
+                            Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
                         }
                     }
                 }
@@ -270,20 +268,6 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
                 Text("View Weekly Quests", color = Color(0xFFFFD700), fontSize = 16.sp)
-            }
-
-            // Delivery reminder for Tuesday and Wednesday
-            val calendar = java.util.Calendar.getInstance()
-            val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
-            if (dayOfWeek == 2 || dayOfWeek == 3) { // Tuesday = 2, Wednesday = 3
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "📦 DELIVERY DAY REMINDER", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4FB3D9))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "Count all packages before storing in car to prevent loss", fontSize = 11.sp, color = Color(0xFF7DD3FC), textAlign = TextAlign.Center)
-                    }
-                }
             }
         }
     }
@@ -346,7 +330,9 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                     val requiredCompleted = requiredWeeklies.count { it.completed }
                     Text(text = "$requiredCompleted / ${requiredWeeklies.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
                 } else {
-                    Text(text = "$completedCount / ${displayQuests.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
+                    val requiredDailies = displayQuests.filter { !it.optional }
+                    val requiredDailiesCompleted = requiredDailies.count { it.completed }
+                    Text(text = "$requiredDailiesCompleted / ${requiredDailies.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
                 }            }
             Text(text = "Back", color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp).clickable { onBackToPlayer() })
         }
@@ -367,21 +353,20 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                     }
                 } else {
                     if (weeklyQuests.isNotEmpty()) {
-
                         val calendar = java.util.Calendar.getInstance()
                         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
 
-                        // Separate today's quests and other day quests
+                        // Separate quests by type
                         val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedWith(compareBy({ it.optional }, { it.completed }))
-                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedWith(compareBy({ !(it.isOverdue && !it.completed) }, { it.completed || (it.optional && it.weekday < dayOfWeek) }, { it.weekday }))
+                        val overdueQuests = weeklyQuests.filter { it.isOverdue && !it.completed && !it.optional }
+                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek && !(it.isOverdue && !it.completed) }.sortedWith(compareBy({ it.completed || (it.optional && it.weekday < dayOfWeek) }, { it.weekday }))
 
                         // Today's quests
                         items(todaysQuests, key = { it.id }) { quest ->
                             QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                         }
 
-                        // Overdue banner
-                        val overdueQuests = weeklyQuests.filter { it.isOverdue && !it.completed && !it.optional }
+                        // Overdue banner and quests
                         if (overdueQuests.isNotEmpty()) {
                             item {
                                 Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF7a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
@@ -393,15 +378,13 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                                 }
                             }
 
-                            // Show overdue quests
                             items(overdueQuests, key = { it.id }) { quest ->
                                 QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                             }
                         }
 
                         // Collapsible section for other days
-                        val nonOverdueOtherDays = otherDaysQuests.filter { !(it.isOverdue && !it.completed) }
-                        if (nonOverdueOtherDays.isNotEmpty()) {
+                        if (otherDaysQuests.isNotEmpty()) {
                             item {
                                 TextButton(
                                     onClick = { showHiddenWeeklies = !showHiddenWeeklies },
@@ -416,7 +399,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                             }
 
                             if (showHiddenWeeklies) {
-                                items(nonOverdueOtherDays, key = { it.id }) { quest ->
+                                items(otherDaysQuests, key = { it.id }) { quest ->
                                     QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                                 }
                             }
@@ -475,10 +458,16 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
         )
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = quest.title.replaceFirst(Regex(" - (\\d+:\\d+|\\d{1,2}:\\d{2} [AP]M)"), " @ $1").replace("daily ", ""), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (checked) Color.Gray else Color.White, textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None)
+            val dayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+            val displayTitle = if (isWeekly && quest.weekday >= 0) {
+                "${quest.title} - ${dayNames[quest.weekday]}"
+            } else {
+                quest.title.replaceFirst(Regex(" - (\\d+:\\d+|\\d{1,2}:\\d{2} [AP]M)"), " @ $1").replace("daily ", "")
+            }
+            Text(text = displayTitle, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (checked) Color.Gray else Color.White, textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None)
             Row(modifier = Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
-                if (isWeekly && quest.optional) {
+                if (quest.optional) {
                     Text(text = "Optional", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFFB0B0B0), modifier = Modifier.background(Color(0xFF2a2a2a), shape = RoundedCornerShape(6.dp)).padding(horizontal = 8.dp, vertical = 4.dp))
                 }
             }
@@ -500,10 +489,11 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                     title = (it["title"] as? String) ?: "",
                     type = (it["type"] as? String) ?: "",
                     category = (it["category"] as? String) ?: "",
-                    xpReward = (it["xpReward"] as? Number)?.toInt() ?: 0,
-                    goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
-                    completed = (it["completed"] as? Boolean) ?: false,
-                    streak = (it["streak"] as? Number)?.toInt() ?: 0
+                    xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
+                    goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
+                    completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
+                    streak = (it["streak"] as? Number)?.toInt() ?: 0,
+                    optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1
                 )
             } else null
         } ?: emptyList()
@@ -517,7 +507,7 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                     category = (it["category"] as? String) ?: "",
                     xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
                     goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
-                    completed = (it["completed"] as? Boolean) ?: false,
+                    completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
                     streak = (it["streak"] as? Number)?.toInt() ?: 0,
                     optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1
                 )
@@ -541,7 +531,7 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         category = (it["category"] as? String) ?: "",
                         xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
                         goldReward = 0,
-                        completed = (it["completed"] as? Boolean) ?: false,
+                        completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
                         streak = 0,
                         weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
                         optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1,
