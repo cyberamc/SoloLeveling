@@ -92,6 +92,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
     var weeklyQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var weekliesCompleted by remember { mutableIntStateOf(0) }
     var hasWeeklyQuests by remember { mutableStateOf(false) }
+    var overdueQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
 
     LaunchedEffect(refreshTrigger) {
         loading = true
@@ -139,9 +140,13 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             val todaysWeeklyQuests = allWeeklyQuestsList.filter { it.weekday == todayWeekday && !it.optional }
             val todaysWeeklyCompleted = todaysWeeklyQuests.count { it.completed }
 
+            // Extract overdue required quests
+            val overdueRequiredQuests = allWeeklyQuestsList.filter { !it.optional && it.isOverdue && !it.completed }
+
             weeklyQuests = todaysWeeklyQuests
             weekliesCompleted = todaysWeeklyCompleted
             hasWeeklyQuests = todaysWeeklyQuests.isNotEmpty()
+            overdueQuests = overdueRequiredQuests
         } catch (e: Exception) {
             error = e.message
         } finally {
@@ -247,6 +252,18 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 }
             }
 
+            // Show overdue banner if there are overdue required quests
+            if (overdueQuests.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF7a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "⚠️ ${overdueQuests.size} OVERDUE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(text = "Past due required quests", fontSize = 12.sp, color = Color(0xFFFF9999))
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
@@ -337,31 +354,9 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                         val calendar = java.util.Calendar.getInstance()
                         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
 
-                        // Separate overdue required quests, today's quests, and other day quests
-                        val overdueQuests = weeklyQuests.filter { !it.optional && it.isOverdue && !it.completed }
+                        // Separate today's quests and other day quests
                         val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedWith(compareBy({ it.optional }, { it.completed }))
                         val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek && !(it.isOverdue && !it.completed) }.sortedWith(compareBy({ it.completed || (it.optional && it.weekday < dayOfWeek) }, { it.weekday }))
-
-                        // Show overdue banner if there are overdue required quests
-                        if (overdueQuests.isNotEmpty()) {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF7a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(text = "⚠️ ${overdueQuests.size} OVERDUE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(text = "Past due required quests", fontSize = 12.sp, color = Color(0xFFFF9999))
-                                    }
-                                }
-                            }
-
-                            items(overdueQuests, key = { it.id }) { quest ->
-                                QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
-                            }
-
-                            item {
-                                Spacer(modifier = Modifier.height(8.dp))
-                            }
-                        }
 
                         // Today's quests
                         items(todaysQuests, key = { it.id }) { quest ->
