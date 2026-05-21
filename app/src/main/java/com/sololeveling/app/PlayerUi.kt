@@ -125,8 +125,8 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                             completed = (it["completed"] as? Boolean) ?: false,
                             streak = 0,
                             weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
-                            optional = (it["optional"] as? Boolean) ?: false,
-                            isOverdue = (it["isOverdue"] as? Boolean) ?: false
+                            optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1,
+                            isOverdue = ((it["isOverdue"] as? Number)?.toInt() ?: 0) == 1
                         )
                     } else null
                 }
@@ -225,7 +225,8 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             Spacer(modifier = Modifier.height(16.dp))
 
             if (hasWeeklyQuests && weeklyQuests.isNotEmpty()) {
-                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
+                val requiredWeeklies = weeklyQuests.filter { !it.optional }
+                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == requiredWeeklies.size
 
                 if (isWeeklyAllCompleted) {
                     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a472a)).padding(12.dp), contentAlignment = Alignment.Center) {
@@ -240,7 +241,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(text = "⚠️ Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
+                            Text(text = "$weekliesCompleted / ${requiredWeeklies.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
                         }
                     }
                 }
@@ -351,20 +352,41 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                     }
                 } else {
                     if (weeklyQuests.isNotEmpty()) {
+
                         val calendar = java.util.Calendar.getInstance()
                         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
 
                         // Separate today's quests and other day quests
                         val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedWith(compareBy({ it.optional }, { it.completed }))
-                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek && !(it.isOverdue && !it.completed) }.sortedWith(compareBy({ it.completed || (it.optional && it.weekday < dayOfWeek) }, { it.weekday }))
+                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek }.sortedWith(compareBy({ !(it.isOverdue && !it.completed) }, { it.completed || (it.optional && it.weekday < dayOfWeek) }, { it.weekday }))
 
                         // Today's quests
                         items(todaysQuests, key = { it.id }) { quest ->
                             QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                         }
 
+                        // Overdue banner
+                        val overdueQuests = weeklyQuests.filter { it.isOverdue && !it.completed && !it.optional }
+                        if (overdueQuests.isNotEmpty()) {
+                            item {
+                                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF7a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(text = "⚠️ ${overdueQuests.size} OVERDUE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(text = "Past due required quests", fontSize = 12.sp, color = Color(0xFFFF9999))
+                                    }
+                                }
+                            }
+
+                            // Show overdue quests
+                            items(overdueQuests, key = { it.id }) { quest ->
+                                QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
+                            }
+                        }
+
                         // Collapsible section for other days
-                        if (otherDaysQuests.isNotEmpty()) {
+                        val nonOverdueOtherDays = otherDaysQuests.filter { !(it.isOverdue && !it.completed) }
+                        if (nonOverdueOtherDays.isNotEmpty()) {
                             item {
                                 TextButton(
                                     onClick = { showHiddenWeeklies = !showHiddenWeeklies },
@@ -379,7 +401,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                             }
 
                             if (showHiddenWeeklies) {
-                                items(otherDaysQuests, key = { it.id }) { quest ->
+                                items(nonOverdueOtherDays, key = { it.id }) { quest ->
                                     QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
                                 }
                             }
@@ -482,7 +504,7 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                     goldReward = (it["goldReward"] as? Number)?.toInt() ?: 0,
                     completed = (it["completed"] as? Boolean) ?: false,
                     streak = (it["streak"] as? Number)?.toInt() ?: 0,
-                    optional = (it["optional"] as? Boolean) ?: false
+                    optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1
                 )
             } else null
         } ?: emptyList()
@@ -507,8 +529,8 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         completed = (it["completed"] as? Boolean) ?: false,
                         streak = 0,
                         weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
-                        optional = (it["optional"] as? Boolean) ?: false,
-                        isOverdue = (it["isOverdue"] as? Boolean) ?: false
+                        optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1,
+                        isOverdue = ((it["isOverdue"] as? Number)?.toInt() ?: 0) == 1
                     )
                 } else null
             }
