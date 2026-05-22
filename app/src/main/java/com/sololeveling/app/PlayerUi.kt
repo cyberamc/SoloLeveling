@@ -413,8 +413,9 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
 
 @Composable
 fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isCompleted: Boolean, isWeekly: Boolean = false) {
-    var checked by remember(isCompleted) { mutableStateOf(isCompleted) }  // KEY: remember(isCompleted)
+    var checked by remember(isCompleted) { mutableStateOf(isCompleted) }
     var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Checkbox(
@@ -423,7 +424,7 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
             onCheckedChange = { newValue ->
                 if (!isLoading) {
                     isLoading = true
-                    Thread {
+                    scope.launch(Dispatchers.IO) {
                         try {
                             val endpoint = if (newValue) "/complete" else "/uncomplete"
                             val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
@@ -443,15 +444,15 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
                                 onCompleteToggle()
                             } else {
                                 android.util.Log.e("QUEST_API", "API returned $responseCode")
-                                checked = isCompleted  // Revert on failure
+                                checked = isCompleted
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("QUEST_API", "Error: ${e.message}")
-                            checked = isCompleted  // Revert on error
+                            checked = isCompleted
                         } finally {
                             isLoading = false
                         }
-                    }.start()
+                    }
                 }
             },
             modifier = Modifier.size(24.dp)
@@ -556,3 +557,223 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
         onError(e.message ?: "Unknown error")
     }
 }
+
+@Composable
+fun MainTabScreen() {
+    var selectedTab by remember { mutableStateOf(TabType.QUESTS) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1a1a1a))
+            .systemBarsPadding()
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            when (selectedTab) {
+                TabType.QUESTS -> PlayerScreen()
+                TabType.SUPPLEMENTS -> SupplementsScreen()
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1a1a1a))
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .imePadding(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            TabButton(
+                label = "Quests",
+                isSelected = selectedTab == TabType.QUESTS,
+                onClick = { selectedTab = TabType.QUESTS },
+                modifier = Modifier.weight(1f)
+            )
+            TabButton(
+                label = "Supplements",
+                isSelected = selectedTab == TabType.SUPPLEMENTS,
+                onClick = { selectedTab = TabType.SUPPLEMENTS },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun TabButton(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier.height(40.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) Color(0xFF2a2a2a) else Color.Transparent
+        ),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 14.sp,
+            color = Color.White
+        )
+    }
+}
+
+enum class TabType {
+    QUESTS, SUPPLEMENTS
+}
+
+@Composable
+fun SupplementsScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF1a1a1a))
+            .padding(16.dp)
+    ) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                SupplementSection(
+                    title = "Gym day",
+                    items = listOf(
+                        SupplementGroup(
+                            category = "Capsule",
+                            supplements = listOf(
+                                "Caffeine" to "400 mg",
+                                "L-Theanine" to "400 mg",
+                                "L-Tyrosine" to "1000 mg",
+                                "Alpha-GPC" to "600 mg"
+                            )
+                        ),
+                        SupplementGroup(
+                            category = "Powder",
+                            supplements = listOf(
+                                "L-Citrulline" to "6g",
+                                "Beta-Alanine" to "3.2g",
+                                "Betaine Anhydrous" to "3g",
+                                "Creatine" to "5g",
+                                "BCAA" to "6g"
+                            )
+                        )
+                    )
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            item {
+                SupplementSection(
+                    title = "Rest day",
+                    items = listOf(
+                        SupplementGroup(
+                            category = "Powder",
+                            supplements = listOf(
+                                "Creatine" to "5g",
+                                "Beta-Alanine" to "3g",
+                                "Betaine Anhydrous" to "1.5g",
+                                "BCAA" to "6g"
+                            )
+                        )
+                    )
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            item {
+                SupplementSection(
+                    title = "Evening",
+                    items = listOf(
+                        SupplementGroup(
+                            category = "Capsule",
+                            supplements = listOf(
+                                "L-Theanine" to "200 mg",
+                                "Magnesium Glycinate" to "210 mg",
+                                "Ashwagandha" to "600 mg",
+                                "Chamomile" to "750 mg",
+                                "Valerian Root" to "500 mg"
+                            )
+                        )
+                    )
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SupplementSection(
+    title: String,
+    items: List<SupplementGroup>
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = title,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
+        items.forEach { group ->
+            SupplementGroupCard(group)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun SupplementGroupCard(group: SupplementGroup) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+            .padding(12.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = group.category,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF999999),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            group.supplements.forEach { (name, dose) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = name,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = dose,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF999999)
+                    )
+                }
+            }
+        }
+    }
+}
+
+data class SupplementGroup(
+    val category: String,
+    val supplements: List<Pair<String, String>>
+)
