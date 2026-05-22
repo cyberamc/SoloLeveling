@@ -266,6 +266,12 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
+                Text("View Weekly Quests", color = Color(0xFFFFD700), fontSize = 16.sp)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // NoFap Streak Counter
             Box(
                 modifier = Modifier
@@ -285,8 +291,6 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                     Text(text = "Keep it going!", fontSize = 11.sp, color = Color(0xFF86EFAC))
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
