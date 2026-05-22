@@ -266,9 +266,27 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
-                Text("View Weekly Quests", color = Color(0xFFFFD700), fontSize = 16.sp)
+            // NoFap Streak Counter
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1a3a2a), shape = RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = "🔥 NoFap Streak", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "${player!!.nofapStreak} Days", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(text = "Keep it going!", fontSize = 11.sp, color = Color(0xFF86EFAC))
+                }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

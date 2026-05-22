@@ -30,7 +30,8 @@ data class Player(
     val rank: String,
     val gold: Int,
     val statPoints: Int,
-    val stats: Stats
+    val stats: Stats,
+    val nofapStreak: Int = 0
 )
 data class Quest(
     val id: Int,
