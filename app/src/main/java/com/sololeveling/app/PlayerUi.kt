@@ -89,6 +89,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
     var error by remember { mutableStateOf<String?>(null) }
     var questsCompleted by remember { mutableIntStateOf(0) }
     var totalQuests by remember { mutableIntStateOf(0) }
+    var dailyQuestsList by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var weeklyQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var weekliesCompleted by remember { mutableIntStateOf(0) }
     var hasWeeklyQuests by remember { mutableStateOf(false) }
@@ -103,6 +104,28 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             val questData = Gson().fromJson(questResponse, Map::class.java)
             questsCompleted = (questData["dailiesCompleted"] as? Number)?.toInt() ?: 0
             totalQuests = (questData["totalDailies"] as? Number)?.toInt() ?: 0
+
+            // Fetch daily quests for hydration banner
+            val dailyQuestsData = try {
+                val dailyQuestsRaw = (questData["dailyQuests"] as? List<*>) ?: emptyList<Any>()
+                dailyQuestsRaw.mapNotNull {
+                    if (it is Map<*, *>) {
+                        Quest(
+                            id = (it["id"] as? Number)?.toInt() ?: 0,
+                            title = (it["title"] as? String) ?: "",
+                            type = "daily",
+                            category = (it["category"] as? String) ?: "",
+                            xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
+                            goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
+                            completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
+                            streak = 0
+                        )
+                    } else null
+                }
+            } catch (e: Exception) {
+                emptyList()
+            }
+            dailyQuestsList = dailyQuestsData
 
             // Fetch ALL weekly quests and filter for today only
             val allWeeklyResponse = try {
@@ -196,6 +219,20 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Hydration Quest Reminder - only show if not all hydration quests are completed
+            val hydrationQuests = dailyQuestsList.filter { it.title.contains("Hydrate", ignoreCase = true) }
+            val hydrationCompleted = hydrationQuests.count { it.completed }
+            if (hydrationCompleted < hydrationQuests.size) {
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "💧 Hydration Quest Active", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4BA3FF))
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(text = "Complete all daily hydration quests", fontSize = 12.sp, color = Color(0xFF7FC3FF))
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             if (totalQuests > 0) {
                 if (isAllCompleted) {
