@@ -8,6 +8,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
@@ -15,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -105,7 +109,6 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             questsCompleted = (questData["dailiesCompleted"] as? Number)?.toInt() ?: 0
             totalQuests = (questData["totalDailies"] as? Number)?.toInt() ?: 0
 
-            // Fetch daily quests for hydration banner
             val dailyQuestsData = try {
                 val dailyQuestsRaw = (questData["dailyQuests"] as? List<*>) ?: emptyList<Any>()
                 dailyQuestsRaw.mapNotNull {
@@ -127,7 +130,6 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             }
             dailyQuestsList = dailyQuestsData
 
-            // Fetch ALL weekly quests and filter for today only
             val allWeeklyResponse = try {
                 fetchFromApi("/api/weekly-quests/all")
             } catch (e: Exception) {
@@ -157,13 +159,10 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 emptyList()
             }
 
-            // Filter for TODAY's required weekly quests only
             val calendar = java.util.Calendar.getInstance()
             val todayWeekday = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
             val todaysWeeklyQuests = allWeeklyQuestsList.filter { it.weekday == todayWeekday && !it.optional }
             val todaysWeeklyCompleted = todaysWeeklyQuests.count { it.completed }
-
-            // Extract overdue required quests
             val overdueRequiredQuests = allWeeklyQuestsList.filter { !it.optional && it.isOverdue && !it.completed }
 
             weeklyQuests = todaysWeeklyQuests
@@ -176,8 +175,6 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             loading = false
         }
     }
-
-    val isAllCompleted = questsCompleted > 0 && questsCompleted == totalQuests
 
     if (loading) {
         Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a)), contentAlignment = Alignment.Center) {
@@ -193,6 +190,7 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 .fillMaxSize()
                 .background(Color(0xFF0a0a0a))
                 .systemBarsPadding()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -208,126 +206,86 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
                     progress = { (player!!.xpInCurrentLevel.toFloat() / player!!.xpNeededForLevel.toFloat()).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(16.dp),
+                    modifier = Modifier.fillMaxWidth().height(10.dp),
                     color = Color(0xFFFFD700),
                     trackColor = Color(0xFF2a2a2a)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "${player!!.xpInCurrentLevel} / ${player!!.xpNeededForLevel} XP", fontSize = 12.sp, color = Color.Gray)
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(text = "Total: ${player!!.totalXp} / ${player!!.totalXpNeeded} XP", fontSize = 10.sp, color = Color(0xFF999999))
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(text = "${player!!.xpInCurrentLevel} / ${player!!.xpNeededForLevel} XP", fontSize = 11.sp, color = Color.Gray)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Hydration Quest Reminder - only show if not all hydration quests are completed
             val hydrationQuests = dailyQuestsList.filter { it.title.contains("Hydrate", ignoreCase = true) }
             val hydrationCompleted = hydrationQuests.count { it.completed }
             if (hydrationCompleted < hydrationQuests.size) {
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a)).padding(12.dp), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a), shape = RoundedCornerShape(8.dp)).padding(10.dp), contentAlignment = Alignment.Center) {
+                    Text(text = "💧 Complete all daily hydration quests", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4BA3FF))
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Box(modifier = Modifier.weight(1f).background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "💧 Hydration Quest Active", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4BA3FF))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(text = "Complete all daily hydration quests", fontSize = 12.sp, color = Color(0xFF7FC3FF))
+                        Text(text = "Daily Quests", fontSize = 11.sp, color = Color(0xFFB0B0B0))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "$questsCompleted / $totalQuests", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                    }
+                }
+                Box(modifier = Modifier.weight(1f).background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Weekly Quests", fontSize = 11.sp, color = Color(0xFFB0B0B0))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "$weekliesCompleted / ${weeklyQuests.size}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                    }
+                }
+            }
+
+            if (overdueQuests.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(8.dp), contentAlignment = Alignment.Center) {
+                    Text(text = "⚠️ ${overdueQuests.size} Overdue Weekly Quests", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = onViewDailyQuests, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
+                    Text("View Daily", color = Color(0xFFFFD700), fontSize = 14.sp)
+                }
+                Button(onClick = onViewWeeklyQuests, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
+                    Text("View Weekly", color = Color(0xFFFFD700), fontSize = 14.sp)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val calendar = java.util.Calendar.getInstance()
+            val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
+            if (dayOfWeek == 2 || dayOfWeek == 3) {
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "📦 DELIVERY DAY REMINDER", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4FB3D9))
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(text = "Count all packages before storing in car to prevent loss", fontSize = 12.sp, color = Color(0xFF7DD3FC))
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            if (totalQuests > 0) {
-                if (isAllCompleted) {
-                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a472a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "🎉 PERFECT CLEAR! 🎉", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80))
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "All daily quests completed", fontSize = 12.sp, color = Color(0xFF86EFAC))
-                        }
-                    }
-                } else {
-                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF472a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "⚠️ Daily Quests Remaining", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "$questsCompleted / $totalQuests completed", fontSize = 12.sp, color = Color(0xFFFFB566))
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                Button(onClick = onViewDailyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
-                    Text("View Daily Quests", color = Color(0xFFFFD700), fontSize = 16.sp)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (hasWeeklyQuests && weeklyQuests.isNotEmpty()) {
-                val isWeeklyAllCompleted = weekliesCompleted > 0 && weekliesCompleted == weeklyQuests.size
-
-                if (isWeeklyAllCompleted) {
-                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a472a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "✅ WEEKLY CLEAR! ✅", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80))
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "All weekly quests completed", fontSize = 12.sp, color = Color(0xFF86EFAC))
-                        }
-                    }
-                } else {
-                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF472a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "⚠️ Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF9F43))
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(text = "$weekliesCompleted / ${weeklyQuests.size} completed", fontSize = 12.sp, color = Color(0xFFFFB566))
-                        }
-                    }
-                }
-            } else {
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF2a2a2a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "📅 No Weekly Quests Due Today", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFB566))
-                    }
-                }
-            }
-
-            // Show overdue banner if there are overdue required quests
-            if (overdueQuests.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF7a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "⚠️ ${overdueQuests.size} OVERDUE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(text = "Past due required quests", fontSize = 12.sp, color = Color(0xFFFF9999))
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(onClick = onViewWeeklyQuests, modifier = Modifier.fillMaxWidth().height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
-                Text("View Weekly Quests", color = Color(0xFFFFD700), fontSize = 16.sp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // NoFap Streak Counter
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFF1a3a2a), shape = RoundedCornerShape(8.dp))
-                    .padding(12.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = "🔥 NoFap Streak", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80))
-                    Spacer(modifier = Modifier.height(4.dp))
+            Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a2a1a), shape = RoundedCornerShape(8.dp)).padding(16.dp), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "🔥 NoFap Streak", fontSize = 13.sp, color = Color(0xFFB0B0B0))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(text = "${player!!.nofapStreak} Days", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(text = "Keep it going!", fontSize = 11.sp, color = Color(0xFF86EFAC))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = "Keep it going!", fontSize = 12.sp, color = Color(0xFFB0B0B0))
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
