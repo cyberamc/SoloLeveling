@@ -85,3 +85,23 @@ suspend fun fetchFromApi(endpoint: String): String {
         }
     }
 }
+
+suspend fun postToApi(endpoint: String): String {
+    return withContext(Dispatchers.IO) {
+        try {
+            disableSSLVerification()
+            val url = URL("https://mysololeveling.us$endpoint")
+            val connection = url.openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+            connection.doOutput = true
+            return@withContext try {
+                if (connection.responseCode in 200..299) connection.inputStream.bufferedReader().readText()
+                else throw Exception("HTTP ${connection.responseCode}")
+            } finally { connection.disconnect() }
+        } catch (e: Exception) {
+            throw Exception("Failed to post to API: ${e.message}")
+        }
+    }
+}
