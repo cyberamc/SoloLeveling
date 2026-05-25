@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import androidx.compose.ui.platform.LocalContext
 import okhttp3.RequestBody
 import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.launch
@@ -88,6 +89,7 @@ fun PlayerScreen() {
 
 @Composable
 fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> Unit, refreshTrigger: Int) {
+    val context = LocalContext.current
     var player by remember { mutableStateOf<Player?>(null) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
