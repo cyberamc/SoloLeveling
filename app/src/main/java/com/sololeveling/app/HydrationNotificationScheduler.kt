@@ -8,59 +8,71 @@ import androidx.work.WorkManager
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
+data class NotificationSchedule(
+    val time: String,
+    val questTitle: String,
+    val notificationTitle: String,
+    val notificationText: String,
+    val notificationId: Int
+)
+
 object HydrationNotificationScheduler {
 
     private val HOME_DAY_QUESTS = listOf(
-        "11:00" to "Hydrate @ 11 AM",
-        "15:00" to "Hydrate @ 3 PM",
-        "19:00" to "Hydrate @ 7 PM",
-        "20:45" to "Complete Daily Hydration @ 8:45 PM",
-        "21:20" to "Prepare Tomorrow's Hydration @ 9:20 PM"
+        NotificationSchedule("11:00", "Hydrate @ 11 AM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("15:00", "Hydrate @ 3 PM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("19:00", "Hydrate @ 7 PM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("20:45", "Complete Daily Hydration @ 8:45 PM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("21:00", "Quest Reminder @ 9 PM", "Quest Reminder", "Do your best to finish your quests", 1001),
+        NotificationSchedule("21:20", "Prepare Tomorrow's Hydration @ 9:20 PM", "Hydrate", "Complete your hydration quest", 1000)
     )
 
     private val DELIVERY_DAY_QUESTS = listOf(
-        "10:00" to "Hydrate @ 10 AM",
-        "12:00" to "Hydrate @ 12 PM",
-        "14:00" to "Hydrate @ 2 PM",
-        "18:00" to "Complete Daily Hydration @ 6 PM",
-        "18:30" to "Prepare Tomorrow's Hydration @ 6:30 PM"
+        NotificationSchedule("10:00", "Hydrate @ 10 AM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("12:00", "Hydrate @ 12 PM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("14:00", "Hydrate @ 2 PM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("18:00", "Complete Daily Hydration @ 6 PM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("18:30", "Prepare Tomorrow's Hydration @ 6:30 PM", "Hydrate", "Complete your hydration quest", 1000),
+        NotificationSchedule("21:00", "Quest Reminder @ 9 PM", "Quest Reminder", "Do your best to finish your quests", 1001)
     )
-    
+
     fun scheduleHydrationNotifications(context: Context) {
         val workManager = WorkManager.getInstance(context)
         val calendar = Calendar.getInstance()
         val todayDayOfWeek = calendar.get(Calendar.DAY_OF_WEEK)
-        
-        // 1 = Sunday, 2 = Monday, 3 = Tuesday, etc.
-        val isDeliveryDay = todayDayOfWeek == 3 || todayDayOfWeek == 4 // Tuesday or Wednesday
-        
+
+        val isDeliveryDay = todayDayOfWeek == 3 || todayDayOfWeek == 4
+
         val questsToSchedule = if (isDeliveryDay) DELIVERY_DAY_QUESTS else HOME_DAY_QUESTS
-        
-        for ((time, questTitle) in questsToSchedule) {
-            val (hour, minute) = time.split(":").map { it.toInt() }
-            val workName = "hydration_${questTitle.hashCode()}"
-            
+
+        for (schedule in questsToSchedule) {
+            val (hour, minute) = schedule.time.split(":").map { it.toInt() }
+            val workName = "hydration_${schedule.questTitle.hashCode()}"
+
             val inputData = Data.Builder()
-                .putString("questTitle", questTitle)
+                .putString("questTitle", schedule.questTitle)
+                .putString("notificationTitle", schedule.notificationTitle)
+                .putString("notificationText", schedule.notificationText)
+                .putInt("notificationId", schedule.notificationId)
                 .build()
-            
+
             val initialDelay = calculateDelayToTime(hour, minute)
-            
-            val hydrationWorkRequest = PeriodicWorkRequestBuilder<HydrationWorker>(
+
+            val workRequest = PeriodicWorkRequestBuilder<HydrationWorker>(
                 1, TimeUnit.DAYS
             )
                 .setInputData(inputData)
                 .setInitialDelay(initialDelay, TimeUnit.MINUTES)
                 .build()
-            
+
             workManager.enqueueUniquePeriodicWork(
                 workName,
-                ExistingPeriodicWorkPolicy.KEEP,
-                hydrationWorkRequest
+                ExistingPeriodicWorkPolicy.REPLACE,
+                workRequest
             )
         }
     }
-    
+
     private fun calculateDelayToTime(hour: Int, minute: Int): Long {
         val now = Calendar.getInstance()
         val target = Calendar.getInstance().apply {
@@ -68,13 +80,12 @@ object HydrationNotificationScheduler {
             set(Calendar.MINUTE, minute)
             set(Calendar.SECOND, 0)
         }
-        
-        // If target time has passed today, schedule for tomorrow
+
         if (target.before(now)) {
             target.add(Calendar.DAY_OF_MONTH, 1)
         }
-        
+
         val delayMillis = target.timeInMillis - now.timeInMillis
-        return delayMillis / (1000 * 60) // Convert to minutes
+        return delayMillis / (1000 * 60)
     }
 }

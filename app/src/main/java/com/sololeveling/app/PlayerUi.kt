@@ -61,6 +61,16 @@ fun PlayerScreen() {
     var questType by remember { mutableStateOf("daily") }
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
+    // Check for pending navigation from notifications
+    LaunchedEffect(NavigationState.pendingNavigation.value) {
+        val pending = NavigationState.pendingNavigation.value
+        if (pending == "daily_quests") {
+            currentScreen = "quests"
+            questType = "daily"
+            NavigationState.pendingNavigation.value = null
+        }
+    }
+
     BackHandler(enabled = currentScreen != "player") {
         currentScreen = "player"
     }
@@ -279,11 +289,11 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
 
             Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a2a1a), shape = RoundedCornerShape(8.dp)).padding(16.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "🔥 NoFap Streak", fontSize = 13.sp, color = Color(0xFFB0B0B0))
+                    Text(text = "🔥 Consistency", fontSize = 13.sp, color = Color(0xFFB0B0B0))
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(text = "${player!!.nofapStreak} Days", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "Keep it going!", fontSize = 12.sp, color = Color(0xFFB0B0B0))
+                    Text(text = "Stay strong", fontSize = 12.sp, color = Color(0xFFB0B0B0))
                 }
             }
 

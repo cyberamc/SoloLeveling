@@ -1,24 +1,27 @@
 package com.sololeveling.app
 
-import android.Manifest
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.Manifest
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import android.content.pm.PackageManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        handleNavigationIntent(intent)
+
         setContent {
             MainTabScreen()
         }
 
-        // Create notification channel
         val channel = NotificationChannel(
             "hydration_channel",
             "Hydration Reminders",
@@ -27,10 +30,8 @@ class MainActivity : ComponentActivity() {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
 
-        // Schedule hydration notifications
         HydrationNotificationScheduler.scheduleHydrationNotifications(this)
 
-        // Request notification permission for Android 13+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(
                     this,
@@ -43,6 +44,18 @@ class MainActivity : ComponentActivity() {
                     1
                 )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleNavigationIntent(intent)
+    }
+
+    private fun handleNavigationIntent(intent: Intent?) {
+        val navigateTo = intent?.getStringExtra("navigate_to")
+        if (navigateTo != null) {
+            NavigationState.pendingNavigation.value = navigateTo
         }
     }
 }
