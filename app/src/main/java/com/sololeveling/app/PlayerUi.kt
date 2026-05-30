@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalContext
 import okhttp3.RequestBody
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -624,6 +625,7 @@ fun MainTabScreen() {
             when (selectedTab) {
                 TabType.QUESTS -> PlayerScreen()
                 TabType.SUPPLEMENTS -> SupplementsScreen()
+                TabType.DIET -> DietScreen()
             }
         }
 
@@ -645,6 +647,12 @@ fun MainTabScreen() {
                 label = "Supplements",
                 isSelected = selectedTab == TabType.SUPPLEMENTS,
                 onClick = { selectedTab = TabType.SUPPLEMENTS },
+                modifier = Modifier.weight(1f)
+            )
+            TabButton(
+                label = "Diet",
+                isSelected = selectedTab == TabType.DIET,
+                onClick = { selectedTab = TabType.DIET },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -675,7 +683,416 @@ private fun TabButton(
 }
 
 enum class TabType {
-    QUESTS, SUPPLEMENTS
+    QUESTS, SUPPLEMENTS, DIET
+}
+
+data class Meal(
+    val name: String,
+    val mealType: String,
+    val macros: Macros,
+    val ingredients: List<String>,
+    val steps: List<MealStep>
+)
+
+data class Macros(
+    val calories: Int,
+    val protein: Int,
+    val fat: Int,
+    val netCarbs: Int
+)
+
+data class MealStep(
+    val title: String,
+    val detail: String
+)
+
+val BREAKFAST_MEALS = listOf(
+    Meal(
+        name = "Beef & Eggs",
+        mealType = "Breakfast",
+        macros = Macros(calories = 510, protein = 39, fat = 36, netCarbs = 3),
+        ingredients = listOf(
+            "5 oz 80/20 ground beef",
+            "40g diced white onion",
+            "1 tsp minced garlic",
+            "3 large eggs",
+            "Pinch of salt",
+            "Black pepper",
+            "Splash of water or heavy cream",
+            "Small sliver of butter (if needed)"
+        ),
+        steps = listOf(
+            MealStep(
+                "1. Crisp the Beef & Aromatics First",
+                "Heat your skillet over medium-high heat. Drop in your 5 oz of 80/20 ground beef. Let it sit untouched for 2–3 minutes before breaking it up — this lets it develop a deep, brown, flavorful crust. Once you break it apart, toss in your 40g of diced white onion and 1 tsp of minced garlic. Sauté until the onions are translucent and the beef is fully cooked and crispy."
+            ),
+            MealStep(
+                "2. The Prep",
+                "Whisk your 3 large eggs in a bowl with a pinch of salt, black pepper, and a tiny splash of water or heavy cream. Whisk vigorously until the eggs are completely uniform and bubbly — this incorporates air for maximum fluffiness."
+            ),
+            MealStep(
+                "3. The Switch",
+                "Turn the burner heat down to medium-low. Push the crispy beef and onions to one side of the pan. If the pan looks dry, drop a tiny sliver of butter onto the empty side."
+            ),
+            MealStep(
+                "4. The Pour",
+                "Pour the whisked eggs into the empty side of the pan. Let them sit for about 30 seconds until the edges just start to set."
+            ),
+            MealStep(
+                "5. The Fold",
+                "Using a spatula, gently push the eggs from the outside edge toward the center, creating long, folding sheets of egg. As they become semi-solid, gently fold the crispy beef and onions back into the eggs."
+            ),
+            MealStep(
+                "6. Pull the Heat",
+                "Turn off the burner while the eggs still look a tiny bit glossy and wet. The residual heat of the pan will finish cooking them in the 10 seconds it takes to plate them."
+            )
+        )
+    )
+)
+
+val LUNCH_MEALS = listOf(
+    Meal(
+        name = "Chicken & Pepper",
+        mealType = "Lunch",
+        macros = Macros(calories = 680, protein = 48, fat = 48, netCarbs = 7),
+        ingredients = listOf(
+            "8 oz chicken breast",
+            "1.5 cups bell peppers",
+            "1 tsp minced garlic",
+            "1 tbsp olive oil",
+            "Dried thyme",
+            "Salt",
+            "Black pepper",
+            "1 oz shredded cheddar cheese"
+        ),
+        steps = listOf(
+            MealStep(
+                "1. The Raw Prep & Quick Marinade",
+                "Dice your 8 oz chicken breast into uniform 1/2-inch cubes. Slice your 1.5 cups of bell peppers into bite-sized strips. In a bowl, toss the raw chicken cubes with 1 tsp minced garlic, 1 tbsp olive oil, dried thyme, salt, and pepper. Let it sit 5 minutes on the counter while the pan heats. Tip: salting the raw chicken early helps it retain its internal juices when it hits the hot pan."
+            ),
+            MealStep(
+                "2. The High-Heat Pan Sear",
+                "Place a large skillet over medium-high heat — hot enough that the chicken sizzles immediately on contact. Drop the cubes in a single layer and sear untouched for 2 minutes to build a golden-brown crust that locks in the juices. Toss and cook another 2–3 minutes until fully cooked through. The small cubes cook fast, so pull them onto a plate immediately so they don't overcook."
+            ),
+            MealStep(
+                "3. Sauté the Peppers",
+                "Leave the burner on medium-high and drop the bell peppers into the same pan so they pick up the leftover garlic, thyme, and chicken juices. Sauté for just 3 minutes, tossing frequently, until vibrant and slightly blistered on the edges but still crisp."
+            ),
+            MealStep(
+                "4. The Fresh Cheddar Melt",
+                "Turn off the heat. Return the cooked chicken to the skillet with the peppers to combine. Sprinkle 1 oz shredded cheddar evenly over the top, cover with a lid or foil for 60 seconds with the heat off — the trapped steam melts the cheese into a gooey blanket without overcooking the meat. Slide onto a plate and eat hot."
+            )
+        )
+    )
+)
+
+val DINNER_MEALS = listOf(
+    Meal(
+        name = "Steak & Mushrooms",
+        mealType = "Dinner",
+        macros = Macros(calories = 640, protein = 45, fat = 46, netCarbs = 8),
+        ingredients = listOf(
+            "Steak — preferred cut (Top Sirloin or Ribeye), room temperature",
+            "8–12 oz white or baby bella mushrooms, sliced thick",
+            "1 tbsp high-smoke-point oil (avocado or light olive oil)",
+            "1–2 tbsp butter (for the finish)",
+            "Coarse salt",
+            "Coarse black pepper",
+            "Optional: minced garlic or fresh thyme"
+        ),
+        steps = listOf(
+            MealStep(
+                "1. Prep and Dry the Steak (~30 min before)",
+                "Take the steak out of the fridge early to drop the chill. Pat it completely dry with paper towels — heavy moisture prevents a good sear. Season generously on all sides with coarse salt and black pepper."
+            ),
+            MealStep(
+                "2. Sear the Steak (4–6 min)",
+                "Heat a heavy skillet (cast iron is perfect) over high heat until it's smoking hot. Add 1 tbsp high-smoke-point oil and drop the steak in. Sear 2–3 minutes per side without moving it, creating a deep, brown crust."
+            ),
+            MealStep(
+                "3. Rest the Meat (5–8 min)",
+                "Pull the steak out and set it on a cutting board or warm plate to rest. Don't skip this — resting lets the muscle fibers relax so the juices stay inside the steak when you cut it."
+            ),
+            MealStep(
+                "4. Sauté the Mushrooms (5–6 min)",
+                "Turn the burner down to medium-high. Drop the sliced mushrooms straight into the same hot pan with the leftover steak fat. Let them sit flat for 2 minutes to get color, then stir. They'll absorb the fat, release water, then start turning golden brown."
+            ),
+            MealStep(
+                "5. The Garlic Butter Finish (1–2 min)",
+                "Once the mushrooms are browned, drop 1–2 tbsp butter into the pan with some minced garlic (and fresh thyme if you have it). Stir vigorously for a minute until the butter foams, turns slightly nutty, and coats the mushrooms."
+            ),
+            MealStep(
+                "Chef's Tip",
+                "Slice the rested steak against the grain and pile the hot, buttery garlic mushrooms right over the top. The warm mushrooms will reheat the surface of the steak perfectly."
+            )
+        )
+    )
+)
+
+val SNACK_MEALS = listOf(
+    Meal(
+        name = "Pecan Halves",
+        mealType = "Snack",
+        macros = Macros(calories = 215, protein = 3, fat = 22, netCarbs = 1),
+        ingredients = listOf("Member's Mark Natural Pecan Halves — 30g"),
+        steps = emptyList()
+    )
+)
+
+val DESSERT_MEALS = listOf(
+    Meal(
+        name = "Pecan Mousse",
+        mealType = "Dessert",
+        macros = Macros(calories = 150, protein = 4, fat = 19, netCarbs = 3),
+        ingredients = listOf(
+            "2 oz heavy whipping cream",
+            "1 tbsp cocoa powder",
+            "1 tbsp sweetener",
+            "7g pecan halves"
+        ),
+        steps = listOf(
+            MealStep(
+                "1. Chill and Prep Your Tools (1 min)",
+                "For the fastest results, use a small metal or glass bowl. If you have an extra 60 seconds, drop the bowl and your whisk (or hand mixer beaters) into the freezer. Cold tools make heavy cream whip up twice as fast."
+            ),
+            MealStep(
+                "2. Combine the Base (2 min)",
+                "Pour the 2 oz heavy whipping cream straight into the chilled bowl. Sift or dump in the 1 tbsp cocoa powder and 1 tbsp sweetener."
+            ),
+            MealStep(
+                "3. Whip to Thick Peaks (2 min)",
+                "Beat the mixture vigorously. Hand mixer: start on low so the cocoa doesn't fly out, then turn to high. By hand: move your wrist in a rapid, circular motion to incorporate air. After about 90–120 seconds the cream suddenly transforms into a thick, velvety, scoopable mousse that holds its shape. Stop immediately once it reaches this point so it doesn't turn into chocolate butter."
+            ),
+            MealStep(
+                "4. The Pecan Crunch Finish (1 min)",
+                "Spoon the mousse into a small bowl or glass. Give your 7g of pecan halves a quick chop and scatter them generously over the top."
+            )
+        )
+    )
+)
+
+@Composable
+fun DietScreen() {
+    var selectedMeal by remember { mutableStateOf<Meal?>(null) }
+
+    BackHandler(enabled = selectedMeal != null) {
+        selectedMeal = null
+    }
+
+    val meal = selectedMeal
+    if (meal == null) {
+        DietListScreen(onMealSelected = { selectedMeal = it })
+    } else {
+        MealDetailScreen(meal = meal, onBack = { selectedMeal = null })
+    }
+}
+
+@Composable
+fun MacroBox(label: String, value: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(text = label, fontSize = 10.sp, color = Color(0xFFB0B0B0), textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+fun DietListScreen(onMealSelected: (Meal) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0a0a0a))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Diet",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Text(
+                    text = "Breakfast",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            items(BREAKFAST_MEALS, key = { it.name }) { meal ->
+                Button(
+                    onClick = { onMealSelected(meal) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = meal.name,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
+            }
+            item {
+                Text(
+                    text = "Lunch",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            items(LUNCH_MEALS, key = { it.name }) { meal ->
+                Button(
+                    onClick = { onMealSelected(meal) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = meal.name,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
+            }
+            item {
+                Text(
+                    text = "Dinner",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            items(DINNER_MEALS, key = { it.name }) { meal ->
+                Button(
+                    onClick = { onMealSelected(meal) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = meal.name,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
+            }
+            item {
+                Text(
+                    text = "Snack",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            items(SNACK_MEALS, key = { it.name }) { meal ->
+                Button(
+                    onClick = { onMealSelected(meal) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+            item {
+                Text(
+                    text = "Dessert",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            items(DESSERT_MEALS, key = { it.name }) { meal ->
+                Button(
+                    onClick = { onMealSelected(meal) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MealDetailScreen(meal: Meal, onBack: () -> Unit) {
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = meal.name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(text = meal.mealType, fontSize = 13.sp, color = Color(0xFFFFD700))
+            }
+            Text(
+                text = "Back",
+                color = Color(0xFFFFD700),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.clickable { onBack() }
+            )
+        }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MacroBox("Calories", "${meal.macros.calories}", Modifier.weight(1f))
+                    MacroBox("Protein", "${meal.macros.protein}g", Modifier.weight(1f))
+                    MacroBox("Fat", "${meal.macros.fat}g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "${meal.macros.netCarbs}g", Modifier.weight(1f))
+                }
+            }
+            if (meal.ingredients.isNotEmpty()) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(16.dp)) {
+                        Column {
+                            Text(text = "Ingredients", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), modifier = Modifier.padding(bottom = 8.dp))
+                            meal.ingredients.forEach { ingredient ->
+                                Text(text = "• $ingredient", fontSize = 14.sp, color = Color.White, modifier = Modifier.padding(vertical = 2.dp))
+                            }
+                        }
+                    }
+                }
+            }
+            if (meal.steps.isNotEmpty()) {
+                item {
+                    Text(text = "Instructions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                }
+                items(meal.steps, key = { it.title }) { step ->
+                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(16.dp)) {
+                        Column {
+                            Text(text = step.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White, modifier = Modifier.padding(bottom = 6.dp))
+                            Text(text = step.detail, fontSize = 14.sp, color = Color(0xFFB0B0B0), lineHeight = 20.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
