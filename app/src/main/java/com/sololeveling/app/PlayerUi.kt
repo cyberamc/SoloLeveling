@@ -59,15 +59,13 @@ private fun createUnsafeHttpClient(): OkHttpClient {
 @Composable
 fun PlayerScreen() {
     var currentScreen by remember { mutableStateOf("player") }
-    var questType by remember { mutableStateOf("daily") }
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
     // Check for pending navigation from notifications
     LaunchedEffect(NavigationState.pendingNavigation.value) {
         val pending = NavigationState.pendingNavigation.value
-        if (pending == "daily_quests") {
+        if (pending == "daily_quests" || pending == "weekly_quests" || pending == "quests") {
             currentScreen = "quests"
-            questType = "daily"
             NavigationState.pendingNavigation.value = null
         }
     }
@@ -78,28 +76,20 @@ fun PlayerScreen() {
 
     if (currentScreen == "player") {
         PlayerStatsScreen(
-            onViewDailyQuests = {
-                currentScreen = "quests"
-                questType = "daily"
-            },
-            onViewWeeklyQuests = {
-                currentScreen = "quests"
-                questType = "weekly"
-            },
+            onViewQuests = { currentScreen = "quests" },
             refreshTrigger = refreshTrigger
         )
     } else {
         QuestsListScreen(
             onBackToPlayer = { currentScreen = "player" },
             onQuestUpdated = { refreshTrigger++ },
-            refreshTrigger = refreshTrigger,
-            questType = questType
+            refreshTrigger = refreshTrigger
         )
     }
 }
 
 @Composable
-fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> Unit, refreshTrigger: Int) {
+fun PlayerStatsScreen(onViewQuests: () -> Unit, refreshTrigger: Int) {
     val context = LocalContext.current
     var player by remember { mutableStateOf<Player?>(null) }
     var loading by remember { mutableStateOf(true) }
@@ -110,7 +100,6 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
     var weeklyQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var weekliesCompleted by remember { mutableIntStateOf(0) }
     var hasWeeklyQuests by remember { mutableStateOf(false) }
-    var overdueQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
 
     LaunchedEffect(refreshTrigger) {
         loading = true
@@ -176,12 +165,10 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
             val todayWeekday = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
             val todaysWeeklyQuests = allWeeklyQuestsList.filter { it.weekday == todayWeekday && !it.optional }
             val todaysWeeklyCompleted = todaysWeeklyQuests.count { it.completed }
-            val overdueRequiredQuests = allWeeklyQuestsList.filter { !it.optional && it.isOverdue && !it.completed }
 
             weeklyQuests = todaysWeeklyQuests
             weekliesCompleted = todaysWeeklyCompleted
             hasWeeklyQuests = todaysWeeklyQuests.isNotEmpty()
-            overdueQuests = overdueRequiredQuests
         } catch (e: Exception) {
             error = e.message
         } finally {
@@ -255,22 +242,14 @@ fun PlayerStatsScreen(onViewDailyQuests: () -> Unit, onViewWeeklyQuests: () -> U
                 }
             }
 
-            if (overdueQuests.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(8.dp), contentAlignment = Alignment.Center) {
-                    Text(text = "⚠️ ${overdueQuests.size} Overdue Weekly Quests", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
-                }
-            }
-
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = onViewDailyQuests, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
-                    Text("View Daily", color = Color(0xFFFFD700), fontSize = 14.sp)
-                }
-                Button(onClick = onViewWeeklyQuests, modifier = Modifier.weight(1f).height(48.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))) {
-                    Text("View Weekly", color = Color(0xFFFFD700), fontSize = 14.sp)
-                }
+            Button(
+                onClick = onViewQuests,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))
+            ) {
+                Text("View Quests", color = Color(0xFFFFD700), fontSize = 14.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -320,31 +299,49 @@ fun sortQuestsByTime(quests: List<Quest>): List<Quest> {
 }
 
 @Composable
-fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, refreshTrigger: Int, questType: String = "daily") {
-    var dailyQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
-    var weeklyQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
+fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, refreshTrigger: Int) {
+    var dailyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
+    var allWeeklyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    var dailiesCompletedCount by remember { mutableIntStateOf(0) }
-    var weekliesCompletedCount by remember { mutableIntStateOf(0) }
-    var showHiddenWeeklies by remember { mutableStateOf(false) }
+    var thisWeekExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshTrigger) {
         loadAllQuests(
-            onQuestsLoaded = { daily, weekly, dailiesCompleted, weekliesCompleted, hasWeekly ->
-                dailyQuests = daily
-                weeklyQuests = weekly
-                dailiesCompletedCount = dailiesCompleted
-                weekliesCompletedCount = weekliesCompleted
+            onQuestsLoaded = { daily, weekly, _, _, _ ->
+                dailyQuestsState = daily
+                allWeeklyQuestsState = weekly
                 loading = false
             },
             onError = { err -> error = err; loading = false }
         )
     }
 
-    val displayQuests = if (questType == "weekly") emptyList() else sortQuestsByTime(dailyQuests)
-    val completedCount = if (questType == "weekly") weekliesCompletedCount else dailiesCompletedCount
-    val title = if (questType == "weekly") "Weekly Quests" else "Daily Quests"
+    val calendar = java.util.Calendar.getInstance()
+    val todayWeekday = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
+    val shortDayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val fullDayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+
+    val sortedDailies = sortQuestsByTime(dailyQuestsState)
+    val todaysWeekly = allWeeklyQuestsState
+        .filter { it.weekday == todayWeekday }
+        .sortedWith(compareBy({ it.optional }, { it.completed }))
+    val overdueQuests = allWeeklyQuestsState
+        .filter { it.weekday != todayWeekday && it.isOverdue && !it.completed && !it.optional }
+    val thisWeekQuests = allWeeklyQuestsState
+        .filter { it.weekday != todayWeekday }
+        .filter { !(it.isOverdue && !it.completed && !it.optional) }
+
+    val thisWeekOrder = (1..6).map { (todayWeekday + it) % 7 }
+    val overdueOrder = (1..6).map { ((todayWeekday - it) + 7) % 7 }
+
+    val activeThisWeekDays = thisWeekOrder.filter { wd -> thisWeekQuests.any { it.weekday == wd } }
+    val activeOverdueDays = overdueOrder.filter { wd -> overdueQuests.any { it.weekday == wd } }
+
+    val requiredDailies = sortedDailies.filter { !it.optional }
+    val requiredDailiesCompleted = requiredDailies.count { it.completed }
+    val requiredTodayWeekly = todaysWeekly.filter { !it.optional }
+    val requiredTodayWeeklyCompleted = requiredTodayWeekly.count { it.completed }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
         Row(
@@ -353,17 +350,14 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
             verticalAlignment = Alignment.Top
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(text = "Quests", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Spacer(modifier = Modifier.height(4.dp))
-                if (questType == "weekly") {
-                    val requiredWeeklies = weeklyQuests.filter { !it.optional }
-                    val requiredCompleted = requiredWeeklies.count { it.completed }
-                    Text(text = "$requiredCompleted / ${requiredWeeklies.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
-                } else {
-                    val requiredDailies = displayQuests.filter { !it.optional }
-                    val requiredDailiesCompleted = requiredDailies.count { it.completed }
-                    Text(text = "$requiredDailiesCompleted / ${requiredDailies.size} Completed", fontSize = 13.sp, color = Color(0xFFFFD700))
-                }
+                val overdueText = if (overdueQuests.isNotEmpty()) " · ${overdueQuests.size} overdue" else ""
+                Text(
+                    text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} weekly$overdueText",
+                    fontSize = 13.sp,
+                    color = Color(0xFFFFD700)
+                )
             }
             Text(text = "Back", color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp).clickable { onBackToPlayer() })
         }
@@ -378,57 +372,94 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (questType == "daily") {
-                    items(displayQuests, key = { it.id }) { quest ->
-                        QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = false)
+                item(key = "today-header") {
+                    SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
+                }
+                items(sortedDailies, key = { "d${it.id}" }) { quest ->
+                    QuestItem(
+                        quest = quest,
+                        onCompleteToggle = { onQuestUpdated() },
+                        questId = quest.id,
+                        isCompleted = quest.completed,
+                        isWeekly = false,
+                        showDaySuffix = false
+                    )
+                }
+                if (todaysWeekly.isNotEmpty()) {
+                    item(key = "today-weekly-divider") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 32.dp, vertical = 4.dp)
+                                .height(1.dp)
+                                .background(Color(0xFF2a2a2a))
+                        )
                     }
-                } else {
-                    if (weeklyQuests.isNotEmpty()) {
-                        val calendar = java.util.Calendar.getInstance()
-                        val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
+                    items(todaysWeekly, key = { "w${it.id}" }) { quest ->
+                        QuestItem(
+                            quest = quest,
+                            onCompleteToggle = { onQuestUpdated() },
+                            questId = quest.id,
+                            isCompleted = quest.completed,
+                            isWeekly = true,
+                            showDaySuffix = false
+                        )
+                    }
+                }
 
-                        val todaysQuests = weeklyQuests.filter { it.weekday == dayOfWeek }.sortedWith(compareBy({ it.optional }, { it.completed }))
-                        val overdueQuests = weeklyQuests.filter { it.isOverdue && !it.completed && !it.optional }
-                        val otherDaysQuests = weeklyQuests.filter { it.weekday != dayOfWeek && !(it.isOverdue && !it.completed) }.sortedWith(compareBy({ it.completed || (it.optional && it.weekday < dayOfWeek) }, { it.weekday }))
-
-                        items(todaysQuests, key = { it.id }) { quest ->
-                            QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
+                if (overdueQuests.isNotEmpty()) {
+                    item(key = "overdue-header") {
+                        SectionHeader(
+                            label = "⚠ OVERDUE",
+                            subtitle = "${overdueQuests.size} quest${if (overdueQuests.size == 1) "" else "s"}",
+                            color = Color(0xFFFF6B6B)
+                        )
+                    }
+                    activeOverdueDays.forEach { weekday ->
+                        val dayQuests = overdueQuests.filter { it.weekday == weekday }
+                        item(key = "overdue-sub-$weekday") {
+                            DaySubheader(label = shortDayNames[weekday], color = Color(0xFFFF6B6B))
                         }
-
-                        if (overdueQuests.isNotEmpty()) {
-                            item {
-                                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF7a1a1a)).padding(12.dp), contentAlignment = Alignment.Center) {
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(text = "⚠️ ${overdueQuests.size} OVERDUE", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFF6B6B))
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text(text = "Past due required quests", fontSize = 12.sp, color = Color(0xFFFF9999))
-                                    }
-                                }
-                            }
-
-                            items(overdueQuests, key = { it.id }) { quest ->
-                                QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
-                            }
+                        items(dayQuests, key = { "w${it.id}" }) { quest ->
+                            QuestItem(
+                                quest = quest,
+                                onCompleteToggle = { onQuestUpdated() },
+                                questId = quest.id,
+                                isCompleted = quest.completed,
+                                isWeekly = true,
+                                showDaySuffix = false,
+                                isOverdue = true
+                            )
                         }
+                    }
+                }
 
-                        if (otherDaysQuests.isNotEmpty()) {
-                            item {
-                                TextButton(
-                                    onClick = { showHiddenWeeklies = !showHiddenWeeklies },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(
-                                        text = if (showHiddenWeeklies) "▲ Hide Other Days" else "▼ Show Other Days",
-                                        color = Color(0xFFFFD700),
-                                        fontSize = 14.sp
-                                    )
-                                }
+                if (thisWeekQuests.isNotEmpty()) {
+                    item(key = "thisweek-header") {
+                        ThisWeekHeader(
+                            expanded = thisWeekExpanded,
+                            onToggle = { thisWeekExpanded = !thisWeekExpanded },
+                            days = activeThisWeekDays.map { shortDayNames[it] },
+                            count = thisWeekQuests.size
+                        )
+                    }
+                    if (thisWeekExpanded) {
+                        activeThisWeekDays.forEach { weekday ->
+                            val dayQuests = thisWeekQuests
+                                .filter { it.weekday == weekday }
+                                .sortedWith(compareBy({ it.optional }, { it.completed }))
+                            item(key = "thisweek-sub-$weekday") {
+                                DaySubheader(label = shortDayNames[weekday], color = Color(0xFFB0B0B0))
                             }
-
-                            if (showHiddenWeeklies) {
-                                items(otherDaysQuests, key = { it.id }) { quest ->
-                                    QuestItem(quest = quest, onCompleteToggle = { onQuestUpdated() }, questId = quest.id, isCompleted = quest.completed, isWeekly = true)
-                                }
+                            items(dayQuests, key = { "w${it.id}" }) { quest ->
+                                QuestItem(
+                                    quest = quest,
+                                    onCompleteToggle = { onQuestUpdated() },
+                                    questId = quest.id,
+                                    isCompleted = quest.completed,
+                                    isWeekly = true,
+                                    showDaySuffix = false
+                                )
                             }
                         }
                     }
@@ -439,7 +470,65 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
 }
 
 @Composable
-fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isCompleted: Boolean, isWeekly: Boolean = false) {
+fun SectionHeader(label: String, subtitle: String? = null, color: Color) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 2.dp, start = 4.dp, end = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = label, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = color, letterSpacing = 2.sp)
+        if (subtitle != null) {
+            Text(text = subtitle, fontSize = 11.sp, color = Color(0xFFB0B0B0))
+        }
+    }
+}
+
+@Composable
+fun DaySubheader(label: String, color: Color) {
+    Text(
+        text = label.uppercase(),
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        color = color,
+        letterSpacing = 1.5.sp,
+        modifier = Modifier.padding(top = 4.dp, bottom = 0.dp, start = 8.dp)
+    )
+}
+
+@Composable
+fun ThisWeekHeader(expanded: Boolean, onToggle: () -> Unit, days: List<String>, count: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp))
+            .clickable { onToggle() }
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = "THIS WEEK", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), letterSpacing = 2.sp)
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = if (days.isEmpty()) "No upcoming quests" else "${days.joinToString(", ")} · $count quest${if (count == 1) "" else "s"}",
+                fontSize = 11.sp,
+                color = Color(0xFFB0B0B0)
+            )
+        }
+        Text(text = if (expanded) "▲" else "▼", fontSize = 14.sp, color = Color(0xFFFFD700))
+    }
+}
+
+@Composable
+fun QuestItem(
+    quest: Quest,
+    onCompleteToggle: () -> Unit,
+    questId: Int,
+    isCompleted: Boolean,
+    isWeekly: Boolean = false,
+    showDaySuffix: Boolean = true,
+    isOverdue: Boolean = false
+) {
     var checked by remember(isCompleted) { mutableStateOf(isCompleted) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -493,16 +582,21 @@ fun QuestItem(quest: Quest, onCompleteToggle: () -> Unit, questId: Int, isComple
 
         Column(modifier = Modifier.weight(1f)) {
             val dayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
-            val displayTitle = if (isWeekly && quest.weekday >= 0) {
-                "${quest.title} - ${dayNames[quest.weekday]}"
-            } else {
-                quest.title.replaceFirst(Regex(" - (\\d+:\\d+|\\d{1,2}:\\d{2} [AP]M)"), " @ $1").replace("daily ", "")
+            val displayTitle = when {
+                isWeekly && quest.weekday >= 0 && showDaySuffix -> "${quest.title} - ${dayNames[quest.weekday]}"
+                isWeekly -> quest.title
+                else -> quest.title.replaceFirst(Regex(" - (\\d+:\\d+|\\d{1,2}:\\d{2} [AP]M)"), " @ $1").replace("daily ", "")
+            }
+            val titleColor = when {
+                checked -> Color.Gray
+                isOverdue -> Color(0xFFFCA5A5)
+                else -> Color.White
             }
             Text(
                 text = displayTitle,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = if (checked) Color.Gray else Color.White,
+                color = titleColor,
                 textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None
             )
             Row(
