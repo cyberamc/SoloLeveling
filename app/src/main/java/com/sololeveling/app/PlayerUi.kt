@@ -401,8 +401,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                             onCompleteToggle = { onQuestUpdated() },
                             questId = quest.id,
                             isCompleted = quest.completed,
-                            isWeekly = true,
-                            showDaySuffix = false
+                            isWeekly = true
                         )
                     }
                 }
@@ -427,7 +426,6 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                                 questId = quest.id,
                                 isCompleted = quest.completed,
                                 isWeekly = true,
-                                showDaySuffix = false,
                                 isOverdue = true
                             )
                         }
@@ -438,29 +436,23 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                     item(key = "thisweek-header") {
                         ThisWeekHeader(
                             expanded = thisWeekExpanded,
-                            onToggle = { thisWeekExpanded = !thisWeekExpanded },
-                            days = activeThisWeekDays.map { shortDayNames[it] },
-                            count = thisWeekQuests.size
+                            onToggle = { thisWeekExpanded = !thisWeekExpanded }
                         )
                     }
                     if (thisWeekExpanded) {
-                        activeThisWeekDays.forEach { weekday ->
-                            val dayQuests = thisWeekQuests
+                        val orderedThisWeek = thisWeekOrder.flatMap { weekday ->
+                            thisWeekQuests
                                 .filter { it.weekday == weekday }
                                 .sortedWith(compareBy({ it.optional }, { it.completed }))
-                            item(key = "thisweek-sub-$weekday") {
-                                DaySubheader(label = shortDayNames[weekday], color = Color(0xFFB0B0B0))
-                            }
-                            items(dayQuests, key = { "w${it.id}" }) { quest ->
-                                QuestItem(
-                                    quest = quest,
-                                    onCompleteToggle = { onQuestUpdated() },
-                                    questId = quest.id,
-                                    isCompleted = quest.completed,
-                                    isWeekly = true,
-                                    showDaySuffix = false
-                                )
-                            }
+                        }
+                        items(orderedThisWeek, key = { "w${it.id}" }) { quest ->
+                            QuestItem(
+                                quest = quest,
+                                onCompleteToggle = { onQuestUpdated() },
+                                questId = quest.id,
+                                isCompleted = quest.completed,
+                                isWeekly = true
+                            )
                         }
                     }
                 }
@@ -496,7 +488,7 @@ fun DaySubheader(label: String, color: Color) {
 }
 
 @Composable
-fun ThisWeekHeader(expanded: Boolean, onToggle: () -> Unit, days: List<String>, count: Int) {
+fun ThisWeekHeader(expanded: Boolean, onToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -506,15 +498,7 @@ fun ThisWeekHeader(expanded: Boolean, onToggle: () -> Unit, days: List<String>, 
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = "THIS WEEK", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), letterSpacing = 2.sp)
-            Spacer(modifier = Modifier.height(2.dp))
-            Text(
-                text = if (days.isEmpty()) "No upcoming quests" else "${days.joinToString(", ")} · $count quest${if (count == 1) "" else "s"}",
-                fontSize = 11.sp,
-                color = Color(0xFFB0B0B0)
-            )
-        }
+        Text(text = "THIS WEEK", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), letterSpacing = 2.sp)
         Text(text = if (expanded) "▲" else "▼", fontSize = 14.sp, color = Color(0xFFFFD700))
     }
 }
