@@ -39,6 +39,9 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.X509TrustManager
 import java.security.cert.X509Certificate
 import okhttp3.OkHttpClient
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 
 private fun createUnsafeHttpClient(): OkHttpClient {
     val trustAllCerts = arrayOf<X509TrustManager>(object : X509TrustManager {
@@ -704,6 +707,7 @@ fun MainTabScreen() {
                 TabType.QUESTS -> PlayerScreen()
                 TabType.SUPPLEMENTS -> SupplementsScreen()
                 TabType.DIET -> DietScreen()
+                TabType.GYM -> GymScreen()
             }
         }
 
@@ -731,6 +735,12 @@ fun MainTabScreen() {
                 label = "Diet",
                 isSelected = selectedTab == TabType.DIET,
                 onClick = { selectedTab = TabType.DIET },
+                modifier = Modifier.weight(1f)
+            )
+            TabButton(
+                label = "Gym",
+                isSelected = selectedTab == TabType.GYM,
+                onClick = { selectedTab = TabType.GYM },
                 modifier = Modifier.weight(1f)
             )
         }
@@ -761,7 +771,7 @@ private fun TabButton(
 }
 
 enum class TabType {
-    QUESTS, SUPPLEMENTS, DIET
+    QUESTS, SUPPLEMENTS, DIET, GYM
 }
 
 data class Meal(
@@ -1314,6 +1324,505 @@ private fun SupplementGroupCard(group: SupplementGroup) {
             }
         }
     }
+}
+
+
+// ─── Gym Tab ──────────────────────────────────────────────────────────────────
+
+data class GymExercise(
+    val exerciseTemplateId: String,
+    val title: String,
+    val sessionCount: Int,
+    val bestWeightLbs: Int,
+    val bestReps: Int,
+    val estimated1RMLbs: Int,
+    val isPlateaued: Boolean,
+    val sessionsAtCurrentWeight: Int,
+    val lastPrDate: String,
+    val recentGainLbs: Int,
+    val strengthLevel: String?,
+    val strengthPercentile: Int?
+)
+
+data class ExerciseSession(
+    val date: String,
+    val weightLbs: Int,
+    val reps: Int,
+    val estimated1RMLbs: Int
+)
+
+data class GymRoutine(
+    val routineId: String,
+    val title: String,
+    val exercises: List<GymExercise>
+)
+
+@Composable
+fun GymScreen() {
+    var selectedExercise by remember { mutableStateOf<GymExercise?>(null) }
+
+    BackHandler(enabled = selectedExercise != null) {
+        selectedExercise = null
+    }
+
+    if (selectedExercise == null) {
+        GymListScreen(onExerciseSelected = { selectedExercise = it })
+    } else {
+        GymDetailScreen(exercise = selectedExercise!!, onBack = { selectedExercise = null })
+    }
+}
+
+@Composable
+fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit) {
+    var routines by remember { mutableStateOf<List<GymRoutine>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        try {
+            val response = fetchFromApi("/api/gym/routines")
+            val data = Gson().fromJson(response, List::class.java)
+            routines = data.mapNotNull {
+                if (it is Map<*, *>) {
+                    val exList = (it["exercises"] as? List<*>)?.mapNotNull { ex ->
+                        if (ex is Map<*, *>) GymExercise(
+                            exerciseTemplateId = (ex["exercise_template_id"] as? String) ?: "",
+                            title = (ex["title"] as? String) ?: "",
+                            sessionCount = (ex["session_count"] as? Number)?.toInt() ?: 0,
+                            bestWeightLbs = (ex["best_weight_lbs"] as? Number)?.toInt() ?: 0,
+                            bestReps = (ex["best_reps"] as? Number)?.toInt() ?: 0,
+                            estimated1RMLbs = (ex["estimated_1rm_lbs"] as? Number)?.toInt() ?: 0,
+                            isPlateaued = (ex["is_plateaued"] as? Boolean) ?: false,
+                            sessionsAtCurrentWeight = (ex["sessions_at_current_weight"] as? Number)?.toInt() ?: 0,
+                            lastPrDate = (ex["last_pr_date"] as? String) ?: "",
+                            recentGainLbs = (ex["recent_gain_lbs"] as? Number)?.toInt() ?: 0,
+                            strengthLevel = ex["strength_level"] as? String,
+                            strengthPercentile = (ex["strength_percentile"] as? Number)?.toInt()
+                        ) else null
+                    } ?: emptyList()
+                    GymRoutine(
+                        routineId = (it["routine_id"] as? String) ?: "",
+                        title = (it["title"] as? String) ?: "",
+                        exercises = exList
+                    )
+                } else null
+            }
+        } catch (e: Exception) {
+            error = e.message
+        } finally {
+            loading = false
+        }
+    }
+
+    val totalPlateaued = routines.sumOf { r -> r.exercises.count { it.isPlateaued } }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).systemBarsPadding().padding(16.dp)
+        ) {
+            Text("Gym", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            if (routines.isNotEmpty()) {
+                Text(
+                    text = "${routines.size} routines" + if (totalPlateaued > 0) " · $totalPlateaued plateaued" else "",
+                    fontSize = 13.sp, color = Color(0xFFFFD700)
+                )
+            }
+        }
+
+        if (loading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFFFD700))
+            }
+        } else if (error != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(routines, key = { it.routineId }) { routine ->
+                    GymRoutineSection(routine = routine, onExerciseSelected = onExerciseSelected)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GymExerciseCard(exercise: GymExercise, onClick: () -> Unit) {
+    val borderColor = when {
+        exercise.isPlateaued -> Color(0xFFf87171)
+        exercise.recentGainLbs > 0 -> Color(0xFF4FB3D9)
+        else -> Color(0xFFFFD700)
+    }
+    val levelColor = gymLevelColor(exercise.strengthLevel)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Max)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF111728))
+            .clickable { onClick() }
+    ) {
+        Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(borderColor))
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp).weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = exercise.title,
+                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                    color = if (exercise.isPlateaued) Color(0xFFfca5a5) else Color(0xFFcdd6e2),
+                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                )
+                if (exercise.isPlateaued) {
+                    Text(
+                        text = "Plateau", fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFFf87171),
+                        modifier = Modifier
+                            .background(Color(0x26f87171), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    )
+                } else if (exercise.recentGainLbs > 0) {
+                    Text(
+                        text = "+${exercise.recentGainLbs} lbs", fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4FB3D9),
+                        modifier = Modifier
+                            .background(Color(0x264FB3D9), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            val subtitle = if (exercise.isPlateaued)
+                "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · stuck ${exercise.sessionsAtCurrentWeight} sessions"
+            else
+                "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · ${exercise.sessionCount} sessions"
+            Text(text = subtitle, fontSize = 12.sp, color = Color(0xFF6b7689), modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Est. 1RM:", fontSize = 11.sp, color = Color(0xFF6b7689))
+                Text("${exercise.estimated1RMLbs} lbs", fontSize = 11.sp, color = Color(0xFFFFD700), fontWeight = FontWeight.SemiBold)
+                if (exercise.strengthLevel != null && exercise.strengthPercentile != null) {
+                    val pct = exercise.strengthPercentile / 100f
+                    Box(modifier = Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFF1f2a3f))) {
+                        Box(modifier = Modifier.fillMaxHeight().fillMaxWidth(pct).background(levelColor, RoundedCornerShape(2.dp)))
+                    }
+                    Text(exercise.strengthLevel, fontSize = 10.sp, color = levelColor, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GymRoutineSection(routine: GymRoutine, onExerciseSelected: (GymExercise) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    val plateauCount = routine.exercises.count { it.isPlateaued }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF111728))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(routine.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFcdd6e2))
+                Text(
+                    text = "${routine.exercises.size} exercises" + if (plateauCount > 0) " · $plateauCount plateaued" else "",
+                    fontSize = 11.sp, color = Color(0xFF6b7689), modifier = Modifier.padding(top = 2.dp)
+                )
+            }
+            Text(if (expanded) "▲" else "▼", fontSize = 13.sp, color = Color(0xFFFFD700))
+        }
+
+        if (expanded) {
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1f2937)))
+            routine.exercises.forEachIndexed { index, exercise ->
+                GymExerciseRow(exercise = exercise, onClick = { onExerciseSelected(exercise) })
+                if (index < routine.exercises.size - 1) {
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF0e1422)))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun GymExerciseRow(exercise: GymExercise, onClick: () -> Unit) {
+    val borderColor = when {
+        exercise.isPlateaued -> Color(0xFFf87171)
+        exercise.recentGainLbs > 0 -> Color(0xFF4FB3D9)
+        else -> Color(0xFFFFD700)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Max)
+            .clickable { onClick() }
+    ) {
+        Box(modifier = Modifier.width(3.dp).fillMaxHeight().background(borderColor))
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp).weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = exercise.title,
+                    fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                    color = if (exercise.isPlateaued) Color(0xFFfca5a5) else Color(0xFFcdd6e2),
+                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                )
+                if (exercise.isPlateaued) {
+                    Text(
+                        "Plateau", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFFf87171),
+                        modifier = Modifier.background(Color(0x26f87171), RoundedCornerShape(10.dp)).padding(horizontal = 7.dp, vertical = 2.dp)
+                    )
+                } else if (exercise.recentGainLbs > 0) {
+                    Text(
+                        "+${exercise.recentGainLbs} lbs", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4FB3D9),
+                        modifier = Modifier.background(Color(0x264FB3D9), RoundedCornerShape(10.dp)).padding(horizontal = 7.dp, vertical = 2.dp)
+                    )
+                }
+            }
+            if (exercise.sessionCount > 0) {
+                Text(
+                    "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · Est. 1RM: ${exercise.estimated1RMLbs} lbs",
+                    fontSize = 11.sp, color = Color(0xFF6b7689), modifier = Modifier.padding(top = 3.dp)
+                )
+            } else {
+                Text("No data yet", fontSize = 11.sp, color = Color(0xFF6b7689), modifier = Modifier.padding(top = 3.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
+    var sessions by remember { mutableStateOf<List<ExerciseSession>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(exercise.exerciseTemplateId) {
+        try {
+            val response = fetchFromApi("/api/gym/history/${exercise.exerciseTemplateId}")
+            val data = Gson().fromJson(response, List::class.java)
+            sessions = data.mapNotNull {
+                if (it is Map<*, *>) ExerciseSession(
+                    date = (it["date"] as? String) ?: "",
+                    weightLbs = (it["weight_lbs"] as? Number)?.toInt() ?: 0,
+                    reps = (it["reps"] as? Number)?.toInt() ?: 0,
+                    estimated1RMLbs = (it["estimated_1rm_lbs"] as? Number)?.toInt() ?: 0
+                ) else null
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("GYM_DETAIL", "History error: ${e.message}")
+        } finally {
+            loading = false
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).systemBarsPadding().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                Text(
+                    exercise.title, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                    color = if (exercise.isPlateaued) Color(0xFFfca5a5) else Color.White
+                )
+                if (exercise.isPlateaued) {
+                    Text(
+                        "Stuck ${exercise.sessionsAtCurrentWeight} sessions at ${exercise.bestWeightLbs} lbs",
+                        fontSize = 12.sp, color = Color(0xFFf87171), modifier = Modifier.padding(top = 2.dp)
+                    )
+                }
+            }
+            Text(
+                "Back", color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 4.dp).clickable { onBack() }
+            )
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            item {
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    GymStatBox("Best set", "${exercise.bestWeightLbs} × ${exercise.bestReps}", Modifier.weight(1f))
+                    GymStatBox("Est. 1RM", "${exercise.estimated1RMLbs} lbs", Modifier.weight(1f), Color(0xFFFFD700))
+                    GymStatBox("Sessions", "${exercise.sessionCount}", Modifier.weight(1f))
+                }
+            }
+
+            item {
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF111728), RoundedCornerShape(8.dp)).padding(12.dp)) {
+                    Column {
+                        Text("Max weight over time", fontSize = 11.sp, color = Color(0xFF6b7689), letterSpacing = 1.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        if (loading) {
+                            Box(modifier = Modifier.fillMaxWidth().height(70.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
+                            }
+                        } else if (sessions.size >= 2) {
+                            GymProgressChart(sessions)
+                        } else {
+                            Box(modifier = Modifier.fillMaxWidth().height(70.dp), contentAlignment = Alignment.Center) {
+                                Text("Not enough sessions yet", fontSize = 12.sp, color = Color(0xFF6b7689))
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (exercise.strengthLevel != null && exercise.strengthPercentile != null) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF111728), RoundedCornerShape(8.dp)).padding(12.dp)) {
+                        Column {
+                            Text(
+                                "Vs other lifters at 191 lbs", fontSize = 11.sp, color = Color(0xFF6b7689),
+                                letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 10.dp)
+                            )
+                            GymStrengthBar(level = exercise.strengthLevel, percentile = exercise.strengthPercentile)
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                "You are ${exercise.strengthLevel} — stronger than ~${exercise.strengthPercentile}% of lifters at your bodyweight.",
+                                fontSize = 12.sp, color = Color(0xFFcdd6e2), lineHeight = 18.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF111728), RoundedCornerShape(8.dp)).padding(12.dp)) {
+                    Column {
+                        Text("Recent sessions", fontSize = 11.sp, color = Color(0xFF6b7689), letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 8.dp))
+                        if (!loading && sessions.isEmpty()) {
+                            Text("No session data", fontSize = 12.sp, color = Color(0xFF6b7689))
+                        }
+                        sessions.forEachIndexed { i, session ->
+                            val isPr = i < sessions.size - 1 && session.weightLbs > sessions[i + 1].weightLbs
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(session.date, fontSize = 12.sp, color = Color(0xFF6b7689))
+                                Text("${session.weightLbs} × ${session.reps}", fontSize = 12.sp, color = Color.White)
+                                Text(
+                                    if (isPr) "PR" else "—", fontSize = 10.sp,
+                                    color = if (isPr) Color(0xFFFFD700) else Color(0xFF6b7689)
+                                )
+                            }
+                            if (i < sessions.size - 1) {
+                                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1f2937)))
+                            }
+                        }
+                    }
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(8.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun GymStatBox(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Color.White) {
+    Box(
+        modifier = modifier.background(Color(0xFF1a1a1a), RoundedCornerShape(8.dp)).padding(10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(label, fontSize = 10.sp, color = Color(0xFF6b7689))
+            Spacer(modifier = Modifier.height(3.dp))
+            Text(value, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = valueColor)
+        }
+    }
+}
+
+@Composable
+fun GymProgressChart(sessions: List<ExerciseSession>) {
+    val ordered = sessions.reversed()
+    Canvas(modifier = Modifier.fillMaxWidth().height(70.dp)) {
+        if (ordered.size < 2) return@Canvas
+        val maxW = ordered.maxOf { it.weightLbs }.toFloat()
+        val minW = ordered.minOf { it.weightLbs }.toFloat()
+        val range = if (maxW == minW) 1f else maxW - minW
+        val padY = size.height * 0.12f
+        val chartH = size.height - padY * 2
+        val points = ordered.mapIndexed { i, s ->
+            val x = (i.toFloat() / (ordered.size - 1)) * size.width
+            val y = padY + chartH - ((s.weightLbs - minW) / range) * chartH
+            Offset(x, y)
+        }
+        for (i in 0 until points.size - 1) {
+            drawLine(Color(0xFF4FB3D9), points[i], points[i + 1], strokeWidth = 3f, cap = StrokeCap.Round)
+        }
+        points.forEachIndexed { i, p ->
+            drawCircle(if (i == points.size - 1) Color(0xFFFFD700) else Color(0xFF4FB3D9), 5f, p)
+        }
+    }
+}
+
+@Composable
+fun GymStrengthBar(level: String, percentile: Int) {
+    val tiers = listOf("Beginner", "Novice", "Intermediate", "Advanced", "Elite")
+    val tierColors = listOf(
+        Color(0xFF4B5563), Color(0xFFca8a04), Color(0xFF4FB3D9), Color(0xFFa78bfa), Color(0xFFFB923C)
+    )
+    val activeIdx = tiers.indexOf(level).coerceAtLeast(0)
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+            horizontalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            tiers.forEachIndexed { i, _ ->
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxHeight()
+                        .background(if (i == activeIdx) tierColors[i] else tierColors[i].copy(alpha = 0.2f))
+                )
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+            tiers.forEachIndexed { i, tier ->
+                Text(
+                    text = tier, modifier = Modifier.weight(1f),
+                    fontSize = 8.sp,
+                    color = if (i == activeIdx) tierColors[i] else Color(0xFF6b7689),
+                    textAlign = TextAlign.Center,
+                    fontWeight = if (i == activeIdx) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+        }
+    }
+}
+
+private fun gymLevelColor(level: String?) = when (level) {
+    "Beginner"     -> Color(0xFF4B5563)
+    "Novice"       -> Color(0xFFca8a04)
+    "Intermediate" -> Color(0xFF4FB3D9)
+    "Advanced"     -> Color(0xFFa78bfa)
+    "Elite"        -> Color(0xFFFB923C)
+    else           -> Color(0xFF6b7689)
 }
 
 data class SupplementGroup(
