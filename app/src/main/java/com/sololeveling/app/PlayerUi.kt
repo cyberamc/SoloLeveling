@@ -99,7 +99,6 @@ fun PlayerStatsScreen(onViewQuests: () -> Unit, refreshTrigger: Int) {
     var error by remember { mutableStateOf<String?>(null) }
     var questsCompleted by remember { mutableIntStateOf(0) }
     var totalQuests by remember { mutableIntStateOf(0) }
-    var dailyQuestsList by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var weeklyQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var weekliesCompleted by remember { mutableIntStateOf(0) }
     var hasWeeklyQuests by remember { mutableStateOf(false) }
@@ -113,27 +112,6 @@ fun PlayerStatsScreen(onViewQuests: () -> Unit, refreshTrigger: Int) {
             val questData = Gson().fromJson(questResponse, Map::class.java)
             questsCompleted = (questData["dailiesCompleted"] as? Number)?.toInt() ?: 0
             totalQuests = (questData["totalDailies"] as? Number)?.toInt() ?: 0
-
-            val dailyQuestsData = try {
-                val dailyQuestsRaw = (questData["dailyQuests"] as? List<*>) ?: emptyList<Any>()
-                dailyQuestsRaw.mapNotNull {
-                    if (it is Map<*, *>) {
-                        Quest(
-                            id = (it["id"] as? Number)?.toInt() ?: 0,
-                            title = (it["title"] as? String) ?: "",
-                            type = "daily",
-                            category = (it["category"] as? String) ?: "",
-                            xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
-                            goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
-                            completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
-                            streak = 0
-                        )
-                    } else null
-                }
-            } catch (e: Exception) {
-                emptyList()
-            }
-            dailyQuestsList = dailyQuestsData
 
             val allWeeklyResponse = try {
                 fetchFromApi("/api/weekly-quests/all")
@@ -219,14 +197,16 @@ fun PlayerStatsScreen(onViewQuests: () -> Unit, refreshTrigger: Int) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            val hydrationQuests = dailyQuestsList.filter { it.title.contains("Hydrate", ignoreCase = true) }
-            val hydrationCompleted = hydrationQuests.count { it.completed }
-            if (hydrationCompleted < hydrationQuests.size) {
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a), shape = RoundedCornerShape(8.dp)).padding(10.dp), contentAlignment = Alignment.Center) {
-                    Text(text = "💧 Complete all daily hydration quests", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4BA3FF))
-                }
-                Spacer(modifier = Modifier.height(16.dp))
+            Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(14.dp), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "\"The pain of discipline or the pain of regret.\"",
+                    fontSize = 13.sp,
+                    color = Color(0xFFFFD700),
+                    textAlign = TextAlign.Center,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(modifier = Modifier.weight(1f).background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
