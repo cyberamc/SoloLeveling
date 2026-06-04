@@ -726,7 +726,7 @@ fun MainTabScreen() {
                 modifier = Modifier.weight(1f)
             )
             TabButton(
-                label = "Supplements",
+                label = "Supps",
                 isSelected = selectedTab == TabType.SUPPLEMENTS,
                 onClick = { selectedTab = TabType.SUPPLEMENTS },
                 modifier = Modifier.weight(1f)
