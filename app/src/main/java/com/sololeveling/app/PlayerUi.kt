@@ -305,10 +305,9 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
     val shortDayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     val fullDayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
 
-    val sortedDailies = sortQuestsByTime(dailyQuestsState)
     val todaysWeekly = allWeeklyQuestsState
         .filter { it.weekday == todayWeekday }
-        .sortedWith(compareBy({ it.optional }, { it.completed }))
+    val combinedToday = sortQuestsByTime(dailyQuestsState + todaysWeekly)
     val overdueQuests = allWeeklyQuestsState
         .filter { it.weekday != todayWeekday && it.isOverdue && !it.completed && !it.optional }
     val thisWeekQuests = allWeeklyQuestsState
@@ -321,7 +320,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
     val activeThisWeekDays = thisWeekOrder.filter { wd -> thisWeekQuests.any { it.weekday == wd } }
     val activeOverdueDays = overdueOrder.filter { wd -> overdueQuests.any { it.weekday == wd } }
 
-    val requiredDailies = sortedDailies.filter { !it.optional }
+    val requiredDailies = dailyQuestsState.filter { !it.optional }
     val requiredDailiesCompleted = requiredDailies.count { it.completed }
     val requiredTodayWeekly = todaysWeekly.filter { !it.optional }
     val requiredTodayWeeklyCompleted = requiredTodayWeekly.count { it.completed }
@@ -358,35 +357,15 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                 item(key = "today-header") {
                     SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
                 }
-                items(sortedDailies, key = { "d${it.id}" }) { quest ->
+                items(combinedToday, key = { "${it.type}${it.id}" }) { quest ->
                     QuestItem(
                         quest = quest,
                         onCompleteToggle = { onQuestUpdated() },
                         questId = quest.id,
                         isCompleted = quest.completed,
-                        isWeekly = false,
+                        isWeekly = quest.type == "weekly",
                         showDaySuffix = false
                     )
-                }
-                if (todaysWeekly.isNotEmpty()) {
-                    item(key = "today-weekly-divider") {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 32.dp, vertical = 4.dp)
-                                .height(1.dp)
-                                .background(Color(0xFF2a2a2a))
-                        )
-                    }
-                    items(todaysWeekly, key = { "w${it.id}" }) { quest ->
-                        QuestItem(
-                            quest = quest,
-                            onCompleteToggle = { onQuestUpdated() },
-                            questId = quest.id,
-                            isCompleted = quest.completed,
-                            isWeekly = true
-                        )
-                    }
                 }
 
                 if (overdueQuests.isNotEmpty()) {
@@ -572,6 +551,17 @@ fun QuestItem(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
+                if (isWeekly) {
+                    Text(
+                        text = "Weekly",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFa78bfa),
+                        modifier = Modifier
+                            .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
                 if (quest.optional) {
                     Text(
                         text = "Optional",
