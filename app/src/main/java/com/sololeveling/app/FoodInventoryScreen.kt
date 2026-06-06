@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,11 +28,10 @@ import java.net.URL
 data class FoodItem(
     val id: Int,
     val name: String,
-    val source: String,
+    val source: String?,
     val level: Int  // 0=Out, 1=Low, 2=Medium, 3=Full
 )
 
-// 0=Out, 1=Low, 2=Medium, 3=Full
 val LEVEL_LABELS = listOf("Out", "Low", "Medium", "Full")
 val LEVEL_COLORS = listOf(
     Color(0xFFCF6679),  // Out — red
@@ -42,8 +42,8 @@ val LEVEL_COLORS = listOf(
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
-fun fetchFoodInventory(baseUrl: String): List<FoodItem> {
-    val url = URL("$baseUrl/api/food-inventory")
+fun fetchInventory(baseUrl: String, endpoint: String): List<FoodItem> {
+    val url = URL("$baseUrl$endpoint")
     val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
@@ -56,7 +56,7 @@ fun fetchFoodInventory(baseUrl: String): List<FoodItem> {
             FoodItem(
                 id = obj.getInt("id"),
                 name = obj.getString("name"),
-                source = obj.getString("source"),
+                source = if (obj.has("source")) obj.getString("source") else null,
                 level = obj.getInt("level")
             )
         }
@@ -65,40 +65,37 @@ fun fetchFoodInventory(baseUrl: String): List<FoodItem> {
     }
 }
 
-fun patchFoodLevel(baseUrl: String, id: Int, level: Int): FoodItem? {
-    val url = URL("$baseUrl/api/food-inventory/$id")
+fun patchInventoryLevel(baseUrl: String, endpoint: String, id: Int, level: Int) {
+    val url = URL("$baseUrl$endpoint/$id")
     val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "PATCH"
     conn.setRequestProperty("Content-Type", "application/json")
     conn.doOutput = true
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
-    return try {
+    try {
         val body = JSONObject().apply { put("level", level) }.toString()
         conn.outputStream.use { it.write(body.toByteArray()) }
-        val text = conn.inputStream.bufferedReader().readText()
-        val obj = JSONObject(text)
-        FoodItem(
-            id = obj.getInt("id"),
-            name = obj.getString("name"),
-            source = obj.getString("source"),
-            level = obj.getInt("level")
-        )
+        conn.inputStream.bufferedReader().readText()
     } finally {
         conn.disconnect()
     }
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+// ─── Shared Inventory Screen ──────────────────────────────────────────────────
 
 @Composable
-fun FoodInventoryScreen(baseUrl: String) {
+fun InventoryScreen(
+    baseUrl: String,
+    endpoint: String,
+    title: String,
+    onBack: () -> Unit
+) {
     val scope = rememberCoroutineScope()
     var items by remember { mutableStateOf<List<FoodItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
-    // Group order: Out first, then Low, Medium, Full
     val grouped = remember(items) {
         listOf(0, 1, 2, 3).mapNotNull { lvl ->
             val group = items.filter { it.level == lvl }
@@ -110,7 +107,7 @@ fun FoodInventoryScreen(baseUrl: String) {
         scope.launch {
             try {
                 items = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    fetchFoodInventory(baseUrl)
+                    fetchInventory(baseUrl, endpoint)
                 }
                 isLoading = false
             } catch (e: Exception) {
@@ -124,22 +121,30 @@ fun FoodInventoryScreen(baseUrl: String) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0A0A1A))
-            .padding(horizontal = 16.dp)
     ) {
         // Header
-        Text(
-            text = "FOOD SUPPLY",
-            color = Color(0xFF7B8CDE),
-            fontSize = 20.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 20.dp, bottom = 4.dp)
-        )
-        Text(
-            text = "Tap an item to cycle its level",
-            color = Color(0xFF555577),
-            fontSize = 12.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1a1a1a))
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "Back",
+                color = Color(0xFFFFD700),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.clickable { onBack() }
+            )
+        }
 
         when {
             isLoading -> {
@@ -153,36 +158,49 @@ fun FoodInventoryScreen(baseUrl: String) {
                 }
             }
             else -> {
-                // Summary bar
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF12122A))
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    listOf(0, 1, 2, 3).forEach { lvl ->
-                        val count = items.count { it.level == lvl }
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = count.toString(),
-                                color = LEVEL_COLORS[lvl],
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = LEVEL_LABELS[lvl],
-                                color = Color(0xFF888899),
-                                fontSize = 11.sp
-                            )
+                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                    Spacer(Modifier.height(12.dp))
+
+                    // Summary bar
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF12122A))
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf(0, 1, 2, 3).forEach { lvl ->
+                            val count = items.count { it.level == lvl }
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    text = count.toString(),
+                                    color = LEVEL_COLORS[lvl],
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = LEVEL_LABELS[lvl],
+                                    color = Color(0xFF888899),
+                                    fontSize = 11.sp
+                                )
+                            }
                         }
                     }
+
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "Tap to cycle level",
+                        color = Color(0xFF555577),
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
                 }
 
-                Spacer(Modifier.height(16.dp))
-
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     grouped.forEach { (lvl, group) ->
                         item(key = "header_$lvl") {
                             Text(
@@ -193,21 +211,19 @@ fun FoodInventoryScreen(baseUrl: String) {
                                 modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
                             )
                         }
-                        items(group, key = { it.id }) { item ->
-                            FoodItemRow(
+                        items(group, key = { "${endpoint}_${it.id}" }) { item ->
+                            InventoryItemRow(
                                 item = item,
                                 onCycleLevel = { newLevel ->
-                                    // Optimistic update
                                     items = items.map {
                                         if (it.id == item.id) it.copy(level = newLevel) else it
                                     }
                                     scope.launch {
                                         try {
                                             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                patchFoodLevel(baseUrl, item.id, newLevel)
+                                                patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
                                             }
                                         } catch (e: Exception) {
-                                            // Revert on failure
                                             items = items.map {
                                                 if (it.id == item.id) it.copy(level = item.level) else it
                                             }
@@ -225,8 +241,8 @@ fun FoodInventoryScreen(baseUrl: String) {
 }
 
 @Composable
-fun FoodItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
-    val nextLevel = (item.level + 3) % 4
+fun InventoryItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
+    val nextLevel = (item.level + 3) % 4  // Full > Medium > Low > Out > Full
 
     Row(
         modifier = Modifier
@@ -237,7 +253,6 @@ fun FoodItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Level indicator bar on left
         Box(
             modifier = Modifier
                 .width(4.dp)
@@ -245,9 +260,7 @@ fun FoodItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
                 .clip(RoundedCornerShape(2.dp))
                 .background(LEVEL_COLORS[item.level])
         )
-
         Spacer(Modifier.width(12.dp))
-
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.name,
@@ -257,16 +270,15 @@ fun FoodItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            Text(
-                text = item.source,
-                color = Color(0xFF444466),
-                fontSize = 11.sp
-            )
+            if (!item.source.isNullOrEmpty()) {
+                Text(
+                    text = item.source,
+                    color = Color(0xFF444466),
+                    fontSize = 11.sp
+                )
+            }
         }
-
         Spacer(Modifier.width(10.dp))
-
-        // Level chip
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
@@ -280,6 +292,68 @@ fun FoodItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )
+        }
+    }
+}
+
+// ─── Supplies Hub Screen ──────────────────────────────────────────────────────
+
+@Composable
+fun SuppliesScreen(baseUrl: String) {
+    var currentView by remember { mutableStateOf<String?>(null) }
+
+    BackHandler(enabled = currentView != null) {
+        currentView = null
+    }
+
+    when (currentView) {
+        "food" -> InventoryScreen(
+            baseUrl = baseUrl,
+            endpoint = "/api/food-inventory",
+            title = "Food Supply",
+            onBack = { currentView = null }
+        )
+        "household" -> InventoryScreen(
+            baseUrl = baseUrl,
+            endpoint = "/api/household-inventory",
+            title = "Household Supply",
+            onBack = { currentView = null }
+        )
+        else -> {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF0A0A1A))
+                    .padding(16.dp)
+            ) {
+                Text(
+                    text = "SUPPLIES",
+                    color = Color(0xFF7B8CDE),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 20.dp, bottom = 24.dp)
+                )
+
+                Button(
+                    onClick = { currentView = "food" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("🥩  Food Supply", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = { currentView = "household" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("🧴  Household Supply", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
         }
     }
 }

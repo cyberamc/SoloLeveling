@@ -678,7 +678,7 @@ fun MainTabScreen() {
                 TabType.SUPPLEMENTS -> SupplementsScreen()
                 TabType.DIET -> DietScreen()
                 TabType.GYM -> GymScreen()
-                TabType.FOOD -> FoodInventoryScreen(baseUrl = "https://mysololeveling.us")
+                TabType.FOOD -> SuppliesScreen(baseUrl = "https://mysololeveling.us")
             }
         }
 
@@ -715,7 +715,7 @@ fun MainTabScreen() {
                 modifier = Modifier.weight(1f)
             )
             TabButton(
-                label = "Food",
+                label = "Supplies",
                 isSelected = selectedTab == TabType.FOOD,
                 onClick = { selectedTab = TabType.FOOD },
                 modifier = Modifier.weight(1f)
