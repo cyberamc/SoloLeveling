@@ -678,6 +678,7 @@ fun MainTabScreen() {
                 TabType.SUPPLEMENTS -> SupplementsScreen()
                 TabType.DIET -> DietScreen()
                 TabType.GYM -> GymScreen()
+                TabType.FOOD -> FoodInventoryScreen(baseUrl = "https://mysololeveling.us")
             }
         }
 
@@ -687,7 +688,7 @@ fun MainTabScreen() {
                 .background(Color(0xFF1a1a1a))
                 .padding(horizontal = 8.dp, vertical = 8.dp)
                 .imePadding(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             TabButton(
                 label = "Quests",
@@ -713,6 +714,12 @@ fun MainTabScreen() {
                 onClick = { selectedTab = TabType.GYM },
                 modifier = Modifier.weight(1f)
             )
+            TabButton(
+                label = "Food",
+                isSelected = selectedTab == TabType.FOOD,
+                onClick = { selectedTab = TabType.FOOD },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -730,18 +737,19 @@ private fun TabButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = if (isSelected) Color(0xFF2a2a2a) else Color.Transparent
         ),
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
     ) {
         Text(
             text = label,
-            fontSize = 14.sp,
+            fontSize = 12.sp,
             color = Color.White
         )
     }
 }
 
 enum class TabType {
-    QUESTS, SUPPLEMENTS, DIET, GYM
+    QUESTS, SUPPLEMENTS, DIET, GYM, FOOD
 }
 
 data class Meal(
