@@ -764,7 +764,7 @@ data class Macros(
     val calories: Int,
     val protein: Int,
     val fat: Int,
-    val netCarbs: Int
+    val netCarbs: String
 )
 
 data class MealStep(
@@ -776,41 +776,26 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Beef & Eggs",
         mealType = "Breakfast",
-        macros = Macros(calories = 510, protein = 39, fat = 36, netCarbs = 3),
+        macros = Macros(calories = 620, protein = 45, fat = 45, netCarbs = "4"),
         ingredients = listOf(
             "5 oz 80/20 ground beef",
             "40g diced white onion",
             "1 tsp minced garlic",
             "3 large eggs",
-            "Pinch of salt",
-            "Black pepper",
-            "Splash of water or heavy cream",
-            "Small sliver of butter (if needed)"
+            "1 oz shredded cheese",
+            "pinch of salt",
+            "black pepper",
+            "splash of water or heavy cream",
+            "small sliver of butter (if needed)"
         ),
         steps = listOf(
             MealStep(
                 "1. Crisp the Beef & Aromatics First",
-                "Heat your skillet over medium-high heat. Drop in your 5 oz of 80/20 ground beef. Let it sit untouched for 2–3 minutes before breaking it up — this lets it develop a deep, brown, flavorful crust. Once you break it apart, toss in your 40g of diced white onion and 1 tsp of minced garlic. Sauté until the onions are translucent and the beef is fully cooked and crispy."
+                "The Prep: Heat your skillet over medium-high heat. Whisk your 3 large eggs in a bowl with a pinch of salt, black pepper, and a tiny splash of water or heavy cream. Whisk vigorously until the eggs are completely uniform and bubbly—this incorporates air for maximum fluffiness.\n\nDrop in your 5 oz of 80/20 ground beef. Let it sit untouched for 2–3 minutes before breaking it up. This lets it develop a deep, brown, flavorful crust.\n\nOnce you break it apart, toss in your 40g of diced white onion and 1 tsp of minced garlic. Sauté everything until the onions are translucent and the beef is fully cooked and crispy."
             ),
             MealStep(
-                "2. The Prep",
-                "Whisk your 3 large eggs in a bowl with a pinch of salt, black pepper, and a tiny splash of water or heavy cream. Whisk vigorously until the eggs are completely uniform and bubbly — this incorporates air for maximum fluffiness."
-            ),
-            MealStep(
-                "3. The Switch",
-                "Turn the burner heat down to medium-low. Push the crispy beef and onions to one side of the pan. If the pan looks dry, drop a tiny sliver of butter onto the empty side."
-            ),
-            MealStep(
-                "4. The Pour",
-                "Pour the whisked eggs into the empty side of the pan. Let them sit for about 30 seconds until the edges just start to set."
-            ),
-            MealStep(
-                "5. The Fold",
-                "Using a spatula, gently push the eggs from the outside edge toward the center, creating long, folding sheets of egg. As they become semi-solid, gently fold the crispy beef and onions back into the eggs."
-            ),
-            MealStep(
-                "6. Pull the Heat",
-                "Turn off the burner while the eggs still look a tiny bit glossy and wet. The residual heat of the pan will finish cooking them in the 10 seconds it takes to plate them."
+                "2. The Fresh \"Soft-Fold\" Egg Technique",
+                "The Switch: Turn the burner heat down to medium-low. Push the crispy beef and onions to one side of the pan. If the pan looks dry, drop a tiny sliver of butter onto the empty side.\n\nThe Pour: Pour the whisked eggs into the empty side of the pan. Let them sit for about 30 seconds until the edges just start to set.\n\nThe Melt & Fold: Sprinkle 1 oz of shredded cheese evenly over the eggs. Using a spatula, gently push the eggs and cheese from the outside edge toward the center, creating long, folding sheets. As they become semi-solid, gently fold the crispy beef and onions back into the cheesy eggs.\n\nPull the Heat: Turn off the burner while the eggs still look a tiny bit glossy and wet. The residual heat of the pan will finish melting the cheese and cooking the eggs to perfection in the 10 seconds it takes to plate them."
             )
         )
     )
@@ -818,35 +803,26 @@ val BREAKFAST_MEALS = listOf(
 
 val LUNCH_MEALS = listOf(
     Meal(
-        name = "Chicken & Pepper",
+        name = "Protein Shake",
         mealType = "Lunch",
-        macros = Macros(calories = 680, protein = 48, fat = 48, netCarbs = 7),
+        macros = Macros(calories = 360, protein = 60, fat = 8, netCarbs = "12"),
         ingredients = listOf(
-            "8 oz chicken breast",
-            "1.5 cups bell peppers",
-            "1 tsp minced garlic",
-            "1 tbsp olive oil",
-            "Dried thyme",
-            "Salt",
-            "Black pepper",
-            "1 oz shredded cheddar cheese"
+            "2 level scoops body fortress whey protein powder",
+            "8 to 12 oz cold water",
+            "2 to 3 ice cubes (optional)"
         ),
         steps = listOf(
             MealStep(
-                "1. The Raw Prep & Quick Marinade",
-                "Dice your 8 oz chicken breast into uniform 1/2-inch cubes. Slice your 1.5 cups of bell peppers into bite-sized strips. In a bowl, toss the raw chicken cubes with 1 tsp minced garlic, 1 tbsp olive oil, dried thyme, salt, and pepper. Let it sit 5 minutes on the counter while the pan heats. Tip: salting the raw chicken early helps it retain its internal juices when it hits the hot pan."
+                "1. Measure the Base",
+                "The Liquid: Pour 8 to 12 oz of cold water into the shaker.\n\n(Optional Tip: If you prefer a thicker shake, stick to 8 oz of water. If you prefer it more fluid, go up to 12 oz. For an ice-cold texture, drop 2 to 3 ice cubes into the liquid.)"
             ),
             MealStep(
-                "2. The High-Heat Pan Sear",
-                "Place a large skillet over medium-high heat — hot enough that the chicken sizzles immediately on contact. Drop the cubes in a single layer and sear untouched for 2 minutes to build a golden-brown crust that locks in the juices. Toss and cook another 2–3 minutes until fully cooked through. The small cubes cook fast, so pull them onto a plate immediately so they don't overcook."
+                "2. Add the Powder",
+                "The Protein: Using the scoop from your tub, add exactly 2 level scoops of Body Fortress Whey Protein powder on top of the water."
             ),
             MealStep(
-                "3. Sauté the Peppers",
-                "Leave the burner on medium-high and drop the bell peppers into the same pan so they pick up the leftover garlic, thyme, and chicken juices. Sauté for just 3 minutes, tossing frequently, until vibrant and slightly blistered on the edges but still crisp."
-            ),
-            MealStep(
-                "4. The Fresh Cheddar Melt",
-                "Turn off the heat. Return the cooked chicken to the skillet with the peppers to combine. Sprinkle 1 oz shredded cheddar evenly over the top, cover with a lid or foil for 60 seconds with the heat off — the trapped steam melts the cheese into a gooey blanket without overcooking the meat. Slide onto a plate and eat hot."
+                "3. Mix and Emulsify",
+                "The Mix: Screw the lid on tightly and snap the flip-cap completely shut. Mix vigorously for 20 to 30 seconds until the powder is fully dissolved and the shake is completely smooth, frothy, and emulsified. Let it sit for 30 seconds to allow the foam to settle before drinking."
             )
         )
     )
@@ -856,40 +832,33 @@ val DINNER_MEALS = listOf(
     Meal(
         name = "Steak & Mushrooms",
         mealType = "Dinner",
-        macros = Macros(calories = 640, protein = 45, fat = 46, netCarbs = 8),
+        macros = Macros(calories = 515, protein = 55, fat = 29, netCarbs = "5"),
         ingredients = listOf(
-            "Steak — preferred cut (Top Sirloin or Ribeye), room temperature",
-            "8–12 oz white or baby bella mushrooms, sliced thick",
-            "1 tbsp high-smoke-point oil (avocado or light olive oil)",
-            "1–2 tbsp butter (for the finish)",
-            "Coarse salt",
-            "Coarse black pepper",
-            "Optional: minced garlic or fresh thyme"
+            "8 oz sirloin tip steak",
+            "100g white mushrooms or baby bella mushrooms, sliced thick",
+            "1 cup beef bone broth",
+            "1/2 tbsp butter",
+            "1 tsp minced garlic",
+            "1/4 tsp dried thyme",
+            "coarse salt",
+            "coarse black pepper"
         ),
         steps = listOf(
             MealStep(
-                "1. Prep and Dry the Steak (~30 min before)",
-                "Take the steak out of the fridge early to drop the chill. Pat it completely dry with paper towels — heavy moisture prevents a good sear. Season generously on all sides with coarse salt and black pepper."
+                "1. Prep and Sear the Steak",
+                "The Prep: Pat your 8 oz of sirloin tip steak dry with a paper towel and cut into bite-sized cubes. Season generously on all sides with salt and coarse black pepper.\n\nHeat a heavy skillet over medium-high heat. Drop in a tiny dab of your 1/2 tbsp of butter just to coat the bottom of the pan.\n\nOnce the pan is hot, add the steak tips in a single layer. Let them sear undisturbed for 2 minutes to build a deep crust, then flip and cook for another 1 to 2 minutes until medium-rare.\n\nRemove the steak from the pan and set it aside on a plate. Do not clean out the pan."
             ),
             MealStep(
-                "2. Sear the Steak (4–6 min)",
-                "Heat a heavy skillet (cast iron is perfect) over high heat until it's smoking hot. Add 1 tbsp high-smoke-point oil and drop the steak in. Sear 2–3 minutes per side without moving it, creating a deep, brown crust."
+                "2. Sauté the Mushrooms",
+                "The Veg: Turn the burner down to medium heat. Toss 100g of sliced white mushrooms and 1/4 tsp of dried thyme leaves directly into the remaining steak fats left in the pan.\n\nLet the mushrooms cook down for 4 to 5 minutes until they turn a rich, golden brown.\n\nStir in 1 tsp of minced garlic during the last 30 seconds of cooking, moving it constantly so it becomes highly fragrant without burning."
             ),
             MealStep(
-                "3. Rest the Meat (5–8 min)",
-                "Pull the steak out and set it on a cutting board or warm plate to rest. Don't skip this — resting lets the muscle fibers relax so the juices stay inside the steak when you cut it."
+                "3. Build the Bone Broth Reduction",
+                "The Sauce: Pour 1 cup of beef bone broth into the hot skillet. It will bubble rapidly. Use a spatula to scrape up all the dark, savory bits (fond) stuck to the bottom of the pan.\n\nKeep the pan at a steady simmer for about 4 to 5 minutes, allowing the broth to reduce by half."
             ),
             MealStep(
-                "4. Sauté the Mushrooms (5–6 min)",
-                "Turn the burner down to medium-high. Drop the sliced mushrooms straight into the same hot pan with the leftover steak fat. Let them sit flat for 2 minutes to get color, then stir. They'll absorb the fat, release water, then start turning golden brown."
-            ),
-            MealStep(
-                "5. The Garlic Butter Finish (1–2 min)",
-                "Once the mushrooms are browned, drop 1–2 tbsp butter into the pan with some minced garlic (and fresh thyme if you have it). Stir vigorously for a minute until the butter foams, turns slightly nutty, and coats the mushrooms."
-            ),
-            MealStep(
-                "Chef's Tip",
-                "Slice the rested steak against the grain and pile the hot, buttery garlic mushrooms right over the top. The warm mushrooms will reheat the surface of the steak perfectly."
+                "4. Gloss the Sauce & Serve",
+                "The Finish: Turn off the burner completely and slide the pan off the heat. Drop the remaining cold butter into the reduction and stir it continuously until it emulsifies into a glossy, velvety sauce.\n\nPour any rested juices from the steak plate back into the pan, then toss the sirloin tips back into the garlic-thyme mushroom glaze to coat them completely. Plate immediately."
             )
         )
     )
@@ -899,7 +868,7 @@ val SNACK_MEALS = listOf(
     Meal(
         name = "Pecan Halves",
         mealType = "Snack",
-        macros = Macros(calories = 215, protein = 3, fat = 22, netCarbs = 1),
+        macros = Macros(calories = 210, protein = 3, fat = 21, netCarbs = "1"),
         ingredients = listOf("Member's Mark Natural Pecan Halves — 30g"),
         steps = emptyList()
     )
@@ -909,7 +878,7 @@ val DESSERT_MEALS = listOf(
     Meal(
         name = "Pecan Mousse",
         mealType = "Dessert",
-        macros = Macros(calories = 150, protein = 4, fat = 19, netCarbs = 3),
+        macros = Macros(calories = 295, protein = 4, fat = 29, netCarbs = "3.5"),
         ingredients = listOf(
             "2 oz heavy whipping cream",
             "1 tbsp cocoa powder",
@@ -918,20 +887,20 @@ val DESSERT_MEALS = listOf(
         ),
         steps = listOf(
             MealStep(
-                "1. Chill and Prep Your Tools (1 min)",
-                "For the fastest results, use a small metal or glass bowl. If you have an extra 60 seconds, drop the bowl and your whisk (or hand mixer beaters) into the freezer. Cold tools make heavy cream whip up twice as fast."
+                "1. Chill and Prep Your Tools: 1 minute",
+                "For the fastest results, use a small metal or glass bowl. If you have an extra 60 seconds, drop the bowl and your whisk (or hand mixer beaters) into the freezer to get them cold. Cold tools make heavy cream whip up twice as fast."
             ),
             MealStep(
-                "2. Combine the Base (2 min)",
-                "Pour the 2 oz heavy whipping cream straight into the chilled bowl. Sift or dump in the 1 tbsp cocoa powder and 1 tbsp sweetener."
+                "2. Combine the Base: 2 minutes",
+                "Pour the 2 oz of heavy whipping cream straight into the chilled bowl. Sift or dump in the 1 tbsp of cocoa powder and 1 tbsp of sweetener."
             ),
             MealStep(
-                "3. Whip to Thick Peaks (2 min)",
-                "Beat the mixture vigorously. Hand mixer: start on low so the cocoa doesn't fly out, then turn to high. By hand: move your wrist in a rapid, circular motion to incorporate air. After about 90–120 seconds the cream suddenly transforms into a thick, velvety, scoopable mousse that holds its shape. Stop immediately once it reaches this point so it doesn't turn into chocolate butter."
+                "3. Whip to Thick Peaks: 2 minutes",
+                "Using a hand whisk, beat the mixture vigorously.\n\nMove your wrist in a rapid, circular motion to incorporate air. Watch it closely—after about 90 to 120 seconds, the liquid cream will suddenly transform into a thick, velvety, scoopable mousse that holds its shape. Stop beating immediately once it reaches this point so it doesn't turn into chocolate butter."
             ),
             MealStep(
-                "4. The Pecan Crunch Finish (1 min)",
-                "Spoon the mousse into a small bowl or glass. Give your 7g of pecan halves a quick chop and scatter them generously over the top."
+                "4. The Pecan Crunch Finish: 1 minute",
+                "Spoon the mousse into a small bowl or glass. Take your 7g of pecan halves, give them a quick chop with a kitchen knife, and scatter them generously over the top."
             )
         )
     )
@@ -980,8 +949,33 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = Color.White,
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(bottom = 12.dp)
         )
+
+        // Daily macro summary
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp))
+                .padding(12.dp)
+        ) {
+            Column {
+                Text(
+                    text = "Daily Targets",
+                    fontSize = 11.sp,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    MacroBox("Calories", "2,000", Modifier.weight(1f))
+                    MacroBox("Protein", "167g", Modifier.weight(1f))
+                    MacroBox("Fat", "132g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "25.5g", Modifier.weight(1f))
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
