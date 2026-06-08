@@ -553,7 +553,7 @@ fun QuestItem(
                 Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
                 if (isWeekly) {
                     Text(
-                        text = "Weekly",
+                        text = "Required",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFFa78bfa),
@@ -807,7 +807,7 @@ val LUNCH_MEALS = listOf(
         mealType = "Lunch",
         macros = Macros(calories = 360, protein = 60, fat = 8, netCarbs = "12"),
         ingredients = listOf(
-            "2 level scoops body fortress whey protein powder",
+            "2 scoops body fortress whey protein powder",
             "8 to 12 oz cold water",
             "2 to 3 ice cubes (optional)"
         ),
