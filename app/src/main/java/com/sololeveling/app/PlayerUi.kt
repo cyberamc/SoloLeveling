@@ -218,7 +218,7 @@ fun PlayerStatsScreen(onViewQuests: () -> Unit, refreshTrigger: Int) {
                 }
                 Box(modifier = Modifier.weight(1f).background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Weekly Quests", fontSize = 11.sp, color = Color(0xFFB0B0B0))
+                        Text(text = "Required Quests", fontSize = 11.sp, color = Color(0xFFB0B0B0))
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(text = "$weekliesCompleted / ${weeklyQuests.size}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
                     }
@@ -336,7 +336,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                 Spacer(modifier = Modifier.height(4.dp))
                 val overdueText = if (overdueQuests.isNotEmpty()) " · ${overdueQuests.size} overdue" else ""
                 Text(
-                    text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} weekly$overdueText",
+                    text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} required$overdueText",
                     fontSize = 13.sp,
                     color = Color(0xFFFFD700)
                 )
