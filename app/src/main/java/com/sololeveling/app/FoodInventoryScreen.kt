@@ -29,16 +29,19 @@ data class FoodItem(
     val id: Int,
     val name: String,
     val source: String?,
-    val level: Int  // 0=Out, 1=Low, 2=Medium, 3=Full
+    val level: Int,
+    val room: String? = null
 )
 
 val LEVEL_LABELS = listOf("Out", "Low", "Medium", "Full")
 val LEVEL_COLORS = listOf(
-    Color(0xFFCF6679),  // Out — red
-    Color(0xFFE8944A),  // Low — orange
-    Color(0xFFD4B84A),  // Medium — yellow
-    Color(0xFF4CAF50),  // Full — green
+    Color(0xFFCF6679),
+    Color(0xFFE8944A),
+    Color(0xFFD4B84A),
+    Color(0xFF4CAF50),
 )
+
+val ROOM_ORDER = listOf("Kitchen", "Garage", "Bedroom", "Bathroom")
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
@@ -56,8 +59,9 @@ fun fetchInventory(baseUrl: String, endpoint: String): List<FoodItem> {
             FoodItem(
                 id = obj.getInt("id"),
                 name = obj.getString("name"),
-                source = if (obj.has("source")) obj.getString("source") else null,
-                level = obj.getInt("level")
+                source = if (obj.has("source") && !obj.isNull("source")) obj.getString("source") else null,
+                level = obj.getInt("level"),
+                room = if (obj.has("room") && !obj.isNull("room")) obj.getString("room") else null
             )
         }
     } finally {
@@ -89,19 +93,13 @@ fun InventoryScreen(
     baseUrl: String,
     endpoint: String,
     title: String,
+    groupByRoom: Boolean = false,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     var items by remember { mutableStateOf<List<FoodItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
-
-    val grouped = remember(items) {
-        listOf(0, 1, 2, 3).mapNotNull { lvl ->
-            val group = items.filter { it.level == lvl }
-            if (group.isNotEmpty()) lvl to group else null
-        }
-    }
 
     LaunchedEffect(Unit) {
         scope.launch {
@@ -197,43 +195,120 @@ fun InventoryScreen(
                     )
                 }
 
-                LazyColumn(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    grouped.forEach { (lvl, group) ->
-                        item(key = "header_$lvl") {
-                            Text(
-                                text = LEVEL_LABELS[lvl].uppercase(),
-                                color = LEVEL_COLORS[lvl].copy(alpha = 0.8f),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-                            )
-                        }
-                        items(group, key = { "${endpoint}_${it.id}" }) { item ->
-                            InventoryItemRow(
-                                item = item,
-                                onCycleLevel = { newLevel ->
-                                    items = items.map {
-                                        if (it.id == item.id) it.copy(level = newLevel) else it
-                                    }
-                                    scope.launch {
-                                        try {
-                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
-                                            }
-                                        } catch (e: Exception) {
-                                            items = items.map {
-                                                if (it.id == item.id) it.copy(level = item.level) else it
+                if (groupByRoom) {
+                    // Group by room in defined order
+                    val roomGroups = ROOM_ORDER.mapNotNull { room ->
+                        val group = items.filter { it.room == room }
+                        if (group.isNotEmpty()) room to group else null
+                    }
+                    // Any items without a room
+                    val noRoom = items.filter { it.room == null }
+
+                    LazyColumn(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        roomGroups.forEach { (room, group) ->
+                            item(key = "room_$room") {
+                                Text(
+                                    text = room.uppercase(),
+                                    color = Color(0xFF7B8CDE),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 2.sp,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                                )
+                            }
+                            val sorted = group.sortedWith(compareBy({ it.level }, { it.name }))
+                            items(sorted, key = { "${endpoint}_${it.id}" }) { item ->
+                                InventoryItemRow(
+                                    item = item,
+                                    onCycleLevel = { newLevel ->
+                                        items = items.map { if (it.id == item.id) it.copy(level = newLevel) else it }
+                                        scope.launch {
+                                            try {
+                                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
+                                                }
+                                            } catch (e: Exception) {
+                                                items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
                                             }
                                         }
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
+                        if (noRoom.isNotEmpty()) {
+                            item(key = "room_other") {
+                                Text(
+                                    text = "OTHER",
+                                    color = Color(0xFF7B8CDE),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 2.sp,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                                )
+                            }
+                            items(noRoom, key = { "${endpoint}_${it.id}" }) { item ->
+                                InventoryItemRow(
+                                    item = item,
+                                    onCycleLevel = { newLevel ->
+                                        items = items.map { if (it.id == item.id) it.copy(level = newLevel) else it }
+                                        scope.launch {
+                                            try {
+                                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
+                                                }
+                                            } catch (e: Exception) {
+                                                items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        item { Spacer(Modifier.height(24.dp)) }
                     }
-                    item { Spacer(Modifier.height(24.dp)) }
+                } else {
+                    // Group by level (food inventory)
+                    val grouped = listOf(0, 1, 2, 3).mapNotNull { lvl ->
+                        val group = items.filter { it.level == lvl }
+                        if (group.isNotEmpty()) lvl to group else null
+                    }
+                    LazyColumn(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        grouped.forEach { (lvl, group) ->
+                            item(key = "header_$lvl") {
+                                Text(
+                                    text = LEVEL_LABELS[lvl].uppercase(),
+                                    color = LEVEL_COLORS[lvl].copy(alpha = 0.8f),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                                )
+                            }
+                            items(group, key = { "${endpoint}_${it.id}" }) { item ->
+                                InventoryItemRow(
+                                    item = item,
+                                    onCycleLevel = { newLevel ->
+                                        items = items.map { if (it.id == item.id) it.copy(level = newLevel) else it }
+                                        scope.launch {
+                                            try {
+                                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
+                                                }
+                                            } catch (e: Exception) {
+                                                items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        item { Spacer(Modifier.height(24.dp)) }
+                    }
                 }
             }
         }
@@ -242,7 +317,7 @@ fun InventoryScreen(
 
 @Composable
 fun InventoryItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
-    val nextLevel = (item.level + 3) % 4  // Full > Medium > Low > Out > Full
+    val nextLevel = (item.level + 3) % 4
 
     Row(
         modifier = Modifier
@@ -311,12 +386,14 @@ fun SuppliesScreen(baseUrl: String) {
             baseUrl = baseUrl,
             endpoint = "/api/food-inventory",
             title = "Food Supply",
+            groupByRoom = false,
             onBack = { currentView = null }
         )
         "household" -> InventoryScreen(
             baseUrl = baseUrl,
             endpoint = "/api/household-inventory",
             title = "Household Supply",
+            groupByRoom = true,
             onBack = { currentView = null }
         )
         else -> {
