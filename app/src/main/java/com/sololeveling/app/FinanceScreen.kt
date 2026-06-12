@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -149,11 +150,162 @@ fun deleteDeliveryWeek(baseUrl: String, id: Int) {
 }
 
 @Composable
-fun FinanceScreen(baseUrl: String) {
+fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit, onDelete: (Int) -> Unit) {
+    var expandedDay by remember { mutableStateOf<String?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    var tueDelivered by remember(week) { mutableStateOf(week.tueDelivered.toString()) }
+    var tueDuplicates by remember(week) { mutableStateOf(week.tueDuplicates.toString()) }
+    var tueUndeliverable by remember(week) { mutableStateOf(week.tueUndeliverable.toString()) }
+    var wedDelivered by remember(week) { mutableStateOf(week.wedDelivered.toString()) }
+    var wedDuplicates by remember(week) { mutableStateOf(week.wedDuplicates.toString()) }
+    var wedUndeliverable by remember(week) { mutableStateOf(week.wedUndeliverable.toString()) }
+
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF12122A))) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(text = "Week of ${week.weekLabel()}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7B8CDE))
+            Spacer(Modifier.height(12.dp))
+
+            DayRow(label = "Tuesday", billable = week.tueBillable, pay = week.tuePay,
+                isExpanded = expandedDay == "tue", onClick = { expandedDay = if (expandedDay == "tue") null else "tue" })
+
+            if (expandedDay == "tue") {
+                Spacer(Modifier.height(10.dp))
+                DeliveryInputRow(delivered = tueDelivered, duplicates = tueDuplicates, undeliverable = tueUndeliverable,
+                    onDeliveredChange = { tueDelivered = it }, onDuplicatesChange = { tueDuplicates = it },
+                    onUndeliverableChange = { tueUndeliverable = it },
+                    onSave = {
+                        expandedDay = null
+                        onSave(week.copy(tueDelivered = tueDelivered.toIntOrNull() ?: 0,
+                            tueDuplicates = tueDuplicates.toIntOrNull() ?: 0,
+                            tueUndeliverable = tueUndeliverable.toIntOrNull() ?: 0))
+                    })
+                Spacer(Modifier.height(10.dp))
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            DayRow(label = "Wednesday", billable = week.wedBillable, pay = week.wedPay,
+                isExpanded = expandedDay == "wed", onClick = { expandedDay = if (expandedDay == "wed") null else "wed" })
+
+            if (expandedDay == "wed") {
+                Spacer(Modifier.height(10.dp))
+                DeliveryInputRow(delivered = wedDelivered, duplicates = wedDuplicates, undeliverable = wedUndeliverable,
+                    onDeliveredChange = { wedDelivered = it }, onDuplicatesChange = { wedDuplicates = it },
+                    onUndeliverableChange = { wedUndeliverable = it },
+                    onSave = {
+                        expandedDay = null
+                        onSave(week.copy(wedDelivered = wedDelivered.toIntOrNull() ?: 0,
+                            wedDuplicates = wedDuplicates.toIntOrNull() ?: 0,
+                            wedUndeliverable = wedUndeliverable.toIntOrNull() ?: 0))
+                    })
+                Spacer(Modifier.height(10.dp))
+            }
+
+            Spacer(Modifier.height(12.dp))
+            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF2a2a3a)))
+            Spacer(Modifier.height(12.dp))
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text("Weekly Total", fontSize = 12.sp, color = Color(0xFF888899))
+                    Text("${week.totalBillable} packages", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("$${String.format("%.2f", week.totalPay)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
+                    Text("💰 Pay Date: ${week.payDate()}", fontSize = 11.sp, color = Color(0xFF888899))
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            if (showDeleteConfirm) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { showDeleteConfirm = false }, modifier = Modifier.weight(1f).height(36.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2a2a3a)), shape = RoundedCornerShape(8.dp)) {
+                        Text("Cancel", color = Color.White, fontSize = 13.sp)
+                    }
+                    Button(onClick = { onDelete(week.id) }, modifier = Modifier.weight(1f).height(36.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF6679)), shape = RoundedCornerShape(8.dp)) {
+                        Text("Delete", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            } else {
+                TextButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.align(Alignment.End)) {
+                    Text("Got my check — remove week", color = Color(0xFF555577), fontSize = 12.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DayRow(label: String, billable: Int, pay: Double, isExpanded: Boolean, onClick: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF1a1a2e))
+        .clickable { onClick() }.padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Column {
+            Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White)
+            Text(text = "$billable billable packages", fontSize = 11.sp, color = Color(0xFF888899))
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(text = "$${String.format("%.2f", pay)}", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
+            Text(text = if (isExpanded) "▲" else "▼", fontSize = 11.sp, color = Color(0xFF7B8CDE))
+        }
+    }
+}
+
+@Composable
+fun DeliveryInputRow(delivered: String, duplicates: String, undeliverable: String,
+                     onDeliveredChange: (String) -> Unit, onDuplicatesChange: (String) -> Unit,
+                     onUndeliverableChange: (String) -> Unit, onSave: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF0e0e1e)).padding(12.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            DeliveryField("Delivered", delivered, onDeliveredChange, Modifier.weight(1f))
+            DeliveryField("Duplicates", duplicates, onDuplicatesChange, Modifier.weight(1f))
+            DeliveryField("Undel.", undeliverable, onUndeliverableChange, Modifier.weight(1f))
+        }
+        Spacer(Modifier.height(10.dp))
+        val del = delivered.toIntOrNull() ?: 0
+        val dup = duplicates.toIntOrNull() ?: 0
+        val und = undeliverable.toIntOrNull() ?: 0
+        val billable = maxOf(0, del - dup - und)
+        val pay = billable * 1.60
+        Text(text = "$del - $dup - $und = $billable packages → $${String.format("%.2f", pay)}",
+            fontSize = 12.sp, color = Color(0xFF7B8CDE), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Spacer(Modifier.height(10.dp))
+        Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(40.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7B8CDE)), shape = RoundedCornerShape(8.dp)) {
+            Text("Save", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun DeliveryField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        OutlinedTextField(value = value,
+            onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) onChange(it) },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold,
+                color = Color.White, textAlign = TextAlign.Center),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Color(0xFF7B8CDE),
+                unfocusedBorderColor = Color(0xFF2a2a3a), cursorColor = Color(0xFF7B8CDE)))
+        Text(text = label, fontSize = 10.sp, color = Color(0xFF888899), modifier = Modifier.padding(top = 2.dp))
+    }
+}
+
+@Composable
+fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var weeks by remember { mutableStateOf<List<DeliveryWeek>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
+
+    BackHandler { onBack() }
 
     LaunchedEffect(Unit) {
         try {
@@ -167,20 +319,19 @@ fun FinanceScreen(baseUrl: String) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0A0A1A))
-    ) {
-        // Header
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF1a1a1a))
-                .padding(horizontal = 16.dp, vertical = 16.dp)
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Finance", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("Delivery Package Tracker", fontSize = 13.sp, color = Color(0xFF888899))
+            Column {
+                Text("Delivery Tracker", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Package tracking", fontSize = 13.sp, color = Color(0xFF888899))
+            }
+            Text("Back", color = Color(0xFFFFD700), fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { onBack() })
         }
 
         when {
@@ -191,10 +342,8 @@ fun FinanceScreen(baseUrl: String) {
                 Text("Error: $errorMsg", color = Color(0xFFCF6679))
             }
             else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
+                LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(weeks, key = { it.id }) { week ->
                         DeliveryWeekCard(
                             week = week,
@@ -219,7 +368,6 @@ fun FinanceScreen(baseUrl: String) {
                                             deleteDeliveryWeek(baseUrl, id)
                                         }
                                     } catch (e: Exception) {
-                                        // refetch on failure
                                         try {
                                             weeks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                                                 fetchDeliveryWeeks(baseUrl)
@@ -238,271 +386,42 @@ fun FinanceScreen(baseUrl: String) {
 }
 
 @Composable
-fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit, onDelete: (Int) -> Unit) {
-    var expandedDay by remember { mutableStateOf<String?>(null) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+fun FinanceScreen(baseUrl: String) {
+    var currentView by remember { mutableStateOf<String?>(null) }
 
-    // Tuesday edit state
-    var tueDelivered by remember(week) { mutableStateOf(week.tueDelivered.toString()) }
-    var tueDuplicates by remember(week) { mutableStateOf(week.tueDuplicates.toString()) }
-    var tueUndeliverable by remember(week) { mutableStateOf(week.tueUndeliverable.toString()) }
+    BackHandler(enabled = currentView != null) { currentView = null }
 
-    // Wednesday edit state
-    var wedDelivered by remember(week) { mutableStateOf(week.wedDelivered.toString()) }
-    var wedDuplicates by remember(week) { mutableStateOf(week.wedDuplicates.toString()) }
-    var wedUndeliverable by remember(week) { mutableStateOf(week.wedUndeliverable.toString()) }
+    when (currentView) {
+        "delivery" -> DeliveryTrackerScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        "bookkeeping" -> BookkeepingScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        else -> {
+            Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A)).padding(16.dp)) {
+                Text("FINANCE", color = Color(0xFF7B8CDE), fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 20.dp, bottom = 24.dp))
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF12122A))
-    ) {
-        // Week header
-        Column(modifier = Modifier.padding(14.dp)) {
-            Text(
-                text = "Week of ${week.weekLabel()}",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF7B8CDE)
-            )
-            Spacer(Modifier.height(12.dp))
-
-            // Tuesday row
-            DayRow(
-                label = "Tuesday",
-                billable = week.tueBillable,
-                pay = week.tuePay,
-                isExpanded = expandedDay == "tue",
-                onClick = { expandedDay = if (expandedDay == "tue") null else "tue" }
-            )
-
-            if (expandedDay == "tue") {
-                Spacer(Modifier.height(10.dp))
-                DeliveryInputRow(
-                    delivered = tueDelivered,
-                    duplicates = tueDuplicates,
-                    undeliverable = tueUndeliverable,
-                    onDeliveredChange = { tueDelivered = it },
-                    onDuplicatesChange = { tueDuplicates = it },
-                    onUndeliverableChange = { tueUndeliverable = it },
-                    onSave = {
-                        expandedDay = null
-                        onSave(week.copy(
-                            tueDelivered = tueDelivered.toIntOrNull() ?: 0,
-                            tueDuplicates = tueDuplicates.toIntOrNull() ?: 0,
-                            tueUndeliverable = tueUndeliverable.toIntOrNull() ?: 0
-                        ))
-                    }
-                )
-                Spacer(Modifier.height(10.dp))
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            // Wednesday row
-            DayRow(
-                label = "Wednesday",
-                billable = week.wedBillable,
-                pay = week.wedPay,
-                isExpanded = expandedDay == "wed",
-                onClick = { expandedDay = if (expandedDay == "wed") null else "wed" }
-            )
-
-            if (expandedDay == "wed") {
-                Spacer(Modifier.height(10.dp))
-                DeliveryInputRow(
-                    delivered = wedDelivered,
-                    duplicates = wedDuplicates,
-                    undeliverable = wedUndeliverable,
-                    onDeliveredChange = { wedDelivered = it },
-                    onDuplicatesChange = { wedDuplicates = it },
-                    onUndeliverableChange = { wedUndeliverable = it },
-                    onSave = {
-                        expandedDay = null
-                        onSave(week.copy(
-                            wedDelivered = wedDelivered.toIntOrNull() ?: 0,
-                            wedDuplicates = wedDuplicates.toIntOrNull() ?: 0,
-                            wedUndeliverable = wedUndeliverable.toIntOrNull() ?: 0
-                        ))
-                    }
-                )
-                Spacer(Modifier.height(10.dp))
-            }
-
-            // Divider
-            Spacer(Modifier.height(12.dp))
-            Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF2a2a3a)))
-            Spacer(Modifier.height(12.dp))
-
-            // Weekly total + pay date
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("Weekly Total", fontSize = 12.sp, color = Color(0xFF888899))
-                    Text(
-                        text = "${week.totalBillable} packages",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        text = "$${String.format("%.2f", week.totalPay)}",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF4CAF50)
-                    )
-                    Text(
-                        text = "💰 Pay Date: ${week.payDate()}",
-                        fontSize = 11.sp,
-                        color = Color(0xFF888899)
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            if (showDeleteConfirm) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Button(
+                    onClick = { currentView = "delivery" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Button(
-                        onClick = { showDeleteConfirm = false },
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2a2a3a)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Cancel", color = Color.White, fontSize = 13.sp)
-                    }
-                    Button(
-                        onClick = { onDelete(week.id) },
-                        modifier = Modifier.weight(1f).height(36.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF6679)),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Delete", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
+                    Text("📦  Delivery Tracker", color = Color.White, fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold)
                 }
-            } else {
-                TextButton(
-                    onClick = { showDeleteConfirm = true },
-                    modifier = Modifier.align(Alignment.End)
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = { currentView = "bookkeeping" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Got my check — remove week", color = Color(0xFF555577), fontSize = 12.sp)
+                    Text("💰  Bookkeeping", color = Color.White, fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold)
                 }
             }
         }
-    }
-}
-
-@Composable
-fun DayRow(label: String, billable: Int, pay: Double, isExpanded: Boolean, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF1a1a2e))
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.Medium, color = Color.White)
-            Text(text = "$billable billable packages", fontSize = 11.sp, color = Color(0xFF888899))
-        }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "$${String.format("%.2f", pay)}",
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF4CAF50)
-            )
-            Text(text = if (isExpanded) "▲" else "▼", fontSize = 11.sp, color = Color(0xFF7B8CDE))
-        }
-    }
-}
-
-@Composable
-fun DeliveryInputRow(
-    delivered: String,
-    duplicates: String,
-    undeliverable: String,
-    onDeliveredChange: (String) -> Unit,
-    onDuplicatesChange: (String) -> Unit,
-    onUndeliverableChange: (String) -> Unit,
-    onSave: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFF0e0e1e))
-            .padding(12.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            DeliveryField("Delivered", delivered, onDeliveredChange, Modifier.weight(1f))
-            DeliveryField("Duplicates", duplicates, onDuplicatesChange, Modifier.weight(1f))
-            DeliveryField("Undel.", undeliverable, onUndeliverableChange, Modifier.weight(1f))
-        }
-        Spacer(Modifier.height(10.dp))
-
-        // Live preview
-        val del = delivered.toIntOrNull() ?: 0
-        val dup = duplicates.toIntOrNull() ?: 0
-        val und = undeliverable.toIntOrNull() ?: 0
-        val billable = maxOf(0, del - dup - und)
-        val pay = billable * 1.60
-        Text(
-            text = "$del - $dup - $und = $billable packages → $${String.format("%.2f", pay)}",
-            fontSize = 12.sp,
-            color = Color(0xFF7B8CDE),
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(Modifier.height(10.dp))
-        Button(
-            onClick = onSave,
-            modifier = Modifier.fillMaxWidth().height(40.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7B8CDE)),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            Text("Save", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun DeliveryField(label: String, value: String, onChange: (String) -> Unit, modifier: Modifier) {
-    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = { if (it.length <= 4 && it.all { c -> c.isDigit() }) onChange(it) },
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = androidx.compose.ui.text.TextStyle(
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            ),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF7B8CDE),
-                unfocusedBorderColor = Color(0xFF2a2a3a),
-                cursorColor = Color(0xFF7B8CDE)
-            )
-        )
-        Text(text = label, fontSize = 10.sp, color = Color(0xFF888899), modifier = Modifier.padding(top = 2.dp))
     }
 }
