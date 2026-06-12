@@ -61,287 +61,104 @@ private fun createUnsafeHttpClient(): OkHttpClient {
 
 @Composable
 fun PlayerScreen() {
-    var currentScreen by remember { mutableStateOf("player") }
+    TasksScreen()
+}
+
+@Composable
+fun TasksScreen() {
     var refreshTrigger by remember { mutableIntStateOf(0) }
-
-    // Check for pending navigation from notifications
-    LaunchedEffect(NavigationState.pendingNavigation.value) {
-        val pending = NavigationState.pendingNavigation.value
-        if (pending == "daily_quests" || pending == "weekly_quests" || pending == "quests") {
-            currentScreen = "quests"
-            NavigationState.pendingNavigation.value = null
-        }
-    }
-
-    BackHandler(enabled = currentScreen != "player") {
-        currentScreen = "player"
-    }
-
-    if (currentScreen == "player") {
-        PlayerStatsScreen(
-            onViewQuests = { currentScreen = "quests" },
-            refreshTrigger = refreshTrigger
-        )
-    } else {
-        QuestsListScreen(
-            onBackToPlayer = { currentScreen = "player" },
-            onQuestUpdated = { refreshTrigger++ },
-            refreshTrigger = refreshTrigger
-        )
-    }
-}
-
-@Composable
-fun PlayerStatsScreen(onViewQuests: () -> Unit, refreshTrigger: Int) {
-    val context = LocalContext.current
-    var player by remember { mutableStateOf<Player?>(null) }
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var questsCompleted by remember { mutableIntStateOf(0) }
-    var totalQuests by remember { mutableIntStateOf(0) }
-    var weeklyQuests by remember { mutableStateOf<List<Quest>>(emptyList()) }
-    var weekliesCompleted by remember { mutableIntStateOf(0) }
-    var hasWeeklyQuests by remember { mutableStateOf(false) }
-
-    LaunchedEffect(refreshTrigger) {
-        loading = true
-        try {
-            val response = fetchFromApi("/api/player")
-            player = Gson().fromJson(response, Player::class.java)
-            val questResponse = fetchFromApi("/api/quests")
-            val questData = Gson().fromJson(questResponse, Map::class.java)
-            questsCompleted = (questData["dailiesCompleted"] as? Number)?.toInt() ?: 0
-            totalQuests = (questData["totalDailies"] as? Number)?.toInt() ?: 0
-
-            val allWeeklyResponse = try {
-                fetchFromApi("/api/weekly-quests/all")
-            } catch (e: Exception) {
-                "[]"
-            }
-
-            val allWeeklyQuestsList = try {
-                val allWeeklyData = Gson().fromJson(allWeeklyResponse, List::class.java)
-                allWeeklyData.mapNotNull {
-                    if (it is Map<*, *>) {
-                        Quest(
-                            id = (it["id"] as? Number)?.toInt() ?: 0,
-                            title = (it["title"] as? String) ?: "",
-                            type = "weekly",
-                            category = (it["category"] as? String) ?: "",
-                            xpReward = (it["xp_reward"] as? Number)?.toInt() ?: 0,
-                            goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
-                            completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
-                            streak = 0,
-                            weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
-                            optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1,
-                            isOverdue = ((it["isOverdue"] as? Number)?.toInt() ?: 0) == 1
-                        )
-                    } else null
-                }
-            } catch (e: Exception) {
-                emptyList()
-            }
-
-            val calendar = java.util.Calendar.getInstance()
-            val todayWeekday = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
-            val todaysWeeklyQuests = allWeeklyQuestsList.filter { it.weekday == todayWeekday && !it.optional }
-            val todaysWeeklyCompleted = todaysWeeklyQuests.count { it.completed }
-
-            weeklyQuests = todaysWeeklyQuests
-            weekliesCompleted = todaysWeeklyCompleted
-            hasWeeklyQuests = todaysWeeklyQuests.isNotEmpty()
-        } catch (e: Exception) {
-            error = e.message
-        } finally {
-            loading = false
-        }
-    }
-
-    if (loading) {
-        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a)), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Color(0xFFFFD700))
-        }
-    } else if (error != null) {
-        Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a)), contentAlignment = Alignment.Center) {
-            Text("Error: $error", color = Color.Red)
-        }
-    } else if (player != null) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF0a0a0a))
-                .systemBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = player!!.name, fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Spacer(modifier = Modifier.height(8.dp))
-            val displayLevel = try { player!!.level.toFloat().toInt() } catch (e: Exception) { 0 }
-            Text(text = "Level $displayLevel • Rank ${player!!.rank}", fontSize = 20.sp, color = Color(0xFFFFD700))
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text(text = "Experience", fontSize = 14.sp, color = Color.Gray)
-                Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(
-                    progress = { (player!!.xpInCurrentLevel.toFloat() / player!!.xpNeededForLevel.toFloat()).coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth().height(10.dp),
-                    color = Color(0xFFFFD700),
-                    trackColor = Color(0xFF2a2a2a)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(text = "${player!!.xpInCurrentLevel} / ${player!!.xpNeededForLevel} XP", fontSize = 11.sp, color = Color.Gray)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(14.dp), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "\"The pain of discipline or the pain of regret.\"",
-                    fontSize = 13.sp,
-                    color = Color(0xFFFFD700),
-                    textAlign = TextAlign.Center,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                )
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(modifier = Modifier.weight(1f).background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Daily Quests", fontSize = 11.sp, color = Color(0xFFB0B0B0))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "$questsCompleted / $totalQuests", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
-                    }
-                }
-                Box(modifier = Modifier.weight(1f).background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "Required Quests", fontSize = 11.sp, color = Color(0xFFB0B0B0))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "$weekliesCompleted / ${weeklyQuests.size}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = onViewQuests,
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a))
-            ) {
-                Text("View Quests", color = Color(0xFFFFD700), fontSize = 14.sp)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val calendar = java.util.Calendar.getInstance()
-            val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
-            if (dayOfWeek == 2 || dayOfWeek == 3) {
-                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a3a4a), shape = RoundedCornerShape(8.dp)).padding(12.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "📦 DELIVERY DAY REMINDER", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4FB3D9))
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(text = "Count all packages before storing in car to prevent loss", fontSize = 12.sp, color = Color(0xFF7DD3FC))
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a2a1a), shape = RoundedCornerShape(8.dp)).padding(16.dp), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "🔥 Consistency", fontSize = 13.sp, color = Color(0xFFB0B0B0))
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "${player!!.nofapStreak} Days", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = "Stay strong", fontSize = 12.sp, color = Color(0xFFB0B0B0))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-fun sortQuestsByTime(quests: List<Quest>): List<Quest> {
-    return quests.sortedBy { quest ->
-        val timeRegex = Regex("@ (\\d{1,2}):(\\d{2}) ([AP]M)|@ (\\d{1,2}) ([AP]M)")
-        val match = timeRegex.find(quest.title)
-        if (match != null) {
-            val hour = (match.groupValues[1].takeIf { it.isNotEmpty() } ?: match.groupValues[4]).toInt()
-            val minute = match.groupValues[2].takeIf { it.isNotEmpty() }?.toInt() ?: 0
-            val period = (match.groupValues[3].takeIf { it.isNotEmpty() } ?: match.groupValues[5])
-            val adjustedHour = if (period == "PM" && hour != 12) hour + 12 else if (period == "AM" && hour == 12) 0 else hour
-            adjustedHour * 60 + minute
-        } else {
-            Int.MAX_VALUE
-        }
-    }
-}
-
-@Composable
-fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, refreshTrigger: Int) {
     var dailyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var allWeeklyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var thisWeekExpanded by remember { mutableStateOf(false) }
+    var nofapStreak by remember { mutableIntStateOf(0) }
 
+    // Load player data once on first launch only
+    LaunchedEffect(Unit) {
+        try {
+            val playerResponse = fetchFromApi("/api/player")
+            val playerData = Gson().fromJson(playerResponse, Map::class.java)
+            nofapStreak = (playerData["nofapStreak"] as? Number)?.toInt() ?: 0
+        } catch (e: Exception) {
+            // streak stays 0
+        }
+    }
+
+    // Load tasks on first launch and on toggle refresh
     LaunchedEffect(refreshTrigger) {
-        loadAllQuests(
-            onQuestsLoaded = { daily, weekly, _, _, _ ->
-                dailyQuestsState = daily
-                allWeeklyQuestsState = weekly
-                loading = false
-            },
-            onError = { err -> error = err; loading = false }
-        )
+        if (refreshTrigger == 0) loading = true
+        try {
+            loadAllQuests(
+                onQuestsLoaded = { daily, weekly, _, _, _ ->
+                    dailyQuestsState = daily
+                    allWeeklyQuestsState = weekly
+                    loading = false
+                },
+                onError = { err -> error = err; loading = false }
+            )
+        } catch (e: Exception) {
+            error = e.message
+            loading = false
+        }
+    }
+
+    LaunchedEffect(NavigationState.pendingNavigation.value) {
+        val pending = NavigationState.pendingNavigation.value
+        if (pending != null) {
+            NavigationState.pendingNavigation.value = null
+        }
     }
 
     val calendar = java.util.Calendar.getInstance()
     val todayWeekday = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
-    val shortDayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     val fullDayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+    val shortDayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
 
-    val todaysWeekly = allWeeklyQuestsState
-        .filter { it.weekday == todayWeekday }
+    val todaysWeekly = allWeeklyQuestsState.filter { it.weekday == todayWeekday }
     val combinedToday = sortQuestsByTime(dailyQuestsState + todaysWeekly)
-    val overdueQuests = allWeeklyQuestsState
-        .filter { it.weekday != todayWeekday && it.isOverdue && !it.completed && !it.optional }
-    val thisWeekQuests = allWeeklyQuestsState
-        .filter { it.weekday != todayWeekday }
-        .filter { !(it.isOverdue && !it.completed && !it.optional) }
-
+    val overdueQuests = allWeeklyQuestsState.filter { it.weekday != todayWeekday && it.isOverdue && !it.completed && !it.optional }
+    val thisWeekQuests = allWeeklyQuestsState.filter { it.weekday != todayWeekday }.filter { !(it.isOverdue && !it.completed && !it.optional) }
     val thisWeekOrder = (1..6).map { (todayWeekday + it) % 7 }
     val overdueOrder = (1..6).map { ((todayWeekday - it) + 7) % 7 }
-
-    val activeThisWeekDays = thisWeekOrder.filter { wd -> thisWeekQuests.any { it.weekday == wd } }
     val activeOverdueDays = overdueOrder.filter { wd -> overdueQuests.any { it.weekday == wd } }
 
     val requiredDailies = dailyQuestsState.filter { !it.optional }
     val requiredDailiesCompleted = requiredDailies.count { it.completed }
     val requiredTodayWeekly = todaysWeekly.filter { !it.optional }
     val requiredTodayWeeklyCompleted = requiredTodayWeekly.count { it.completed }
+    val overdueText = if (overdueQuests.isNotEmpty()) " · ${overdueQuests.size} overdue" else ""
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
-        Row(
-            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).systemBarsPadding().padding(top = 16.dp, bottom = 16.dp, start = 16.dp, end = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
+        // Header
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF1a1a1a))
+                .systemBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = "Quests", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Spacer(modifier = Modifier.height(4.dp))
-                val overdueText = if (overdueQuests.isNotEmpty()) " · ${overdueQuests.size} overdue" else ""
-                Text(
-                    text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} required$overdueText",
-                    fontSize = 13.sp,
-                    color = Color(0xFFFFD700)
-                )
+            Text(text = "Tasks", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "\"The pain of discipline or the pain of regret.\"",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.White,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} required$overdueText",
+                fontSize = 13.sp,
+                color = Color(0xFFFFD700)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "🔥", fontSize = 13.sp)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
             }
-            Text(text = "Back", color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 6.dp).clickable { onBackToPlayer() })
         }
 
         if (loading) {
@@ -360,7 +177,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                 items(combinedToday, key = { "${it.type}${it.id}" }) { quest ->
                     QuestItem(
                         quest = quest,
-                        onCompleteToggle = { onQuestUpdated() },
+                        onCompleteToggle = { refreshTrigger++ },
                         questId = quest.id,
                         isCompleted = quest.completed,
                         isWeekly = quest.type == "weekly",
@@ -372,7 +189,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                     item(key = "overdue-header") {
                         SectionHeader(
                             label = "⚠ OVERDUE",
-                            subtitle = "${overdueQuests.size} quest${if (overdueQuests.size == 1) "" else "s"}",
+                            subtitle = "${overdueQuests.size} task${if (overdueQuests.size == 1) "" else "s"}",
                             color = Color(0xFFFF6B6B)
                         )
                     }
@@ -384,7 +201,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                         items(dayQuests, key = { "w${it.id}" }) { quest ->
                             QuestItem(
                                 quest = quest,
-                                onCompleteToggle = { onQuestUpdated() },
+                                onCompleteToggle = { refreshTrigger++ },
                                 questId = quest.id,
                                 isCompleted = quest.completed,
                                 isWeekly = true,
@@ -410,7 +227,7 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                         items(orderedThisWeek, key = { "w${it.id}" }) { quest ->
                             QuestItem(
                                 quest = quest,
-                                onCompleteToggle = { onQuestUpdated() },
+                                onCompleteToggle = { refreshTrigger++ },
                                 questId = quest.id,
                                 isCompleted = quest.completed,
                                 isWeekly = true
@@ -418,7 +235,25 @@ fun QuestsListScreen(onBackToPlayer: () -> Unit, onQuestUpdated: () -> Unit, ref
                         }
                     }
                 }
+
+                item { Spacer(modifier = Modifier.height(8.dp)) }
             }
+        }
+    }
+}
+
+fun sortQuestsByTime(quests: List<Quest>): List<Quest> {
+    return quests.sortedBy { quest ->
+        val timeRegex = Regex("@ (\\d{1,2}):(\\d{2}) ([AP]M)|@ (\\d{1,2}) ([AP]M)")
+        val match = timeRegex.find(quest.title)
+        if (match != null) {
+            val hour = (match.groupValues[1].takeIf { it.isNotEmpty() } ?: match.groupValues[4]).toInt()
+            val minute = match.groupValues[2].takeIf { it.isNotEmpty() }?.toInt() ?: 0
+            val period = (match.groupValues[3].takeIf { it.isNotEmpty() } ?: match.groupValues[5])
+            val adjustedHour = if (period == "PM" && hour != 12) hour + 12 else if (period == "AM" && hour == 12) 0 else hour
+            adjustedHour * 60 + minute
+        } else {
+            Int.MAX_VALUE
         }
     }
 }
@@ -550,7 +385,6 @@ fun QuestItem(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(text = "${quest.xpReward} XP", fontSize = 12.sp, color = Color(0xFFFFD700))
                 if (isWeekly) {
                     Text(
                         text = "Required",
@@ -691,7 +525,7 @@ fun MainTabScreen() {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             TabButton(
-                label = "Quests",
+                label = "Tasks",
                 isSelected = selectedTab == TabType.QUESTS,
                 onClick = { selectedTab = TabType.QUESTS },
                 modifier = Modifier.weight(1f)
@@ -776,13 +610,13 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Beef & Eggs",
         mealType = "Breakfast",
-        macros = Macros(calories = 620, protein = 45, fat = 45, netCarbs = "4"),
+        macros = Macros(calories = 730, protein = 52, fat = 54, netCarbs = "5"),
         ingredients = listOf(
             "5 oz 80/20 ground beef",
             "40g diced white onion",
             "1 tsp minced garlic",
             "3 large eggs",
-            "1 oz shredded cheese",
+            "2 oz shredded cheese",
             "pinch of salt",
             "black pepper",
             "splash of water or heavy cream",
@@ -795,7 +629,7 @@ val BREAKFAST_MEALS = listOf(
             ),
             MealStep(
                 "2. The Fresh \"Soft-Fold\" Egg Technique",
-                "The Switch: Turn the burner heat down to medium-low. Push the crispy beef and onions to one side of the pan. If the pan looks dry, drop a tiny sliver of butter onto the empty side.\n\nThe Pour: Pour the whisked eggs into the empty side of the pan. Let them sit for about 30 seconds until the edges just start to set.\n\nThe Melt & Fold: Sprinkle 1 oz of shredded cheese evenly over the eggs. Using a spatula, gently push the eggs and cheese from the outside edge toward the center, creating long, folding sheets. As they become semi-solid, gently fold the crispy beef and onions back into the cheesy eggs.\n\nPull the Heat: Turn off the burner while the eggs still look a tiny bit glossy and wet. The residual heat of the pan will finish melting the cheese and cooking the eggs to perfection in the 10 seconds it takes to plate them."
+                "The Switch: Turn the burner heat down to medium-low. Push the crispy beef and onions to one side of the pan. If the pan looks dry, drop a tiny sliver of butter onto the empty side.\n\nThe Pour: Pour the whisked eggs into the empty side of the pan. Let them sit for about 30 seconds until the edges just start to set.\n\nThe Melt & Fold: Sprinkle 2 oz of shredded cheese evenly over the eggs. Using a spatula, gently push the eggs and cheese from the outside edge toward the center, creating long, folding sheets. As they become semi-solid, gently fold the crispy beef and onions back into the cheesy eggs.\n\nPull the Heat: Turn off the burner while the eggs still look a tiny bit glossy and wet. The residual heat of the pan will finish melting the cheese and cooking the eggs to perfection in the 10 seconds it takes to plate them."
             )
         )
     )
@@ -832,11 +666,10 @@ val DINNER_MEALS = listOf(
     Meal(
         name = "Steak & Mushrooms",
         mealType = "Dinner",
-        macros = Macros(calories = 515, protein = 55, fat = 29, netCarbs = "5"),
+        macros = Macros(calories = 475, protein = 46, fat = 29, netCarbs = "4"),
         ingredients = listOf(
             "8 oz sirloin tip steak",
             "100g white mushrooms or baby bella mushrooms, sliced thick",
-            "1 cup beef bone broth",
             "1/2 tbsp butter",
             "1 tsp minced garlic",
             "1/4 tsp dried thyme",
@@ -845,20 +678,20 @@ val DINNER_MEALS = listOf(
         ),
         steps = listOf(
             MealStep(
-                "1. Prep and Sear the Steak",
-                "The Prep: Pat your 8 oz of sirloin tip steak dry with a paper towel and cut into bite-sized cubes. Season generously on all sides with salt and coarse black pepper.\n\nHeat a heavy skillet over medium-high heat. Drop in a tiny dab of your 1/2 tbsp of butter just to coat the bottom of the pan.\n\nOnce the pan is hot, add the steak tips in a single layer. Let them sear undisturbed for 2 minutes to build a deep crust, then flip and cook for another 1 to 2 minutes until medium-rare.\n\nRemove the steak from the pan and set it aside on a plate. Do not clean out the pan."
+                "1. Prep and Dry the Steak",
+                "The Prep: Pat your 8 oz of sirloin tip steak completely dry with paper towels—removing surface moisture is crucial to getting a good crust without a loose reduction. Cut into bite-sized cubes and season generously on all sides with coarse salt and black pepper.\n\nHeat a heavy skillet (cast iron or stainless steel) over high heat until it is smoking hot."
             ),
             MealStep(
-                "2. Sauté the Mushrooms",
-                "The Veg: Turn the burner down to medium heat. Toss 100g of sliced white mushrooms and 1/4 tsp of dried thyme leaves directly into the remaining steak fats left in the pan.\n\nLet the mushrooms cook down for 4 to 5 minutes until they turn a rich, golden brown.\n\nStir in 1 tsp of minced garlic during the last 30 seconds of cooking, moving it constantly so it becomes highly fragrant without burning."
+                "2. Sear the Steak",
+                "The Sear: Drop a tiny dab of your 1/2 tbsp of butter into the screaming hot pan just to coat the surface, then immediately add the steak tips in a single layer.\n\nLet them sear undisturbed for 2 minutes to build a deep, brown crust, then flip with your metal spatula and cook for another 1 to 2 minutes. Slide the steak cubes out of the pan and set them aside on a plate to rest. Do not clean out the skillet."
             ),
             MealStep(
-                "3. Build the Bone Broth Reduction",
-                "The Sauce: Pour 1 cup of beef bone broth into the hot skillet. It will bubble rapidly. Use a spatula to scrape up all the dark, savory bits (fond) stuck to the bottom of the pan.\n\nKeep the pan at a steady simmer for about 4 to 5 minutes, allowing the broth to reduce by half."
+                "3. Sauté the Mushrooms",
+                "The Veg: Turn the burner down to medium heat. Toss 100g of sliced white mushrooms and 1/4 tsp of dried thyme leaves directly into the hot pan with the leftover steak fats.\n\nLet them sit flat for 2 minutes to get color, then stir. Sauté for another 2 to 3 minutes until they turn a rich, golden brown and absorb the pan flavors.\n\nStir in 1 tsp of minced garlic during the final 30 seconds of cooking, moving it constantly so it becomes fragrant without burning."
             ),
             MealStep(
-                "4. Gloss the Sauce & Serve",
-                "The Finish: Turn off the burner completely and slide the pan off the heat. Drop the remaining cold butter into the reduction and stir it continuously until it emulsifies into a glossy, velvety sauce.\n\nPour any rested juices from the steak plate back into the pan, then toss the sirloin tips back into the garlic-thyme mushroom glaze to coat them completely. Plate immediately."
+                "4. The Butter Finish",
+                "The Finish: Turn off the burner completely and slide the pan off the heat. Drop the remaining butter into the hot mushrooms, stirring quickly until it melts and glazes them.\n\nToss the rested sirloin tips and any juices from the plate back into the pan with the garlic-thyme mushrooms. Coat everything evenly and plate immediately."
             )
         )
     )
@@ -967,9 +800,9 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,000", Modifier.weight(1f))
-                    MacroBox("Protein", "167g", Modifier.weight(1f))
-                    MacroBox("Fat", "132g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,070", Modifier.weight(1f))
+                    MacroBox("Protein", "165g", Modifier.weight(1f))
+                    MacroBox("Fat", "141g", Modifier.weight(1f))
                     MacroBox("Net Carbs", "25.5g", Modifier.weight(1f))
                 }
             }

@@ -396,6 +396,13 @@ fun SuppliesScreen(baseUrl: String) {
             groupByRoom = true,
             onBack = { currentView = null }
         )
+        "supplement" -> InventoryScreen(
+            baseUrl = baseUrl,
+            endpoint = "/api/supplement-inventory",
+            title = "Supplement Supply",
+            groupByRoom = false,
+            onBack = { currentView = null }
+        )
         else -> {
             Column(
                 modifier = Modifier
@@ -429,6 +436,17 @@ fun SuppliesScreen(baseUrl: String) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("🧴  Household Supply", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = { currentView = "supplement" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("💊  Supplement Supply", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
