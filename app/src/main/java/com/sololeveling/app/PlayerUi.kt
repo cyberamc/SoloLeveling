@@ -513,6 +513,7 @@ fun MainTabScreen() {
                 TabType.DIET -> DietScreen()
                 TabType.GYM -> GymScreen()
                 TabType.FOOD -> SuppliesScreen(baseUrl = "https://mysololeveling.us")
+                TabType.FINANCE -> FinanceScreen(baseUrl = "https://mysololeveling.us")
             }
         }
 
@@ -554,6 +555,12 @@ fun MainTabScreen() {
                 onClick = { selectedTab = TabType.FOOD },
                 modifier = Modifier.weight(1f)
             )
+            TabButton(
+                label = "Finance",
+                isSelected = selectedTab == TabType.FINANCE,
+                onClick = { selectedTab = TabType.FINANCE },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
@@ -576,14 +583,14 @@ private fun TabButton(
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             color = Color.White
         )
     }
 }
 
 enum class TabType {
-    QUESTS, SUPPLEMENTS, DIET, GYM, FOOD
+    QUESTS, SUPPLEMENTS, DIET, GYM, FOOD, FINANCE
 }
 
 data class Meal(
@@ -1010,7 +1017,9 @@ fun SupplementsScreen() {
                                 "Caffeine" to "400 mg",
                                 "L-Theanine" to "400 mg",
                                 "L-Tyrosine" to "1000 mg",
-                                "Alpha-GPC" to "600 mg"
+                                "Alpha-GPC" to "600 mg",
+                                "One A Day Multivitamin for Men" to "1 tablet",
+                                "Allergy Relief" to "1 tablet"
                             )
                         ),
                         SupplementGroup(
@@ -1032,6 +1041,13 @@ fun SupplementsScreen() {
                 SupplementSection(
                     title = "Rest day",
                     items = listOf(
+                        SupplementGroup(
+                            category = "Capsule",
+                            supplements = listOf(
+                                "One A Day Multivitamin for Men" to "1 tablet",
+                                "Allergy Relief" to "1 tablet"
+                            )
+                        ),
                         SupplementGroup(
                             category = "Powder",
                             supplements = listOf(
