@@ -22,6 +22,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -48,19 +50,23 @@ val STATUS_COLORS = mapOf(
     "ON HOLD" to Color(0xFF8B6914)
 )
 
+// Counts toward Total Income (+ speedxTotal added separately)
 val FIXED_INCOME = mapOf(
-    "Check 1" to 590.0,
-    "Check 2" to 581.0,
-    "Check 3" to 587.0,
-    "Check 4" to 578.0,
+    "IT Check 1" to 620.0,
+    "IT Check 2" to 620.0,
+    "IT Check 3" to 620.0,
+    "IT Check 4" to 620.0,
     "Plasma" to 520.0
 )
 
 val GROUP_ORDER = listOf(
-    "Check 1", "Check 2", "Check 3", "Check 4", "Plasma",
+    "IT Check 1", "IT Check 2", "IT Check 3", "IT Check 4", "People",
     "SpeedX Check 1", "SpeedX Check 2", "SpeedX Check 3", "SpeedX Check 4",
-    "People", "Subscriptions"
+    "Subscriptions"
 )
+
+// Groups that show no "income · bills" header line and no "Remaining" line
+val NO_REMAINING_GROUPS = setOf("People", "Subscriptions")
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
@@ -84,7 +90,14 @@ fun fetchBookkeepingMonths(baseUrl: String): List<BookkeepingMonth> {
     } finally { conn.disconnect() }
 }
 
-fun fetchBookkeepingDetail(baseUrl: String, monthId: Int): Pair<List<BookkeepingBill>, Double> {
+data class BookkeepingDetail(
+    val bills: List<BookkeepingBill>,
+    val speedxTotal: Double,
+    val speedxByCheck: Map<String, Double>,
+    val incomeLabels: Map<String, Double>
+)
+
+fun fetchBookkeepingDetail(baseUrl: String, monthId: Int): BookkeepingDetail {
     val url = URL("$baseUrl/api/bookkeeping/$monthId")
     val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "GET"
@@ -106,7 +119,15 @@ fun fetchBookkeepingDetail(baseUrl: String, monthId: Int): Pair<List<Bookkeeping
                 sortOrder = b.getInt("sort_order")
             )
         }
-        Pair(bills, speedxTotal)
+        val speedxByCheck = mutableMapOf<String, Double>()
+        obj.optJSONObject("speedxByCheck")?.let { sc ->
+            sc.keys().forEach { k -> speedxByCheck[k] = sc.getDouble(k) }
+        }
+        val incomeLabels = mutableMapOf<String, Double>()
+        obj.optJSONObject("incomeLabels")?.let { il ->
+            il.keys().forEach { k -> incomeLabels[k] = il.getDouble(k) }
+        }
+        BookkeepingDetail(bills, speedxTotal, speedxByCheck, incomeLabels)
     } finally { conn.disconnect() }
 }
 
@@ -134,6 +155,19 @@ fun patchBillStatus(baseUrl: String, id: Int, status: String): BookkeepingBill {
     } finally { conn.disconnect() }
 }
 
+fun deleteBookkeepingMonth(baseUrl: String, monthId: Int) {
+    val url = URL("$baseUrl/api/bookkeeping/$monthId")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "DELETE"
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try { conn.responseCode } finally { conn.disconnect() }
+}
+
+fun currentYearMonth(): String {
+    return SimpleDateFormat("yyyy-MM", Locale.US).format(java.util.Date())
+}
+
 fun formatMonth(month: String): String {
     return try {
         val parts = month.split("-")
@@ -154,6 +188,9 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
     var selectedMonth by remember { mutableStateOf<BookkeepingMonth?>(null) }
     var bills by remember { mutableStateOf<List<BookkeepingBill>>(emptyList()) }
     var speedxTotal by remember { mutableStateOf(0.0) }
+    var speedxByCheck by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+    var incomeLabels by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
+    var pendingDeleteMonth by remember { mutableStateOf<BookkeepingMonth?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
@@ -166,12 +203,16 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
             }
             months = m
             if (m.isNotEmpty()) {
-                selectedMonth = m.first()
-                val (b, s) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    fetchBookkeepingDetail(baseUrl, m.first().id)
+                val ym = currentYearMonth()
+                val defaultMonth = m.find { it.month == ym } ?: m.first()
+                selectedMonth = defaultMonth
+                val detail = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    fetchBookkeepingDetail(baseUrl, defaultMonth.id)
                 }
-                bills = b
-                speedxTotal = s
+                bills = detail.bills
+                speedxTotal = detail.speedxTotal
+                speedxByCheck = detail.speedxByCheck
+                incomeLabels = detail.incomeLabels
             }
             isLoading = false
         } catch (e: Exception) {
@@ -184,18 +225,46 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
         selectedMonth = month
         scope.launch {
             try {
-                val (b, s) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                val detail = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     fetchBookkeepingDetail(baseUrl, month.id)
                 }
-                bills = b
-                speedxTotal = s
+                bills = detail.bills
+                speedxTotal = detail.speedxTotal
+                speedxByCheck = detail.speedxByCheck
+                incomeLabels = detail.incomeLabels
+            } catch (e: Exception) { errorMsg = e.message }
+        }
+    }
+
+    fun deleteMonth(month: BookkeepingMonth) {
+        scope.launch {
+            try {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    deleteBookkeepingMonth(baseUrl, month.id)
+                }
+                val m = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    fetchBookkeepingMonths(baseUrl)
+                }
+                months = m
+                val newSel = m.firstOrNull()
+                selectedMonth = newSel
+                if (newSel != null) {
+                    val detail = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        fetchBookkeepingDetail(baseUrl, newSel.id)
+                    }
+                    bills = detail.bills
+                    speedxTotal = detail.speedxTotal
+                    speedxByCheck = detail.speedxByCheck
+                    incomeLabels = detail.incomeLabels
+                } else {
+                    bills = emptyList()
+                }
             } catch (e: Exception) { errorMsg = e.message }
         }
     }
 
     val totalIncome = FIXED_INCOME.values.sum() + speedxTotal
-    val totalExpenses = bills.sumOf { it.amount }
-    val paidExpenses = bills.filter { it.status == "PAID" || it.status == "AUTOPAY" }.sumOf { it.amount }
+    val totalExpenses = bills.filter { it.status != "ON HOLD" && it.groupName != "People" }.sumOf { it.amount }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A))) {
         // Header
@@ -213,6 +282,23 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                 fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { onBack() })
         }
 
+        pendingDeleteMonth?.let { m ->
+            AlertDialog(
+                onDismissRequest = { pendingDeleteMonth = null },
+                title = { Text("Delete ${formatMonth(m.month)}?") },
+                text = { Text("This removes its bills and delivery weeks. This cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingDeleteMonth = null
+                        deleteMonth(m)
+                    }) { Text("Delete", color = Color(0xFFCF6679), fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingDeleteMonth = null }) { Text("Cancel") }
+                }
+            )
+        }
+
         when {
             isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Color(0xFFFFD700))
@@ -225,20 +311,25 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
 
                     // Month selector
-                    if (months.size > 1) {
+                    if (months.isNotEmpty()) {
                         item {
                             Row(modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                months.forEach { m ->
+                                months.sortedBy { it.month }.forEach { m ->
                                     val isSelected = m.id == selectedMonth?.id
-                                    Box(
+                                    Row(
                                         modifier = Modifier.clip(RoundedCornerShape(6.dp))
-                                            .background(if (isSelected) Color(0xFF7B8CDE) else Color(0xFF12122A))
-                                            .clickable { loadMonth(m) }
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            .background(if (isSelected) Color(0xFF7B8CDE) else Color(0xFF12122A)),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(formatMonth(m.month), fontSize = 12.sp,
-                                            color = if (isSelected) Color.White else Color(0xFF888899))
+                                            color = if (isSelected) Color.White else Color(0xFF888899),
+                                            modifier = Modifier.clickable { loadMonth(m) }
+                                                .padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp))
+                                        Text("×", fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                                            color = if (isSelected) Color.White else Color(0xFF888899),
+                                            modifier = Modifier.clickable { pendingDeleteMonth = m }
+                                                .padding(end = 10.dp, top = 4.dp, bottom = 4.dp))
                                     }
                                 }
                             }
@@ -254,24 +345,20 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                 SummaryBox("Income", "$${String.format("%.0f", totalIncome)}", Color(0xFF4CAF50), Modifier.weight(1f))
                                 SummaryBox("Expenses", "$${String.format("%.0f", totalExpenses)}", Color(0xFFCF6679), Modifier.weight(1f))
                             }
-                            Row(modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                SummaryBox("Paid", "$${String.format("%.0f", paidExpenses)}", Color(0xFFD4B84A), Modifier.weight(1f))
-                                SummaryBox("Remaining", "$${String.format("%.0f", totalExpenses - paidExpenses)}", Color(0xFF7B8CDE), Modifier.weight(1f))
-                            }
-                            SummaryBox("SpeedX (Delivery)", "$${String.format("%.2f", speedxTotal)}", Color(0xFF4CAF50), Modifier.fillMaxWidth())
+                            SummaryBox("Plasma", "$520", Color(0xFF4CAF50), Modifier.fillMaxWidth())
                         }
                     }
 
                     // Bill groups
                     val groupedBills = bills.groupBy { it.groupName }
-                    val orderedGroups = GROUP_ORDER.filter { groupedBills.containsKey(it) } +
-                            groupedBills.keys.filter { !GROUP_ORDER.contains(it) }
+                    val orderedGroups = (GROUP_ORDER.filter { groupedBills.containsKey(it) } +
+                            groupedBills.keys.filter { !GROUP_ORDER.contains(it) }).filter { it != "Plasma" }
 
                     items(orderedGroups) { groupName ->
                         val groupBills = groupedBills[groupName] ?: return@items
-                        val income = FIXED_INCOME[groupName]
-                        val groupTotal = groupBills.sumOf { it.amount }
+                        val income = speedxByCheck[groupName] ?: incomeLabels[groupName]
+                        val groupTotal = groupBills.filter { it.status != "ON HOLD" }.sumOf { it.amount }
+                        val showIncomeLine = income != null && groupName !in NO_REMAINING_GROUPS
 
                         Column(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
@@ -282,8 +369,8 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                 verticalAlignment = Alignment.CenterVertically) {
                                 Text(groupName, fontSize = 13.sp, fontWeight = FontWeight.Bold,
                                     color = Color(0xFF7B8CDE))
-                                if (income != null) {
-                                    Text("$${income.toInt()} income · $${groupTotal.toInt()} bills",
+                                if (showIncomeLine) {
+                                    Text("$${income!!.toInt()} income · $${groupTotal.toInt()} bills",
                                         fontSize = 11.sp, color = Color(0xFF888899))
                                 }
                             }

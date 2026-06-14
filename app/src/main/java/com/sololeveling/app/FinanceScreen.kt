@@ -29,9 +29,23 @@ import java.util.*
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
+// The YYYY-MM that today's delivery week pays out in.
+// Today's week_start (Sunday) -> Wednesday (+3) -> pay date (+16) -> that month.
+fun currentDeliveryPayMonth(): String {
+    val cal = Calendar.getInstance()
+    // Back up to this week's Sunday
+    while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+        cal.add(Calendar.DAY_OF_MONTH, -1)
+    }
+    // Sunday + 3 = Wednesday, + 16 = pay date
+    cal.add(Calendar.DAY_OF_MONTH, 19)
+    return SimpleDateFormat("yyyy-MM", Locale.US).format(cal.time)
+}
+
 data class DeliveryWeek(
     val id: Int,
     val weekStart: String,
+    val checkNumber: Int,
     val tueDelivered: Int,
     val tueDuplicates: Int,
     val tueUndeliverable: Int,
@@ -74,8 +88,8 @@ data class DeliveryWeek(
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
-fun fetchDeliveryWeeks(baseUrl: String): List<DeliveryWeek> {
-    val url = URL("$baseUrl/api/delivery-weeks")
+fun fetchDeliveryWeeks(baseUrl: String, monthId: Int? = null): List<DeliveryWeek> {
+    val url = URL("$baseUrl/api/delivery-weeks" + (if (monthId != null) "?month_id=$monthId" else ""))
     val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
@@ -88,6 +102,7 @@ fun fetchDeliveryWeeks(baseUrl: String): List<DeliveryWeek> {
             DeliveryWeek(
                 id = obj.getInt("id"),
                 weekStart = obj.getString("week_start"),
+                checkNumber = obj.optInt("check_number", 0),
                 tueDelivered = obj.getInt("tue_delivered"),
                 tueDuplicates = obj.getInt("tue_duplicates"),
                 tueUndeliverable = obj.getInt("tue_undeliverable"),
@@ -124,6 +139,7 @@ fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
         DeliveryWeek(
             id = obj.getInt("id"),
             weekStart = obj.getString("week_start"),
+            checkNumber = obj.optInt("check_number", 0),
             tueDelivered = obj.getInt("tue_delivered"),
             tueDuplicates = obj.getInt("tue_duplicates"),
             tueUndeliverable = obj.getInt("tue_undeliverable"),
@@ -150,9 +166,8 @@ fun deleteDeliveryWeek(baseUrl: String, id: Int) {
 }
 
 @Composable
-fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit, onDelete: (Int) -> Unit) {
+fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
     var expandedDay by remember { mutableStateOf<String?>(null) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     var tueDelivered by remember(week) { mutableStateOf(week.tueDelivered.toString()) }
     var tueDuplicates by remember(week) { mutableStateOf(week.tueDuplicates.toString()) }
@@ -163,7 +178,13 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit, onDelet
 
     Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF12122A))) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(text = "Week of ${week.weekLabel()}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7B8CDE))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "Week of ${week.weekLabel()}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7B8CDE))
+                if (week.checkNumber > 0) {
+                    Text(text = "SpeedX Check ${week.checkNumber}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4CAF50))
+                }
+            }
             Spacer(Modifier.height(12.dp))
 
             DayRow(label = "Tuesday", billable = week.tueBillable, pay = week.tuePay,
@@ -215,25 +236,6 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit, onDelet
                 Column(horizontalAlignment = Alignment.End) {
                     Text("$${String.format("%.2f", week.totalPay)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
                     Text("💰 Pay Date: ${week.payDate()}", fontSize = 11.sp, color = Color(0xFF888899))
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            if (showDeleteConfirm) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { showDeleteConfirm = false }, modifier = Modifier.weight(1f).height(36.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2a2a3a)), shape = RoundedCornerShape(8.dp)) {
-                        Text("Cancel", color = Color.White, fontSize = 13.sp)
-                    }
-                    Button(onClick = { onDelete(week.id) }, modifier = Modifier.weight(1f).height(36.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCF6679)), shape = RoundedCornerShape(8.dp)) {
-                        Text("Delete", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            } else {
-                TextButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.align(Alignment.End)) {
-                    Text("Got my check — remove week", color = Color(0xFF555577), fontSize = 12.sp)
                 }
             }
         }
@@ -302,15 +304,40 @@ fun DeliveryField(label: String, value: String, onChange: (String) -> Unit, modi
 fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var weeks by remember { mutableStateOf<List<DeliveryWeek>>(emptyList()) }
+    var months by remember { mutableStateOf<List<BookkeepingMonth>>(emptyList()) }
+    var selectedMonth by remember { mutableStateOf<BookkeepingMonth?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
     BackHandler { onBack() }
 
+    fun loadWeeks(month: BookkeepingMonth) {
+        selectedMonth = month
+        scope.launch {
+            try {
+                weeks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    fetchDeliveryWeeks(baseUrl, month.id)
+                }
+            } catch (e: Exception) { errorMsg = e.message }
+        }
+    }
+
     LaunchedEffect(Unit) {
         try {
-            weeks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                fetchDeliveryWeeks(baseUrl)
+            val m = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                fetchBookkeepingMonths(baseUrl)
+            }
+            months = m
+            val sel = m.find { it.month == currentDeliveryPayMonth() } ?: m.firstOrNull()
+            selectedMonth = sel
+            weeks = if (sel != null) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    fetchDeliveryWeeks(baseUrl, sel.id)
+                }
+            } else {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    fetchDeliveryWeeks(baseUrl)
+                }
             }
             isLoading = false
         } catch (e: Exception) {
@@ -344,6 +371,24 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
             else -> {
                 LazyColumn(modifier = Modifier.fillMaxSize().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (months.isNotEmpty()) {
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                months.sortedBy { it.month }.forEach { m ->
+                                    val isSelected = m.id == selectedMonth?.id
+                                    Box(
+                                        modifier = Modifier.clip(RoundedCornerShape(6.dp))
+                                            .background(if (isSelected) Color(0xFF7B8CDE) else Color(0xFF12122A))
+                                            .clickable { loadWeeks(m) }
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Text(formatMonth(m.month), fontSize = 12.sp,
+                                            color = if (isSelected) Color.White else Color(0xFF888899))
+                                    }
+                                }
+                            }
+                        }
+                    }
                     items(weeks, key = { it.id }) { week ->
                         DeliveryWeekCard(
                             week = week,
@@ -357,22 +402,6 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
                                         weeks = weeks.map { if (it.id == result.id) result else it }
                                     } catch (e: Exception) {
                                         weeks = weeks.map { if (it.id == week.id) week else it }
-                                    }
-                                }
-                            },
-                            onDelete = { id ->
-                                weeks = weeks.filter { it.id != id }
-                                scope.launch {
-                                    try {
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                            deleteDeliveryWeek(baseUrl, id)
-                                        }
-                                    } catch (e: Exception) {
-                                        try {
-                                            weeks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                fetchDeliveryWeeks(baseUrl)
-                                            }
-                                        } catch (_: Exception) {}
                                     }
                                 }
                             }
