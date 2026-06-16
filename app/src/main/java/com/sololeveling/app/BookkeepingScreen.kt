@@ -39,7 +39,8 @@ data class BookkeepingBill(
 data class BookkeepingMonth(
     val id: Int,
     val month: String,
-    val speedxAmount: Double
+    val speedxAmount: Double,
+    val notes: String = ""
 )
 
 val BILL_STATUSES = listOf("NOT PAID", "PAID", "AUTOPAY", "ON HOLD")
@@ -84,7 +85,8 @@ fun fetchBookkeepingMonths(baseUrl: String): List<BookkeepingMonth> {
             BookkeepingMonth(
                 id = obj.getInt("id"),
                 month = obj.getString("month"),
-                speedxAmount = obj.getDouble("speedx_amount")
+                speedxAmount = obj.getDouble("speedx_amount"),
+                notes = obj.optString("notes", "")
             )
         }
     } finally { conn.disconnect() }
@@ -155,6 +157,21 @@ fun patchBillStatus(baseUrl: String, id: Int, status: String): BookkeepingBill {
     } finally { conn.disconnect() }
 }
 
+fun saveMonthNotes(baseUrl: String, monthId: Int, notes: String) {
+    val url = URL("$baseUrl/api/bookkeeping/$monthId/notes")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "PATCH"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        val body = JSONObject().apply { put("notes", notes) }.toString()
+        conn.outputStream.use { it.write(body.toByteArray()) }
+        conn.responseCode
+    } finally { conn.disconnect() }
+}
+
 fun deleteBookkeepingMonth(baseUrl: String, monthId: Int) {
     val url = URL("$baseUrl/api/bookkeeping/$monthId")
     val conn = url.openConnection() as HttpURLConnection
@@ -191,6 +208,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
     var speedxByCheck by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
     var incomeLabels by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
     var pendingDeleteMonth by remember { mutableStateOf<BookkeepingMonth?>(null) }
+    var notesText by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
@@ -206,6 +224,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                 val ym = currentYearMonth()
                 val defaultMonth = m.find { it.month == ym } ?: m.first()
                 selectedMonth = defaultMonth
+                notesText = defaultMonth.notes
                 val detail = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                     fetchBookkeepingDetail(baseUrl, defaultMonth.id)
                 }
@@ -223,6 +242,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
 
     fun loadMonth(month: BookkeepingMonth) {
         selectedMonth = month
+        notesText = month.notes
         scope.launch {
             try {
                 val detail = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
@@ -248,6 +268,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                 months = m
                 val newSel = m.firstOrNull()
                 selectedMonth = newSel
+                notesText = newSel?.notes ?: ""
                 if (newSel != null) {
                     val detail = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                         fetchBookkeepingDetail(baseUrl, newSel.id)
@@ -346,6 +367,45 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                 SummaryBox("Expenses", "$${String.format("%.0f", totalExpenses)}", Color(0xFFCF6679), Modifier.weight(1f))
                             }
                             SummaryBox("Plasma", "$520", Color(0xFF4CAF50), Modifier.fillMaxWidth())
+
+                            Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF12122A)).padding(12.dp)) {
+                                Text("Notes", fontSize = 11.sp, color = Color(0xFF888899))
+                                OutlinedTextField(
+                                    value = notesText,
+                                    onValueChange = { notesText = it },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                                    placeholder = { Text("Add a note...", color = Color(0xFF555577)) },
+                                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 13.sp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Color(0xFF7B8CDE),
+                                        unfocusedBorderColor = Color(0xFF2a2a3a),
+                                        cursorColor = Color(0xFF7B8CDE)
+                                    ),
+                                    minLines = 2
+                                )
+                                Box(
+                                    modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFF1a2a1a))
+                                        .clickable {
+                                            val mId = selectedMonth?.id
+                                            if (mId != null) {
+                                                selectedMonth = selectedMonth?.copy(notes = notesText)
+                                                months = months.map { if (it.id == mId) it.copy(notes = notesText) else it }
+                                                scope.launch {
+                                                    try {
+                                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                            saveMonthNotes(baseUrl, mId, notesText)
+                                                        }
+                                                    } catch (e: Exception) { errorMsg = e.message }
+                                                }
+                                            }
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                                ) {
+                                    Text("Save", color = Color(0xFF4CAF50), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
                         }
                     }
 
