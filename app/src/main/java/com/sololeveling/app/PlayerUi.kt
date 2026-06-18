@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
@@ -21,6 +23,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -73,6 +77,22 @@ fun TasksScreen() {
     var error by remember { mutableStateOf<String?>(null) }
     var thisWeekExpanded by remember { mutableStateOf(false) }
     var nofapStreak by remember { mutableIntStateOf(0) }
+    var showRoutine by remember { mutableStateOf(false) }
+    var showNotepad by remember { mutableStateOf(false) }
+    var showNofapNotepad by remember { mutableStateOf(false) }
+
+    if (showRoutine) {
+        RoutineScreen(onBack = { showRoutine = false })
+        return
+    }
+    if (showNotepad) {
+        NotepadScreen(onBack = { showNotepad = false })
+        return
+    }
+    if (showNofapNotepad) {
+        NofapNotepadScreen(onBack = { showNofapNotepad = false })
+        return
+    }
 
     // Load player data once on first launch only
     LaunchedEffect(Unit) {
@@ -138,7 +158,35 @@ fun TasksScreen() {
                 .systemBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Text(text = "Tasks", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Tasks", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Notepad",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFFFD700),
+                        modifier = Modifier
+                            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                            .clickable { showNotepad = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                    Text(
+                        text = "View Routine",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFFFD700),
+                        modifier = Modifier
+                            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                            .clickable { showRoutine = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "\"The pain of discipline or the pain of regret.\"",
@@ -154,7 +202,12 @@ fun TasksScreen() {
                 color = Color(0xFFFFD700)
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.pointerInput(Unit) {
+                    detectTapGestures(onLongPress = { showNofapNotepad = true })
+                }
+            ) {
                 Text(text = "🔥", fontSize = 13.sp)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
@@ -240,6 +293,405 @@ fun TasksScreen() {
             }
         }
     }
+}
+
+data class RoutineQuest(
+    val id: Int,
+    val title: String,
+    val time: String?,
+    val category: String,
+    val xpReward: Int,
+    val optional: Boolean,
+    val kind: String // "daily" or "required"
+)
+
+@Composable
+fun RoutineScreen(onBack: () -> Unit) {
+    val fullDayNames = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
+    val shortDayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val todayWeekday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1
+
+    var selectedDay by remember { mutableIntStateOf(todayWeekday) }
+    var quests by remember { mutableStateOf<List<RoutineQuest>>(emptyList()) }
+    var dailyCount by remember { mutableIntStateOf(0) }
+    var requiredCount by remember { mutableIntStateOf(0) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(selectedDay) {
+        loading = true
+        error = null
+        try {
+            val response = fetchFromApi("/api/routine/$selectedDay")
+            val obj = Gson().fromJson(response, Map::class.java)
+            dailyCount = (obj["dailyCount"] as? Number)?.toInt() ?: 0
+            requiredCount = (obj["requiredCount"] as? Number)?.toInt() ?: 0
+            @Suppress("UNCHECKED_CAST")
+            val list = (obj["quests"] as? List<Map<String, Any?>>) ?: emptyList()
+            quests = list.map { q ->
+                RoutineQuest(
+                    id = (q["id"] as? Number)?.toInt() ?: 0,
+                    title = q["title"] as? String ?: "",
+                    time = q["time"] as? String,
+                    category = q["category"] as? String ?: "STR",
+                    xpReward = (q["xp_reward"] as? Number)?.toInt() ?: 0,
+                    optional = ((q["optional"] as? Number)?.toInt() ?: 0) == 1,
+                    kind = q["kind"] as? String ?: "daily"
+                )
+            }
+            loading = false
+        } catch (e: Exception) {
+            error = e.message
+            loading = false
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        // Header
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
+                .systemBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Routine", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    text = "Back",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier.clickable { onBack() }
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "$dailyCount daily · $requiredCount required",
+                fontSize = 13.sp,
+                color = Color(0xFFFFD700)
+            )
+        }
+
+        // Day picker
+        androidx.compose.foundation.lazy.LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items((0..6).toList()) { day ->
+                val isSelected = day == selectedDay
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isSelected) Color(0xFFFFD700) else Color(0xFF1a1a1a))
+                        .clickable { selectedDay = day }
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = shortDayNames[day],
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isSelected) Color(0xFF1a1a1a) else Color(0xFFB0B0B0)
+                    )
+                }
+            }
+        }
+
+        when {
+            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFFFD700))
+            }
+            error != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item(key = "day-header") {
+                        SectionHeader(label = fullDayNames[selectedDay].uppercase(), color = Color(0xFFFFD700))
+                    }
+                    items(quests, key = { "${it.kind}${it.id}" }) { q ->
+                        RoutineQuestItem(q)
+                    }
+                    item { Spacer(modifier = Modifier.height(8.dp)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun RoutineQuestItem(q: RoutineQuest) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp))
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = if (q.time != null) "${q.title} @ ${q.time}" else q.title,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.White
+            )
+            Row(
+                modifier = Modifier.padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(text = "${q.xpReward} XP", fontSize = 11.sp, color = Color(0xFFFFD700))
+                if (q.kind == "required") {
+                    Text(
+                        text = "Required",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFa78bfa),
+                        modifier = Modifier
+                            .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+                if (q.optional) {
+                    Text(
+                        text = "Optional",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFB0B0B0),
+                        modifier = Modifier
+                            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotepadScreen(onBack: () -> Unit) {
+    var noteText by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(true) }
+    var saving by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var savedFlash by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        try {
+            val response = fetchFromApi("/api/notepad")
+            val obj = Gson().fromJson(response, Map::class.java)
+            noteText = obj["content"] as? String ?: ""
+            loading = false
+        } catch (e: Exception) {
+            error = e.message
+            loading = false
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
+                .systemBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Notepad", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    text = "Back",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier.clickable { onBack() }
+                )
+            }
+        }
+
+        when {
+            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFFFD700))
+            }
+            error != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+            else -> {
+                Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { noteText = it; savedFlash = false },
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        placeholder = { Text("Type your notes here...", color = Color(0xFF555577)) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFFFD700),
+                            unfocusedBorderColor = Color(0xFF2a2a3a),
+                            cursorColor = Color(0xFFFFD700)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF1a2a1a))
+                            .clickable(enabled = !saving) {
+                                saving = true
+                                scope.launch(Dispatchers.IO) {
+                                    try {
+                                        saveNotepad(noteText)
+                                        savedFlash = true
+                                    } catch (e: Exception) {
+                                        error = e.message
+                                    } finally {
+                                        saving = false
+                                    }
+                                }
+                            }
+                            .padding(horizontal = 22.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = if (savedFlash) "Saved ✓" else if (saving) "Saving..." else "Save",
+                            color = Color(0xFF4CAF50),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun saveNotepad(content: String) {
+    val url = URL("https://mysololeveling.us/api/notepad")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "PATCH"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        val payload = Gson().toJson(mapOf("content" to content))
+        conn.outputStream.use { it.write(payload.toByteArray()) }
+        conn.responseCode
+    } finally { conn.disconnect() }
+}
+
+@Composable
+fun NofapNotepadScreen(onBack: () -> Unit) {
+    var noteText by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(true) }
+    var saving by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var savedFlash by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        try {
+            val response = fetchFromApi("/api/nofap-notepad")
+            val obj = Gson().fromJson(response, Map::class.java)
+            noteText = obj["content"] as? String ?: ""
+            loading = false
+        } catch (e: Exception) {
+            error = e.message
+            loading = false
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
+                .systemBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Notes", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    text = "Back",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier.clickable { onBack() }
+                )
+            }
+        }
+
+        when {
+            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFFFD700))
+            }
+            error != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+            else -> {
+                Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { noteText = it; savedFlash = false },
+                        modifier = Modifier.fillMaxWidth().weight(1f),
+                        placeholder = { Text("Type your notes here...", color = Color(0xFF555577)) },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFFFD700),
+                            unfocusedBorderColor = Color(0xFF2a2a3a),
+                            cursorColor = Color(0xFFFFD700)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF1a2a1a))
+                            .clickable(enabled = !saving) {
+                                saving = true
+                                scope.launch(Dispatchers.IO) {
+                                    try {
+                                        saveNofapNotepad(noteText)
+                                        savedFlash = true
+                                    } catch (e: Exception) {
+                                        error = e.message
+                                    } finally {
+                                        saving = false
+                                    }
+                                }
+                            }
+                            .padding(horizontal = 22.dp, vertical = 10.dp)
+                    ) {
+                        Text(
+                            text = if (savedFlash) "Saved ✓" else if (saving) "Saving..." else "Save",
+                            color = Color(0xFF4CAF50),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun saveNofapNotepad(content: String) {
+    val url = URL("https://mysololeveling.us/api/nofap-notepad")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "PATCH"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        val payload = Gson().toJson(mapOf("content" to content))
+        conn.outputStream.use { it.write(payload.toByteArray()) }
+        conn.responseCode
+    } finally { conn.disconnect() }
 }
 
 fun sortQuestsByTime(quests: List<Quest>): List<Quest> {
@@ -1181,20 +1633,22 @@ data class GymRoutine(
 @Composable
 fun GymScreen() {
     var selectedExercise by remember { mutableStateOf<GymExercise?>(null) }
+    var showStandards by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = selectedExercise != null) {
-        selectedExercise = null
+    BackHandler(enabled = selectedExercise != null || showStandards) {
+        if (selectedExercise != null) selectedExercise = null
+        else showStandards = false
     }
 
-    if (selectedExercise == null) {
-        GymListScreen(onExerciseSelected = { selectedExercise = it })
-    } else {
-        GymDetailScreen(exercise = selectedExercise!!, onBack = { selectedExercise = null })
+    when {
+        selectedExercise != null -> GymDetailScreen(exercise = selectedExercise!!, onBack = { selectedExercise = null })
+        showStandards -> GymStandardsScreen(onBack = { showStandards = false })
+        else -> GymListScreen(onExerciseSelected = { selectedExercise = it }, onViewStandards = { showStandards = true })
     }
 }
 
 @Composable
-fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit) {
+fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: () -> Unit) {
     var routines by remember { mutableStateOf<List<GymRoutine>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -1248,6 +1702,13 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit) {
                     fontSize = 13.sp, color = Color(0xFFFFD700)
                 )
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "📊 View Strength Standards",
+                fontSize = 12.sp,
+                color = Color(0xFF7B8CDE),
+                modifier = Modifier.clickable { onViewStandards() }
+            )
         }
 
         if (loading) {
@@ -1434,6 +1895,167 @@ fun GymExerciseRow(exercise: GymExercise, onClick: () -> Unit) {
 }
 
 @Composable
+fun GymStandardsScreen(onBack: () -> Unit) {
+    var exercises by remember { mutableStateOf<List<GymExercise>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val standards = mapOf(
+        "Bench Press (Barbell)" to listOf(96, 143, 191, 239, 287),
+        "Squat (Barbell)" to listOf(143, 239, 287, 382, 478),
+        "Deadlift (Barbell)" to listOf(191, 287, 334, 430, 525),
+        "Overhead Press (Barbell)" to listOf(67, 96, 124, 162, 210),
+        "Bent Over Row (Barbell)" to listOf(86, 124, 172, 229, 300),
+        "Romanian Deadlift" to listOf(120, 182, 258, 354, 460),
+        "Incline Bench Press (Barbell)" to listOf(84, 120, 167, 229, 300),
+        "Supine Press" to listOf(96, 143, 191, 239, 287),
+        "Shoulder Press (Dumbbell)" to listOf(44, 66, 88, 110, 132),
+        "Incline Bench Press (Dumbbell)" to listOf(44, 66, 88, 110, 132),
+        "Skullcrusher (Barbell)" to listOf(44, 66, 88, 110, 132),
+        "Triceps Pushdown" to listOf(33, 55, 77, 99, 121),
+        "Triceps Overhead Extension" to listOf(44, 66, 88, 110, 132),
+        "Lean-Back Lat Pulldown" to listOf(77, 121, 165, 209, 253),
+        "Lat Pulldown (Band)" to listOf(77, 121, 165, 209, 253),
+        "Chest Supported Incline Row (Dumbbell)" to listOf(55, 88, 121, 154, 187),
+        "Bent Over Row (Smith Machine)" to listOf(86, 124, 172, 229, 300),
+        "Hammer Curl (Cable)" to listOf(33, 55, 77, 99, 121),
+        "Single Arm Preacher Curl" to listOf(22, 44, 66, 88, 110),
+        "Bayesian Cable Curl" to listOf(22, 44, 66, 88, 110),
+        "Hack Squat (Machine)" to listOf(121, 198, 275, 352, 440),
+        "Split Squat (Smith Machine)" to listOf(55, 99, 143, 187, 231),
+        "Lunge (Dumbbell)" to listOf(44, 77, 110, 143, 176),
+        "Lying Leg Curl (Machine)" to listOf(77, 121, 165, 209, 253),
+        "Seated Leg Curl (Machine)" to listOf(77, 121, 165, 209, 253),
+        "Leg Extension (Machine)" to listOf(99, 154, 209, 264, 319),
+        "Back Extension (Weighted Hyperextension)" to listOf(33, 55, 88, 121, 154),
+        "Calf Press (Machine)" to listOf(165, 253, 341, 429, 517),
+        "Calf Extension (Machine)" to listOf(165, 253, 341, 429, 517),
+        "Hip Abduction (Machine)" to listOf(77, 121, 165, 209, 253),
+        "Ab Crunch (Machine)" to listOf(55, 99, 143, 187, 231),
+        "Low-To-High Cable Crossover" to listOf(22, 33, 44, 66, 88),
+        "Single Arm Lateral Raise (Cable)" to listOf(11, 22, 33, 44, 55),
+        "Single Arm Rear Delt Flye (Cable)" to listOf(11, 22, 33, 44, 55),
+        "Paused Shrug-In (Cable)" to listOf(99, 154, 209, 264, 319),
+        "Ab Wheel" to listOf(0, 0, 0, 0, 0),
+    )
+
+    val tiers = listOf("Beginner", "Novice", "Intermediate", "Advanced", "Elite")
+    val tierColors = listOf(
+        Color(0xFF4B5563), Color(0xFFca8a04), Color(0xFF4FB3D9), Color(0xFFa78bfa), Color(0xFFFB923C)
+    )
+
+    LaunchedEffect(Unit) {
+        try {
+            val response = fetchFromApi("/api/gym/summary")
+            val data = Gson().fromJson(response, List::class.java)
+            exercises = data.mapNotNull {
+                if (it is Map<*, *>) GymExercise(
+                    exerciseTemplateId = (it["exercise_template_id"] as? String) ?: "",
+                    title = (it["title"] as? String) ?: "",
+                    sessionCount = (it["session_count"] as? Number)?.toInt() ?: 0,
+                    bestWeightLbs = (it["best_weight_lbs"] as? Number)?.toInt() ?: 0,
+                    bestReps = (it["best_reps"] as? Number)?.toInt() ?: 0,
+                    estimated1RMLbs = (it["estimated_1rm_lbs"] as? Number)?.toInt() ?: 0,
+                    isPlateaued = (it["is_plateaued"] as? Boolean) ?: false,
+                    sessionsAtCurrentWeight = (it["sessions_at_current_weight"] as? Number)?.toInt() ?: 0,
+                    lastPrDate = (it["last_pr_date"] as? String) ?: "",
+                    recentGainLbs = (it["recent_gain_lbs"] as? Number)?.toInt() ?: 0,
+                    strengthLevel = it["strength_level"] as? String,
+                    strengthPercentile = (it["strength_percentile"] as? Number)?.toInt()
+                ) else null
+            }.filter { standards.containsKey(it.title) && it.estimated1RMLbs > 0 }
+            isLoading = false
+        } catch (e: Exception) {
+            error = e.message
+            isLoading = false
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).systemBarsPadding().padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("Strength Comparison", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("35yr male · 191 lbs · Est. 1RM", fontSize = 12.sp, color = Color(0xFF6b7689))
+            }
+            Text("Back", color = Color(0xFFFFD700), fontSize = 14.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.clickable { onBack() })
+        }
+
+        when {
+            isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFFFD700))
+            }
+            error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+            else -> {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item { Spacer(Modifier.height(8.dp)) }
+                    items(exercises, key = { it.exerciseTemplateId }) { exercise ->
+                        val tiers5 = standards[exercise.title] ?: return@items
+                        val oneRM = exercise.estimated1RMLbs
+                        val levelIdx = when {
+                            oneRM >= tiers5[4] -> 4
+                            oneRM >= tiers5[3] -> 3
+                            oneRM >= tiers5[2] -> 2
+                            oneRM >= tiers5[1] -> 1
+                            else -> 0
+                        }
+                        val levelColor = tierColors[levelIdx]
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                                .background(Color(0xFF111728)).padding(12.dp)
+                        ) {
+                            Row(modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Text(exercise.title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                                    color = Color(0xFFcdd6e2), modifier = Modifier.weight(1f).padding(end = 8.dp))
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text("${oneRM} lbs", fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFFFD700))
+                                    Box(modifier = Modifier.clip(RoundedCornerShape(4.dp))
+                                        .background(levelColor.copy(alpha = 0.15f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)) {
+                                        Text(tiers[levelIdx], fontSize = 10.sp, fontWeight = FontWeight.Bold,
+                                            color = levelColor)
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(10.dp))
+                            // Progress bar across tiers
+                            Row(modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                                tiers5.forEachIndexed { i, _ ->
+                                    Box(modifier = Modifier.weight(1f).fillMaxHeight()
+                                        .background(if (i <= levelIdx) tierColors[i] else tierColors[i].copy(alpha = 0.15f)))
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                tiers5.forEachIndexed { i, lbs ->
+                                    Text("${lbs}lb", fontSize = 8.sp, color = if (i <= levelIdx) tierColors[i] else Color(0xFF444455),
+                                        modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                                }
+                            }
+                        }
+                    }
+                    item { Spacer(Modifier.height(16.dp)) }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
     var sessions by remember { mutableStateOf<List<ExerciseSession>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -1518,7 +2140,7 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
                     Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF111728), RoundedCornerShape(8.dp)).padding(12.dp)) {
                         Column {
                             Text(
-                                "Vs other lifters at 191 lbs", fontSize = 11.sp, color = Color(0xFF6b7689),
+                                "Vs other lifters at 191 lbs (age 35)", fontSize = 11.sp, color = Color(0xFF6b7689),
                                 letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 10.dp)
                             )
                             GymStrengthBar(level = exercise.strengthLevel, percentile = exercise.strengthPercentile)
