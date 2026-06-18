@@ -476,20 +476,49 @@ fun RoutineQuestItem(q: RoutineQuest) {
 fun NotepadScreen(onBack: () -> Unit) {
     var noteText by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
-    var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var savedFlash by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("Saved") }
+    var loaded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var lastSaved by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         try {
             val response = fetchFromApi("/api/notepad")
             val obj = Gson().fromJson(response, Map::class.java)
             noteText = obj["content"] as? String ?: ""
+            lastSaved = noteText
+            loaded = true
             loading = false
         } catch (e: Exception) {
             error = e.message
             loading = false
+        }
+    }
+
+    // Debounced autosave: 1.5s after the last edit
+    LaunchedEffect(noteText) {
+        if (!loaded) return@LaunchedEffect
+        if (noteText == lastSaved) return@LaunchedEffect
+        status = "Editing..."
+        kotlinx.coroutines.delay(1500)
+        status = "Saving..."
+        try {
+            kotlinx.coroutines.withContext(Dispatchers.IO) { saveNotepad(noteText) }
+            lastSaved = noteText
+            status = "Saved"
+        } catch (e: Exception) {
+            status = "Save failed"
+        }
+    }
+
+    // Save on exit
+    DisposableEffect(Unit) {
+        onDispose {
+            if (loaded && noteText != lastSaved) {
+                val toSave = noteText
+                scope.launch(Dispatchers.IO) { try { saveNotepad(toSave) } catch (e: Exception) {} }
+            }
         }
     }
 
@@ -503,7 +532,10 @@ fun NotepadScreen(onBack: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Notepad", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Column {
+                    Text(text = "Notepad", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(text = status, fontSize = 12.sp, color = Color(0xFF4CAF50))
+                }
                 Text(
                     text = "Back",
                     fontSize = 14.sp,
@@ -525,7 +557,7 @@ fun NotepadScreen(onBack: () -> Unit) {
                 Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
                     OutlinedTextField(
                         value = noteText,
-                        onValueChange = { noteText = it; savedFlash = false },
+                        onValueChange = { noteText = it },
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         placeholder = { Text("Type your notes here...", color = Color(0xFF555577)) },
                         textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
@@ -535,33 +567,6 @@ fun NotepadScreen(onBack: () -> Unit) {
                             cursorColor = Color(0xFFFFD700)
                         )
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF1a2a1a))
-                            .clickable(enabled = !saving) {
-                                saving = true
-                                scope.launch(Dispatchers.IO) {
-                                    try {
-                                        saveNotepad(noteText)
-                                        savedFlash = true
-                                    } catch (e: Exception) {
-                                        error = e.message
-                                    } finally {
-                                        saving = false
-                                    }
-                                }
-                            }
-                            .padding(horizontal = 22.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = if (savedFlash) "Saved ✓" else if (saving) "Saving..." else "Save",
-                            color = Color(0xFF4CAF50),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }
@@ -587,20 +592,47 @@ fun saveNotepad(content: String) {
 fun NofapNotepadScreen(onBack: () -> Unit) {
     var noteText by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
-    var saving by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var savedFlash by remember { mutableStateOf(false) }
+    var status by remember { mutableStateOf("Saved") }
+    var loaded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var lastSaved by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         try {
             val response = fetchFromApi("/api/nofap-notepad")
             val obj = Gson().fromJson(response, Map::class.java)
             noteText = obj["content"] as? String ?: ""
+            lastSaved = noteText
+            loaded = true
             loading = false
         } catch (e: Exception) {
             error = e.message
             loading = false
+        }
+    }
+
+    LaunchedEffect(noteText) {
+        if (!loaded) return@LaunchedEffect
+        if (noteText == lastSaved) return@LaunchedEffect
+        status = "Editing..."
+        kotlinx.coroutines.delay(1500)
+        status = "Saving..."
+        try {
+            kotlinx.coroutines.withContext(Dispatchers.IO) { saveNofapNotepad(noteText) }
+            lastSaved = noteText
+            status = "Saved"
+        } catch (e: Exception) {
+            status = "Save failed"
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            if (loaded && noteText != lastSaved) {
+                val toSave = noteText
+                scope.launch(Dispatchers.IO) { try { saveNofapNotepad(toSave) } catch (e: Exception) {} }
+            }
         }
     }
 
@@ -614,7 +646,10 @@ fun NofapNotepadScreen(onBack: () -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "Notes", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Column {
+                    Text(text = "Notes", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text(text = status, fontSize = 12.sp, color = Color(0xFF4CAF50))
+                }
                 Text(
                     text = "Back",
                     fontSize = 14.sp,
@@ -636,7 +671,7 @@ fun NofapNotepadScreen(onBack: () -> Unit) {
                 Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
                     OutlinedTextField(
                         value = noteText,
-                        onValueChange = { noteText = it; savedFlash = false },
+                        onValueChange = { noteText = it },
                         modifier = Modifier.fillMaxWidth().weight(1f),
                         placeholder = { Text("Type your notes here...", color = Color(0xFF555577)) },
                         textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
@@ -646,33 +681,6 @@ fun NofapNotepadScreen(onBack: () -> Unit) {
                             cursorColor = Color(0xFFFFD700)
                         )
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF1a2a1a))
-                            .clickable(enabled = !saving) {
-                                saving = true
-                                scope.launch(Dispatchers.IO) {
-                                    try {
-                                        saveNofapNotepad(noteText)
-                                        savedFlash = true
-                                    } catch (e: Exception) {
-                                        error = e.message
-                                    } finally {
-                                        saving = false
-                                    }
-                                }
-                            }
-                            .padding(horizontal = 22.dp, vertical = 10.dp)
-                    ) {
-                        Text(
-                            text = if (savedFlash) "Saved ✓" else if (saving) "Saving..." else "Save",
-                            color = Color(0xFF4CAF50),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
         }

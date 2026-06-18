@@ -209,6 +209,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
     var incomeLabels by remember { mutableStateOf<Map<String, Double>>(emptyMap()) }
     var pendingDeleteMonth by remember { mutableStateOf<BookkeepingMonth?>(null) }
     var notesText by remember { mutableStateOf("") }
+    var notesStatus by remember { mutableStateOf("Saved") }
     var isLoading by remember { mutableStateOf(true) }
     var errorMsg by remember { mutableStateOf<String?>(null) }
 
@@ -286,6 +287,27 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
 
     val totalIncome = FIXED_INCOME.values.sum() + speedxTotal
     val totalExpenses = bills.filter { it.status != "ON HOLD" && it.groupName != "People" }.sumOf { it.amount }
+
+    // Debounced autosave for month notes (only when text differs from the loaded month's notes)
+    LaunchedEffect(notesText, selectedMonth?.id) {
+        val m = selectedMonth ?: return@LaunchedEffect
+        if (notesText == m.notes) return@LaunchedEffect
+        notesStatus = "Editing..."
+        kotlinx.coroutines.delay(1500)
+        if (notesText == (selectedMonth?.notes ?: "")) return@LaunchedEffect
+        notesStatus = "Saving..."
+        try {
+            val mId = m.id
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                saveMonthNotes(baseUrl, mId, notesText)
+            }
+            selectedMonth = selectedMonth?.copy(notes = notesText)
+            months = months.map { if (it.id == mId) it.copy(notes = notesText) else it }
+            notesStatus = "Saved"
+        } catch (e: Exception) {
+            notesStatus = "Save failed"
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A))) {
         // Header
@@ -370,7 +392,13 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
 
                             Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF12122A)).padding(12.dp)) {
-                                Text("Notes", fontSize = 11.sp, color = Color(0xFF888899))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Notes", fontSize = 11.sp, color = Color(0xFF888899))
+                                    Text(notesStatus, fontSize = 11.sp, color = Color(0xFF4CAF50))
+                                }
                                 OutlinedTextField(
                                     value = notesText,
                                     onValueChange = { notesText = it },
@@ -384,27 +412,6 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                     ),
                                     minLines = 2
                                 )
-                                Box(
-                                    modifier = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(6.dp))
-                                        .background(Color(0xFF1a2a1a))
-                                        .clickable {
-                                            val mId = selectedMonth?.id
-                                            if (mId != null) {
-                                                selectedMonth = selectedMonth?.copy(notes = notesText)
-                                                months = months.map { if (it.id == mId) it.copy(notes = notesText) else it }
-                                                scope.launch {
-                                                    try {
-                                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                            saveMonthNotes(baseUrl, mId, notesText)
-                                                        }
-                                                    } catch (e: Exception) { errorMsg = e.message }
-                                                }
-                                            }
-                                        }
-                                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                                ) {
-                                    Text("Save", color = Color(0xFF4CAF50), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                                }
                             }
                         }
                     }
