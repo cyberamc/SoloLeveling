@@ -33,7 +33,8 @@ data class BookkeepingBill(
     val name: String,
     val amount: Double,
     val status: String,
-    val sortOrder: Int
+    val sortOrder: Int,
+    val autopay: Boolean = false
 )
 
 data class BookkeepingMonth(
@@ -43,13 +44,13 @@ data class BookkeepingMonth(
     val notes: String = ""
 )
 
-val BILL_STATUSES = listOf("NOT PAID", "PAID", "AUTOPAY", "ON HOLD")
+val BILL_STATUSES = listOf("NOT PAID", "PAID", "ON HOLD")
 val STATUS_COLORS = mapOf(
     "PAID" to Color(0xFF4CAF50),
     "NOT PAID" to Color(0xFF888899),
-    "AUTOPAY" to Color(0xFFD4B84A),
     "ON HOLD" to Color(0xFF8B6914)
 )
+val AUTOPAY_BADGE_COLOR = Color(0xFFD4B84A)
 
 // Counts toward Total Income (+ speedxTotal added separately)
 val FIXED_INCOME = mapOf(
@@ -118,7 +119,8 @@ fun fetchBookkeepingDetail(baseUrl: String, monthId: Int): BookkeepingDetail {
                 name = b.getString("name"),
                 amount = b.getDouble("amount"),
                 status = b.getString("status"),
-                sortOrder = b.getInt("sort_order")
+                sortOrder = b.getInt("sort_order"),
+                autopay = b.optInt("autopay", 0) == 1
             )
         }
         val speedxByCheck = mutableMapOf<String, Double>()
@@ -152,7 +154,8 @@ fun patchBillStatus(baseUrl: String, id: Int, status: String): BookkeepingBill {
             name = b.getString("name"),
             amount = b.getDouble("amount"),
             status = b.getString("status"),
-            sortOrder = b.getInt("sort_order")
+            sortOrder = b.getInt("sort_order"),
+            autopay = b.optInt("autopay", 0) == 1
         )
     } finally { conn.disconnect() }
 }
@@ -487,8 +490,18 @@ fun BillRow(bill: BookkeepingBill, onStatusCycle: (String) -> Unit) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(bill.name, fontSize = 13.sp, color = Color(0xFFCCCCDD),
-            modifier = Modifier.weight(1f).padding(end = 8.dp))
+        Row(modifier = Modifier.weight(1f).padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(bill.name, fontSize = 13.sp, color = Color(0xFFCCCCDD))
+            if (bill.autopay) {
+                Box(
+                    modifier = Modifier.padding(start = 6.dp).clip(RoundedCornerShape(4.dp))
+                        .background(AUTOPAY_BADGE_COLOR.copy(alpha = 0.13f))
+                        .padding(horizontal = 5.dp, vertical = 1.dp)
+                ) {
+                    Text("AUTOPAY", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = AUTOPAY_BADGE_COLOR)
+                }
+            }
+        }
         Text("$${bill.amount.toInt()}", fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
             color = Color.White, modifier = Modifier.padding(end = 8.dp))
         Box(
