@@ -24,6 +24,10 @@ class MainActivity : ComponentActivity() {
         ensureNotificationPermission()
         SleepReminder.scheduleAll(this)
 
+        // Task reminder: channel + schedule daily 8 PM (live remaining-task count)
+        TaskReminder.createChannel(this)
+        TaskReminder.schedule(this)
+
         setContent {
             MainTabScreen()
         }

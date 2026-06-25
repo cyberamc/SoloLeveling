@@ -53,12 +53,14 @@ data class DeliveryWeek(
     val wedDuplicates: Int,
     val wedUndeliverable: Int,
     val tueRoute324: Boolean = false,
-    val wedRoute324: Boolean = false
+    val wedRoute324: Boolean = false,
+    val tueRoute121: Boolean = false,
+    val wedRoute121: Boolean = false
 ) {
     val tueBillable: Int get() = maxOf(0, tueDelivered - tueDuplicates - tueUndeliverable)
     val wedBillable: Int get() = maxOf(0, wedDelivered - wedDuplicates - wedUndeliverable)
-    val tueRate: Double get() = if (tueRoute324) 1.90 else 1.60
-    val wedRate: Double get() = if (wedRoute324) 1.90 else 1.60
+    val tueRate: Double get() = if (tueRoute324) 1.90 else if (tueRoute121) 1.80 else 1.60
+    val wedRate: Double get() = if (wedRoute324) 1.90 else if (wedRoute121) 1.80 else 1.60
     val totalBillable: Int get() = tueBillable + wedBillable
     val tuePay: Double get() = tueBillable * tueRate
     val wedPay: Double get() = wedBillable * wedRate
@@ -114,7 +116,9 @@ fun fetchDeliveryWeeks(baseUrl: String, monthId: Int? = null): List<DeliveryWeek
                 wedDuplicates = obj.getInt("wed_duplicates"),
                 wedUndeliverable = obj.getInt("wed_undeliverable"),
                 tueRoute324 = obj.optInt("tue_route324", 0) == 1,
-                wedRoute324 = obj.optInt("wed_route324", 0) == 1
+                wedRoute324 = obj.optInt("wed_route324", 0) == 1,
+                tueRoute121 = obj.optInt("tue_route121", 0) == 1,
+                wedRoute121 = obj.optInt("wed_route121", 0) == 1
             )
         }
     } finally {
@@ -140,6 +144,8 @@ fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
             put("wed_undeliverable", week.wedUndeliverable)
             put("tue_route324", if (week.tueRoute324) 1 else 0)
             put("wed_route324", if (week.wedRoute324) 1 else 0)
+            put("tue_route121", if (week.tueRoute121) 1 else 0)
+            put("wed_route121", if (week.wedRoute121) 1 else 0)
         }.toString()
         conn.outputStream.use { it.write(body.toByteArray()) }
         val text = conn.inputStream.bufferedReader().readText()
@@ -155,7 +161,9 @@ fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
             wedDuplicates = obj.getInt("wed_duplicates"),
             wedUndeliverable = obj.getInt("wed_undeliverable"),
             tueRoute324 = obj.optInt("tue_route324", 0) == 1,
-            wedRoute324 = obj.optInt("wed_route324", 0) == 1
+            wedRoute324 = obj.optInt("wed_route324", 0) == 1,
+            tueRoute121 = obj.optInt("tue_route121", 0) == 1,
+            wedRoute121 = obj.optInt("wed_route121", 0) == 1
         )
     } finally {
         conn.disconnect()
@@ -185,8 +193,9 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
     var wedDelivered by remember(week) { mutableStateOf(week.wedDelivered.toString()) }
     var wedDuplicates by remember(week) { mutableStateOf(week.wedDuplicates.toString()) }
     var wedUndeliverable by remember(week) { mutableStateOf(week.wedUndeliverable.toString()) }
-    var tueRoute324 by remember(week) { mutableStateOf(week.tueRoute324) }
-    var wedRoute324 by remember(week) { mutableStateOf(week.wedRoute324) }
+    // Rate state per day: 0 = Standard ($1.60), 1 = Route 324 ($1.90), 2 = Route 121 ($1.80)
+    var tueRateMode by remember(week) { mutableStateOf(if (week.tueRoute324) 1 else if (week.tueRoute121) 2 else 0) }
+    var wedRateMode by remember(week) { mutableStateOf(if (week.wedRoute324) 1 else if (week.wedRoute121) 2 else 0) }
 
     Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF12122A))) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -204,9 +213,10 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
 
             if (expandedDay == "tue") {
                 Spacer(Modifier.height(10.dp))
-                Route324Toggle(checked = tueRoute324, onCheckedChange = { tueRoute324 = it })
+                RouteRateSelector(mode = tueRateMode, onCycle = { tueRateMode = (tueRateMode + 1) % 3 })
                 Spacer(Modifier.height(10.dp))
                 DeliveryInputRow(delivered = tueDelivered, duplicates = tueDuplicates, undeliverable = tueUndeliverable,
+                    rate = rateForMode(tueRateMode),
                     onDeliveredChange = { tueDelivered = it }, onDuplicatesChange = { tueDuplicates = it },
                     onUndeliverableChange = { tueUndeliverable = it },
                     onSave = {
@@ -214,7 +224,8 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
                         onSave(week.copy(tueDelivered = tueDelivered.toIntOrNull() ?: 0,
                             tueDuplicates = tueDuplicates.toIntOrNull() ?: 0,
                             tueUndeliverable = tueUndeliverable.toIntOrNull() ?: 0,
-                            tueRoute324 = tueRoute324))
+                            tueRoute324 = tueRateMode == 1,
+                            tueRoute121 = tueRateMode == 2))
                     })
                 Spacer(Modifier.height(10.dp))
             }
@@ -226,9 +237,10 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
 
             if (expandedDay == "wed") {
                 Spacer(Modifier.height(10.dp))
-                Route324Toggle(checked = wedRoute324, onCheckedChange = { wedRoute324 = it })
+                RouteRateSelector(mode = wedRateMode, onCycle = { wedRateMode = (wedRateMode + 1) % 3 })
                 Spacer(Modifier.height(10.dp))
                 DeliveryInputRow(delivered = wedDelivered, duplicates = wedDuplicates, undeliverable = wedUndeliverable,
+                    rate = rateForMode(wedRateMode),
                     onDeliveredChange = { wedDelivered = it }, onDuplicatesChange = { wedDuplicates = it },
                     onUndeliverableChange = { wedUndeliverable = it },
                     onSave = {
@@ -236,7 +248,8 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
                         onSave(week.copy(wedDelivered = wedDelivered.toIntOrNull() ?: 0,
                             wedDuplicates = wedDuplicates.toIntOrNull() ?: 0,
                             wedUndeliverable = wedUndeliverable.toIntOrNull() ?: 0,
-                            wedRoute324 = wedRoute324))
+                            wedRoute324 = wedRateMode == 1,
+                            wedRoute121 = wedRateMode == 2))
                     })
                 Spacer(Modifier.height(10.dp))
             }
@@ -261,31 +274,36 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
 }
 
 @Composable
-fun Route324Toggle(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+fun rateForMode(mode: Int): Double = when (mode) { 1 -> 1.90; 2 -> 1.80; else -> 1.60 }
+
+@Composable
+fun RouteRateSelector(mode: Int, onCycle: () -> Unit) {
+    val label = when (mode) {
+        1 -> "$1.90 · Route 324"
+        2 -> "$1.80 · Route 121"
+        else -> "$1.60 · Standard"
+    }
+    val accent = when (mode) {
+        1 -> Color(0xFF4CAF50)
+        2 -> Color(0xFFD4B84A)
+        else -> Color(0xFFB0B0B0)
+    }
+    val bg = when (mode) {
+        1 -> Color(0x1A4CAF50)
+        2 -> Color(0x1AD4B84A)
+        else -> Color(0xFF0e0e1e)
+    }
     Row(
         modifier = Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(if (checked) Color(0x1A4CAF50) else Color(0xFF0e0e1e))
+            .background(bg)
+            .clickable { onCycle() }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = if (checked) "$1.90 · Route 324" else "$1.60 · Standard",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (checked) Color(0xFF4CAF50) else Color(0xFFB0B0B0)
-        )
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF4CAF50),
-                uncheckedThumbColor = Color(0xFFB0B0B0),
-                uncheckedTrackColor = Color(0xFF2a2a3a)
-            )
-        )
+        Text(text = label, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = accent)
+        Text(text = "Tap to change ▸", fontSize = 11.sp, color = Color(0xFF7B8CDE))
     }
 }
 
@@ -307,6 +325,7 @@ fun DayRow(label: String, billable: Int, pay: Double, isExpanded: Boolean, onCli
 
 @Composable
 fun DeliveryInputRow(delivered: String, duplicates: String, undeliverable: String,
+                     rate: Double,
                      onDeliveredChange: (String) -> Unit, onDuplicatesChange: (String) -> Unit,
                      onUndeliverableChange: (String) -> Unit, onSave: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF0e0e1e)).padding(12.dp)) {
@@ -320,7 +339,7 @@ fun DeliveryInputRow(delivered: String, duplicates: String, undeliverable: Strin
         val dup = duplicates.toIntOrNull() ?: 0
         val und = undeliverable.toIntOrNull() ?: 0
         val billable = maxOf(0, del - dup - und)
-        val pay = billable * 1.60
+        val pay = billable * rate
         Text(text = "$del - $dup - $und = $billable packages → $${String.format("%.2f", pay)}",
             fontSize = 12.sp, color = Color(0xFF7B8CDE), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))
