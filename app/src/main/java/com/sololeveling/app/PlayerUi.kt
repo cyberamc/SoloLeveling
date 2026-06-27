@@ -211,21 +211,29 @@ fun TasksScreen() {
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} required$overdueText",
-                fontSize = 13.sp,
-                color = Color(0xFFFFD700)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.pointerInput(Unit) {
-                    detectTapGestures(onLongPress = { showNofapNotepad = true })
-                }
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "🔥", fontSize = 13.sp)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                Text(
+                    text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} required$overdueText",
+                    fontSize = 13.sp,
+                    color = Color(0xFFFFD700)
+                )
+                Text(
+                    text = "  ·  ",
+                    fontSize = 13.sp,
+                    color = Color(0xFFFFD700)
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.pointerInput(Unit) {
+                        detectTapGestures(onLongPress = { showNofapNotepad = true })
+                    }
+                ) {
+                    Text(text = "🔥", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                }
             }
         }
 
@@ -454,33 +462,34 @@ fun RoutineQuestItem(q: RoutineQuest) {
                 fontWeight = FontWeight.Medium,
                 color = Color.White
             )
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(text = "${q.xpReward} XP", fontSize = 11.sp, color = Color(0xFFFFD700))
-                if (q.kind == "required") {
-                    Text(
-                        text = "Required",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFa78bfa),
-                        modifier = Modifier
-                            .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-                if (q.optional) {
-                    Text(
-                        text = "Optional",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFB0B0B0),
-                        modifier = Modifier
-                            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+            if (q.kind == "required" || q.optional) {
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (q.kind == "required") {
+                        Text(
+                            text = "Required",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFa78bfa),
+                            modifier = Modifier
+                                .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    if (q.optional) {
+                        Text(
+                            text = "Optional",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFB0B0B0),
+                            modifier = Modifier
+                                .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             }
         }

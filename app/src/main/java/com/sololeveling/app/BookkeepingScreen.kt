@@ -424,11 +424,22 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                     val orderedGroups = (GROUP_ORDER.filter { groupedBills.containsKey(it) } +
                             groupedBills.keys.filter { !GROUP_ORDER.contains(it) }).filter { it != "Plasma" }
 
+                    // People reimbursements fund the Subscriptions bucket
+                    val peopleFunding = (groupedBills["People"] ?: emptyList())
+                        .filter { it.status != "ON HOLD" }.sumOf { it.amount }
+
                     items(orderedGroups) { groupName ->
                         val groupBills = groupedBills[groupName] ?: return@items
                         val income = speedxByCheck[groupName] ?: incomeLabels[groupName]
                         val groupTotal = groupBills.filter { it.status != "ON HOLD" }.sumOf { it.amount }
                         val showIncomeLine = income != null && groupName !in NO_REMAINING_GROUPS
+                        // Remaining after bills, mirroring web: income-bearing cards use their
+                        // income; Subscriptions uses People funding; People (and others) show none.
+                        val remaining: Double? = when {
+                            income != null && groupName != "People" && groupName != "Subscriptions" -> income - groupTotal
+                            groupName == "Subscriptions" -> peopleFunding - groupTotal
+                            else -> null
+                        }
 
                         Column(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
@@ -442,6 +453,12 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                 if (showIncomeLine) {
                                     Text("$${income!!.toInt()} income · $${groupTotal.toInt()} bills",
                                         fontSize = 11.sp, color = Color(0xFF888899))
+                                } else if (groupName == "People") {
+                                    Text("Owed: $${groupTotal.toInt()}",
+                                        fontSize = 11.sp, color = Color(0xFF4CAF50))
+                                } else if (groupName == "Subscriptions") {
+                                    Text("$${peopleFunding.toInt()} from People · $${groupTotal.toInt()} bills",
+                                        fontSize = 11.sp, color = Color(0xFF4CAF50))
                                 }
                             }
                             Spacer(Modifier.height(8.dp))
@@ -459,6 +476,11 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                         }
                                     }
                                 })
+                            }
+                            if (remaining != null) {
+                                Spacer(Modifier.height(6.dp))
+                                Text("Remaining after bills: $${"%.2f".format(remaining)}",
+                                    fontSize = 11.sp, color = Color(0xFF888899))
                             }
                         }
                     }
