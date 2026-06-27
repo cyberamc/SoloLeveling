@@ -325,7 +325,8 @@ data class RoutineQuest(
     val category: String,
     val xpReward: Int,
     val optional: Boolean,
-    val kind: String // "daily" or "required"
+    val kind: String, // "daily" or "required"
+    val important: Boolean = false
 )
 
 @Composable
@@ -359,7 +360,8 @@ fun RoutineScreen(onBack: () -> Unit) {
                     category = q["category"] as? String ?: "STR",
                     xpReward = (q["xp_reward"] as? Number)?.toInt() ?: 0,
                     optional = ((q["optional"] as? Number)?.toInt() ?: 0) == 1,
-                    kind = q["kind"] as? String ?: "daily"
+                    kind = q["kind"] as? String ?: "daily",
+                    important = ((q["important"] as? Number)?.toInt() ?: 0) == 1
                 )
             }
             loading = false
@@ -462,7 +464,7 @@ fun RoutineQuestItem(q: RoutineQuest) {
                 fontWeight = FontWeight.Medium,
                 color = Color.White
             )
-            if (q.kind == "required" || q.optional) {
+            if (q.kind == "required" || q.optional || q.important) {
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -487,6 +489,17 @@ fun RoutineQuestItem(q: RoutineQuest) {
                             color = Color(0xFFB0B0B0),
                             modifier = Modifier
                                 .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    if (q.important) {
+                        Text(
+                            text = "Don't Skip",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFF59E0B),
+                            modifier = Modifier
+                                .background(Color(0x26F59E0B), shape = RoundedCornerShape(6.dp))
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         )
                     }
@@ -1007,6 +1020,17 @@ fun QuestItem(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
+                if (quest.important) {
+                    Text(
+                        text = "Don't Skip",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF59E0B),
+                        modifier = Modifier
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(6.dp))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -1028,7 +1052,8 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                     goldReward = (it["gold_reward"] as? Number)?.toInt() ?: 0,
                     completed = ((it["completed"] as? Number)?.toInt() ?: 0) == 1,
                     streak = (it["streak"] as? Number)?.toInt() ?: 0,
-                    optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1
+                    optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1,
+                    important = ((it["important"] as? Number)?.toInt() ?: 0) == 1
                 )
             } else null
         } ?: emptyList()
