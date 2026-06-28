@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
@@ -81,6 +82,7 @@ fun TasksScreen() {
     var showNotepad by remember { mutableStateOf(false) }
     var showSideTasks by remember { mutableStateOf(false) }
     var showNofapNotepad by remember { mutableStateOf(false) }
+    var showGoingOut by remember { mutableStateOf(false) }
 
     if (showRoutine) {
         RoutineScreen(onBack = { showRoutine = false })
@@ -92,6 +94,10 @@ fun TasksScreen() {
     }
     if (showSideTasks) {
         SideTasksScreen(onBack = { showSideTasks = false })
+        return
+    }
+    if (showGoingOut) {
+        GoingOutScreen(onBack = { showGoingOut = false })
         return
     }
     if (showNofapNotepad) {
@@ -163,44 +169,52 @@ fun TasksScreen() {
                 .systemBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
+            Text(text = "Tasks", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
-                Text(text = "Tasks", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Side Tasks",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFD700),
-                        modifier = Modifier
-                            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
-                            .clickable { showSideTasks = true }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                    Text(
-                        text = "Notepad",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFD700),
-                        modifier = Modifier
-                            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
-                            .clickable { showNotepad = true }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                    Text(
-                        text = "View Routine",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFD700),
-                        modifier = Modifier
-                            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
-                            .clickable { showRoutine = true }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    )
-                }
+                Text(
+                    text = "Going Out",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFF59E0B),
+                    modifier = Modifier
+                        .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                        .clickable { showGoingOut = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+                Text(
+                    text = "Side Tasks",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier
+                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                        .clickable { showSideTasks = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+                Text(
+                    text = "Notepad",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier
+                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                        .clickable { showNotepad = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+                Text(
+                    text = "View Routine",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier
+                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                        .clickable { showRoutine = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -739,6 +753,175 @@ fun saveSideTasks(content: String) {
         conn.outputStream.use { it.write(payload.toByteArray()) }
         conn.responseCode
     } finally { conn.disconnect() }
+}
+
+@Composable
+fun GoingOutScreen(onBack: () -> Unit) {
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var armable by remember { mutableStateOf<String?>(null) }   // "SAT" | "SUN" | null
+    var armedDay by remember { mutableStateOf<String?>(null) }  // currently armed target
+    var armedDate by remember { mutableStateOf<String?>(null) }
+    var working by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    // Checklist items. The funnel item only applies when arming for Saturday.
+    // checkedState keyed by item index.
+    val checked = remember { mutableStateMapOf<Int, Boolean>() }
+
+    suspend fun refresh() {
+        try {
+            val resp = fetchFromApi("/api/protocol")
+            val obj = Gson().fromJson(resp, Map::class.java)
+            armable = obj["armable"] as? String
+            armedDay = obj["armedDay"] as? String
+            armedDate = obj["armedDate"] as? String
+            loading = false
+        } catch (e: Exception) {
+            error = e.message
+            loading = false
+        }
+    }
+
+    LaunchedEffect(Unit) { refresh() }
+
+    // Build the applicable checklist for the day we'd arm for.
+    // Funnel item (index 0) is Saturday-only.
+    val items = remember(armable) {
+        buildList {
+            if (armable == "SAT") add("Prepare funnel container with rest day pre-workout & supplements")
+            add("Prepare hydration & soda (if needed)")
+            add("Prepare green for ride home")
+        }
+    }
+    val allChecked = items.indices.all { checked[it] == true }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
+                .systemBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(text = "Going Out", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    text = "Back",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier.clickable { onBack() }
+                )
+            }
+        }
+
+        when {
+            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFFF59E0B))
+            }
+            error != null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $error", color = Color.Red)
+            }
+            else -> {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Armed banner
+                    if (armedDay != null) {
+                        val dayLabel = if (armedDay == "SAT") "Saturday" else "Sunday"
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(Color(0x26F59E0B), shape = RoundedCornerShape(10.dp))
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text("✓ Going-Out Protocol armed for $dayLabel",
+                                fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF59E0B))
+                            Text("Tomorrow's routine will be replaced with the recovery routine.",
+                                fontSize = 13.sp, color = Color(0xFFB0B0B0))
+                            Text(
+                                text = if (working) "Working..." else "Cancel protocol",
+                                fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFFCA5A5),
+                                modifier = Modifier.clickable(enabled = !working) {
+                                    working = true
+                                    scope.launch {
+                                        try { postToApi("/api/protocol/disarm"); refresh() }
+                                        catch (e: Exception) { error = e.message }
+                                        finally { working = false }
+                                    }
+                                }
+                            )
+                        }
+                    } else if (armable == null) {
+                        // Not Fri or Sat night — can't arm
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text("Protocol can only be armed on Friday or Saturday night.",
+                                fontSize = 14.sp, color = Color(0xFFB0B0B0))
+                        }
+                    } else {
+                        // Armable: show checklist + arm button
+                        val dayLabel = if (armable == "SAT") "Saturday" else "Sunday"
+                        Text("Prep checklist for $dayLabel",
+                            fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Text("Complete all items to arm the protocol.",
+                            fontSize = 13.sp, color = Color(0xFFB0B0B0))
+
+                        items.forEachIndexed { i, label ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp))
+                                    .clickable { checked[i] = !(checked[i] ?: false) }
+                                    .padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = if (checked[i] == true) "☑" else "☐",
+                                    fontSize = 20.sp,
+                                    color = if (checked[i] == true) Color(0xFF4CAF50) else Color(0xFF888899)
+                                )
+                                Text(label, fontSize = 14.sp, color = Color.White,
+                                    modifier = Modifier.weight(1f))
+                            }
+                        }
+
+                        Spacer(Modifier.height(4.dp))
+                        val armEnabled = allChecked && !working
+                        Box(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(
+                                    if (armEnabled) Color(0xFFF59E0B) else Color(0xFF2a2a2a),
+                                    shape = RoundedCornerShape(10.dp)
+                                )
+                                .clickable(enabled = armEnabled) {
+                                    working = true
+                                    scope.launch {
+                                        try { postToApi("/api/protocol/arm"); refresh() }
+                                        catch (e: Exception) { error = e.message }
+                                        finally { working = false }
+                                    }
+                                }
+                                .padding(vertical = 14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (working) "Arming..." else "Arm Going-Out Protocol",
+                                fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                                color = if (armEnabled) Color(0xFF1a1a1a) else Color(0xFF666677)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
