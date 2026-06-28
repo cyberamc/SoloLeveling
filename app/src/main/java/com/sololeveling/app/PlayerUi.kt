@@ -355,7 +355,8 @@ data class RoutineQuest(
     val xpReward: Int,
     val optional: Boolean,
     val kind: String, // "daily" or "required"
-    val important: Boolean = false
+    val important: Boolean = false,
+    val monthly: Boolean = false
 )
 
 @Composable
@@ -390,7 +391,8 @@ fun RoutineScreen(onBack: () -> Unit) {
                     xpReward = (q["xp_reward"] as? Number)?.toInt() ?: 0,
                     optional = ((q["optional"] as? Number)?.toInt() ?: 0) == 1,
                     kind = q["kind"] as? String ?: "daily",
-                    important = ((q["important"] as? Number)?.toInt() ?: 0) == 1
+                    important = ((q["important"] as? Number)?.toInt() ?: 0) == 1,
+                    monthly = ((q["monthly"] as? Number)?.toInt() ?: 0) == 1
                 )
             }
             loading = false
@@ -500,15 +502,27 @@ fun RoutineQuestItem(q: RoutineQuest) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (q.kind == "required") {
-                        Text(
-                            text = "Required",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFFa78bfa),
-                            modifier = Modifier
-                                .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
+                        if (q.monthly) {
+                            Text(
+                                text = "Monthly",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2DD4BF),
+                                modifier = Modifier
+                                    .background(Color(0x262DD4BF), shape = RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "Required",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFa78bfa),
+                                modifier = Modifier
+                                    .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                     if (q.optional) {
                         Text(
@@ -1197,15 +1211,27 @@ fun QuestItem(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (isWeekly) {
-                    Text(
-                        text = "Required",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFa78bfa),
-                        modifier = Modifier
-                            .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    if (quest.monthly) {
+                        Text(
+                            text = "Monthly",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2DD4BF),
+                            modifier = Modifier
+                                .background(Color(0x262DD4BF), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    } else {
+                        Text(
+                            text = "Required",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color(0xFFa78bfa),
+                            modifier = Modifier
+                                .background(Color(0x26a78bfa), shape = RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
                 if (quest.optional) {
                     Text(
@@ -1293,7 +1319,8 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
                         streak = 0,
                         weekday = (it["weekday"] as? Number)?.toInt() ?: -1,
                         optional = ((it["optional"] as? Number)?.toInt() ?: 0) == 1,
-                        isOverdue = ((it["isOverdue"] as? Number)?.toInt() ?: 0) == 1
+                        isOverdue = ((it["isOverdue"] as? Number)?.toInt() ?: 0) == 1,
+                        monthly = ((it["monthly"] as? Number)?.toInt() ?: 0) == 1
                     )
                 } else null
             }

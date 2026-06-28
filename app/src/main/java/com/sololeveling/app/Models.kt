@@ -45,7 +45,8 @@ data class Quest(
     val weekday: Int = -1,
     val optional: Boolean = false,
     val isOverdue: Boolean = false,
-    val important: Boolean = false
+    val important: Boolean = false,
+    val monthly: Boolean = false
 )
 
 data class QuestResponse(
