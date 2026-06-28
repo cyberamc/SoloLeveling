@@ -220,7 +220,7 @@ fun TasksScreen() {
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "\"The pain of discipline or the pain of regret.\"",
+                text = "\"The Pain Of Discipline Or The Pain Of Regret.\"",
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 color = Color.White,
@@ -231,7 +231,7 @@ fun TasksScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "$requiredDailiesCompleted/${requiredDailies.size} daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} required$overdueText",
+                    text = "$requiredDailiesCompleted/${requiredDailies.size} Daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} Required$overdueText",
                     fontSize = 13.sp,
                     color = Color(0xFFFFD700)
                 )
@@ -422,7 +422,7 @@ fun RoutineScreen(onBack: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "$dailyCount daily · $requiredCount required",
+                text = "$dailyCount Daily · $requiredCount Required",
                 fontSize = 13.sp,
                 color = Color(0xFFFFD700)
             )
