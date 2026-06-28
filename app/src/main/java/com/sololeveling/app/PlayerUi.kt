@@ -1311,7 +1311,7 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
         val armedDay = proto?.get("armedDay") as? String
         fun dayLabel(d: String?) = if (d == "SAT") "Saturday" else if (d == "SUN") "Sunday" else null
         val protocolBannerText: String? = when {
-            activeToday != null -> "Recovery routine active"
+            activeToday != null -> "Recovery Routine Active"
             armedDay != null -> "Going-Out Protocol armed for ${dayLabel(armedDay)}"
             else -> null
         }
