@@ -83,6 +83,7 @@ fun TasksScreen() {
     var showSideTasks by remember { mutableStateOf(false) }
     var showNofapNotepad by remember { mutableStateOf(false) }
     var showGoingOut by remember { mutableStateOf(false) }
+    var protocolBanner by remember { mutableStateOf<String?>(null) }
 
     if (showRoutine) {
         RoutineScreen(onBack = { showRoutine = false })
@@ -121,9 +122,10 @@ fun TasksScreen() {
         if (refreshTrigger == 0) loading = true
         try {
             loadAllQuests(
-                onQuestsLoaded = { daily, weekly, _, _, _ ->
+                onQuestsLoaded = { daily, weekly, _, _, _, banner ->
                     dailyQuestsState = daily
                     allWeeklyQuestsState = weekly
+                    protocolBanner = banner
                     loading = false
                 },
                 onError = { err -> error = err; loading = false }
@@ -248,6 +250,19 @@ fun TasksScreen() {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
                 }
+            }
+            if (protocolBanner != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = protocolBanner!!,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFF59E0B),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
             }
         }
 
@@ -1219,7 +1234,7 @@ fun QuestItem(
     }
 }
 
-suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, Boolean) -> Unit, onError: (String) -> Unit) {
+suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, Boolean, String?) -> Unit, onError: (String) -> Unit) {
     try {
         val response = fetchFromApi("/api/quests")
         val questData = Gson().fromJson(response, Map::class.java)
@@ -1290,10 +1305,21 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
         val weekliesCompleted = (questData["weekliesCompleted"] as? Number)?.toInt() ?: 0
         val hasWeekly = (questData["hasWeeklyQuests"] as? Boolean) ?: false
 
+        // Protocol banner: prioritize "active today" (recovery routine live) over "armed for later".
+        val proto = questData["protocol"] as? Map<*, *>
+        val activeToday = proto?.get("activeToday") as? String
+        val armedDay = proto?.get("armedDay") as? String
+        fun dayLabel(d: String?) = if (d == "SAT") "Saturday" else if (d == "SUN") "Sunday" else null
+        val protocolBannerText: String? = when {
+            activeToday != null -> "Recovery routine active"
+            armedDay != null -> "Going-Out Protocol armed for ${dayLabel(armedDay)}"
+            else -> null
+        }
+
         android.util.Log.d("API_DEBUG", "Daily quests: ${dailyQuestsList.size}, Weekly quests due today: ${weeklyQuestsList.size}, All weekly quests: ${allWeeklyQuestsList.size}")
         android.util.Log.d("QUEST_COMPLETED", "All weekly quests: ${allWeeklyQuestsList.map { "${it.title}: ${it.completed}" }.joinToString(", ")}")
 
-        onQuestsLoaded(dailyQuestsList, allWeeklyQuestsList, dailiesCompleted, weekliesCompleted, hasWeekly)
+        onQuestsLoaded(dailyQuestsList, allWeeklyQuestsList, dailiesCompleted, weekliesCompleted, hasWeekly, protocolBannerText)
     } catch (e: Exception) {
         android.util.Log.e("API_ERROR", "Error loading quests: ${e.message}", e)
         onError(e.message ?: "Unknown error")
