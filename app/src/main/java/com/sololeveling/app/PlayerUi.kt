@@ -1763,7 +1763,6 @@ fun SupplementsScreen() {
                                 "Beta-Alanine" to "3.2g",
                                 "Betaine Anhydrous" to "3g",
                                 "Creatine" to "5g",
-                                "BCAA" to "6g",
                                 "L-Theanine" to "400 mg"
                             )
                         )
@@ -1789,7 +1788,7 @@ fun SupplementsScreen() {
                                 "Creatine" to "5g",
                                 "Beta-Alanine" to "3g",
                                 "Betaine Anhydrous" to "1.5g",
-                                "BCAA" to "6g"
+                                "L-Theanine" to "200 mg"
                             )
                         )
                     )
