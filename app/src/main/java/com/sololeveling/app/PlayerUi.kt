@@ -361,6 +361,7 @@ data class RoutineQuest(
 
 @Composable
 fun RoutineScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     val fullDayNames = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
     val shortDayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
     val todayWeekday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1
@@ -554,6 +555,7 @@ fun RoutineQuestItem(q: RoutineQuest) {
 
 @Composable
 fun NotepadScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     var noteText by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -670,6 +672,7 @@ fun saveNotepad(content: String) {
 
 @Composable
 fun SideTasksScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     var noteText by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -786,6 +789,7 @@ fun saveSideTasks(content: String) {
 
 @Composable
 fun GoingOutScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var armable by remember { mutableStateOf<String?>(null) }   // "SAT" | "SUN" | null
@@ -955,6 +959,7 @@ fun GoingOutScreen(onBack: () -> Unit) {
 
 @Composable
 fun NofapNotepadScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
     var noteText by remember { mutableStateOf("") }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
