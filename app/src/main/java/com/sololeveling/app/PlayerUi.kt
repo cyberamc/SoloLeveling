@@ -80,7 +80,6 @@ fun TasksScreen() {
     var nofapStreak by remember { mutableIntStateOf(0) }
     var showRoutine by remember { mutableStateOf(false) }
     var showNotepad by remember { mutableStateOf(false) }
-    var showSideTasks by remember { mutableStateOf(false) }
     var showNofapNotepad by remember { mutableStateOf(false) }
     var showGoingOut by remember { mutableStateOf(false) }
     var protocolBanner by remember { mutableStateOf<String?>(null) }
@@ -91,10 +90,6 @@ fun TasksScreen() {
     }
     if (showNotepad) {
         NotepadScreen(onBack = { showNotepad = false })
-        return
-    }
-    if (showSideTasks) {
-        SideTasksScreen(onBack = { showSideTasks = false })
         return
     }
     if (showGoingOut) {
@@ -185,16 +180,6 @@ fun TasksScreen() {
                     modifier = Modifier
                         .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
                         .clickable { showGoingOut = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-                Text(
-                    text = "Side Tasks",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
-                    modifier = Modifier
-                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
-                        .clickable { showSideTasks = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
                 Text(
@@ -670,122 +655,6 @@ fun saveNotepad(content: String) {
     } finally { conn.disconnect() }
 }
 
-@Composable
-fun SideTasksScreen(onBack: () -> Unit) {
-    BackHandler { onBack() }
-    var noteText by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var status by remember { mutableStateOf("Saved") }
-    var loaded by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    var lastSaved by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        try {
-            val response = fetchFromApi("/api/side-tasks")
-            val obj = Gson().fromJson(response, Map::class.java)
-            noteText = obj["content"] as? String ?: ""
-            lastSaved = noteText
-            loaded = true
-            loading = false
-        } catch (e: Exception) {
-            error = e.message
-            loading = false
-        }
-    }
-
-    // Debounced autosave: 1.5s after the last edit
-    LaunchedEffect(noteText) {
-        if (!loaded) return@LaunchedEffect
-        if (noteText == lastSaved) return@LaunchedEffect
-        status = "Editing..."
-        kotlinx.coroutines.delay(1500)
-        status = "Saving..."
-        try {
-            kotlinx.coroutines.withContext(Dispatchers.IO) { saveSideTasks(noteText) }
-            lastSaved = noteText
-            status = "Saved"
-        } catch (e: Exception) {
-            status = "Save failed"
-        }
-    }
-
-    // Save on exit
-    DisposableEffect(Unit) {
-        onDispose {
-            if (loaded && noteText != lastSaved) {
-                val toSave = noteText
-                scope.launch(Dispatchers.IO) { try { saveSideTasks(toSave) } catch (e: Exception) {} }
-            }
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
-        Column(
-            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
-                .systemBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(text = "Side Tasks", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(text = status, fontSize = 12.sp, color = Color(0xFF4CAF50))
-                }
-                Text(
-                    text = "Back",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
-                    modifier = Modifier.clickable { onBack() }
-                )
-            }
-        }
-
-        when {
-            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFFD700))
-            }
-            error != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Error: $error", color = Color.Red)
-            }
-            else -> {
-                Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-                    OutlinedTextField(
-                        value = noteText,
-                        onValueChange = { noteText = it },
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        placeholder = { Text("Type your side tasks here...", color = Color(0xFF555577)) },
-                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFFFFD700),
-                            unfocusedBorderColor = Color(0xFF2a2a3a),
-                            cursorColor = Color(0xFFFFD700)
-                        )
-                    )
-                }
-            }
-        }
-    }
-}
-
-fun saveSideTasks(content: String) {
-    val url = URL("https://mysololeveling.us/api/side-tasks")
-    val conn = url.openConnection() as HttpURLConnection
-    conn.requestMethod = "PATCH"
-    conn.setRequestProperty("Content-Type", "application/json")
-    conn.doOutput = true
-    conn.connectTimeout = 5000
-    conn.readTimeout = 5000
-    try {
-        val payload = Gson().toJson(mapOf("content" to content))
-        conn.outputStream.use { it.write(payload.toByteArray()) }
-        conn.responseCode
-    } finally { conn.disconnect() }
-}
 
 @Composable
 fun GoingOutScreen(onBack: () -> Unit) {
