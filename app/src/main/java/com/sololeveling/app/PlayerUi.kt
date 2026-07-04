@@ -1410,8 +1410,35 @@ data class MealStep(
 
 val BREAKFAST_MEALS = listOf(
     Meal(
-        name = "Beef & Eggs",
+        name = "Protein Shake",
         mealType = "Breakfast",
+        macros = Macros(calories = 360, protein = 60, fat = 8, netCarbs = "12"),
+        ingredients = listOf(
+            "2 scoops body fortress whey protein powder",
+            "8 to 12 oz cold water",
+            "2 to 3 ice cubes (optional)"
+        ),
+        steps = listOf(
+            MealStep(
+                "1. Measure the Base",
+                "The Liquid: Pour 8 to 12 oz of cold water into the shaker.\n\n(Optional Tip: If you prefer a thicker shake, stick to 8 oz of water. If you prefer it more fluid, go up to 12 oz. For an ice-cold texture, drop 2 to 3 ice cubes into the liquid.)"
+            ),
+            MealStep(
+                "2. Add the Powder",
+                "The Protein: Using the scoop from your tub, add exactly 2 level scoops of Body Fortress Whey Protein powder on top of the water."
+            ),
+            MealStep(
+                "3. Mix and Emulsify",
+                "The Mix: Screw the lid on tightly and snap the flip-cap completely shut. Mix vigorously for 20 to 30 seconds until the powder is fully dissolved and the shake is completely smooth, frothy, and emulsified. Let it sit for 30 seconds to allow the foam to settle before drinking."
+            )
+        )
+    )
+)
+
+val LUNCH_MEALS = listOf(
+    Meal(
+        name = "Beef & Eggs",
+        mealType = "Lunch",
         macros = Macros(calories = 730, protein = 52, fat = 54, netCarbs = "5"),
         ingredients = listOf(
             "5 oz 80/20 ground beef",
@@ -1432,33 +1459,6 @@ val BREAKFAST_MEALS = listOf(
             MealStep(
                 "2. The Fresh \"Soft-Fold\" Egg Technique",
                 "The Switch: Turn the burner heat down to medium-low. Push the crispy beef and onions to one side of the pan. If the pan looks dry, drop a tiny sliver of butter onto the empty side.\n\nThe Pour: Pour the whisked eggs into the empty side of the pan. Let them sit for about 30 seconds until the edges just start to set.\n\nThe Melt & Fold: Sprinkle 2 oz of shredded cheese evenly over the eggs. Using a spatula, gently push the eggs and cheese from the outside edge toward the center, creating long, folding sheets. As they become semi-solid, gently fold the crispy beef and onions back into the cheesy eggs.\n\nPull the Heat: Turn off the burner while the eggs still look a tiny bit glossy and wet. The residual heat of the pan will finish melting the cheese and cooking the eggs to perfection in the 10 seconds it takes to plate them."
-            )
-        )
-    )
-)
-
-val LUNCH_MEALS = listOf(
-    Meal(
-        name = "Protein Shake",
-        mealType = "Lunch",
-        macros = Macros(calories = 360, protein = 60, fat = 8, netCarbs = "12"),
-        ingredients = listOf(
-            "2 scoops body fortress whey protein powder",
-            "8 to 12 oz cold water",
-            "2 to 3 ice cubes (optional)"
-        ),
-        steps = listOf(
-            MealStep(
-                "1. Measure the Base",
-                "The Liquid: Pour 8 to 12 oz of cold water into the shaker.\n\n(Optional Tip: If you prefer a thicker shake, stick to 8 oz of water. If you prefer it more fluid, go up to 12 oz. For an ice-cold texture, drop 2 to 3 ice cubes into the liquid.)"
-            ),
-            MealStep(
-                "2. Add the Powder",
-                "The Protein: Using the scoop from your tub, add exactly 2 level scoops of Body Fortress Whey Protein powder on top of the water."
-            ),
-            MealStep(
-                "3. Mix and Emulsify",
-                "The Mix: Screw the lid on tightly and snap the flip-cap completely shut. Mix vigorously for 20 to 30 seconds until the powder is fully dissolved and the shake is completely smooth, frothy, and emulsified. Let it sit for 30 seconds to allow the foam to settle before drinking."
             )
         )
     )
@@ -1606,10 +1606,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,070", Modifier.weight(1f))
-                    MacroBox("Protein", "165g", Modifier.weight(1f))
-                    MacroBox("Fat", "141g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "25.5g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,190", Modifier.weight(1f))
+                    MacroBox("Protein", "167g", Modifier.weight(1f))
+                    MacroBox("Fat", "139g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "53.5g", Modifier.weight(1f))
                 }
             }
         }
