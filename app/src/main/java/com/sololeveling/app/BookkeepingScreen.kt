@@ -433,13 +433,13 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                         val income = speedxByCheck[groupName] ?: incomeLabels[groupName]
                         val groupTotal = groupBills.filter { it.status != "ON HOLD" }.sumOf { it.amount }
                         val showIncomeLine = income != null && groupName !in NO_REMAINING_GROUPS
-                        // Remaining after bills, mirroring web: income-bearing cards use their
-                        // income; Subscriptions uses People funding; People (and others) show none.
-                        val remaining: Double? = when {
-                            income != null && groupName != "People" && groupName != "Subscriptions" -> income - groupTotal
-                            groupName == "Subscriptions" -> peopleFunding - groupTotal
-                            else -> null
-                        }
+                        // Show the "remaining bills" line on the same cards as before
+                        // (income cards + Subscriptions).
+                        val showRemaining = (income != null && groupName != "People" && groupName != "Subscriptions") || groupName == "Subscriptions"
+                        // Remaining bills = sum of bills not yet paid (excludes PAID and ON HOLD).
+                        val remainingBills = groupBills
+                            .filter { it.status != "PAID" && it.status != "ON HOLD" }
+                            .sumOf { it.amount }
 
                         Column(
                             modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
@@ -477,9 +477,9 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                     }
                                 })
                             }
-                            if (remaining != null) {
+                            if (showRemaining) {
                                 Spacer(Modifier.height(6.dp))
-                                Text("Remaining after bills: $${"%.2f".format(remaining)}",
+                                Text("Remaining bills: $${"%.2f".format(remainingBills)}",
                                     fontSize = 11.sp, color = Color(0xFF888899))
                             }
                         }
