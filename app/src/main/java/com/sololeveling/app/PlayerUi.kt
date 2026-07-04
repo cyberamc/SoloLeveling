@@ -1466,34 +1466,38 @@ val LUNCH_MEALS = listOf(
 
 val DINNER_MEALS = listOf(
     Meal(
-        name = "Steak & Mushrooms",
+        name = "Garlic-Herb Steak & Rice",
         mealType = "Dinner",
-        macros = Macros(calories = 475, protein = 46, fat = 29, netCarbs = "4"),
+        macros = Macros(calories = 595, protein = 48, fat = 27, netCarbs = "32"),
         ingredients = listOf(
             "8 oz sirloin tip steak",
-            "100g white mushrooms or baby bella mushrooms, sliced thick",
-            "1/2 tbsp butter",
+            "3/4 cup cooked jasmine rice",
+            "1 tbsp butter",
             "1 tsp minced garlic",
-            "1/4 tsp dried thyme",
-            "coarse salt",
-            "coarse black pepper"
+            "1/2 tsp dried thyme",
+            "sea salt",
+            "freshly cracked black pepper"
         ),
         steps = listOf(
             MealStep(
-                "1. Prep and Dry the Steak",
-                "The Prep: Pat your 8 oz of sirloin tip steak completely dry with paper towels—removing surface moisture is crucial to getting a good crust without a loose reduction. Cut into bite-sized cubes and season generously on all sides with coarse salt and black pepper.\n\nHeat a heavy skillet (cast iron or stainless steel) over high heat until it is smoking hot."
+                "1. Season the Steak Whole",
+                "The Prep: Pat your 8 oz sirloin tip steak completely dry with paper towels. Season the whole steak generously on all sides with your sea salt and freshly cracked black pepper."
             ),
             MealStep(
-                "2. Sear the Steak",
-                "The Sear: Drop a tiny dab of your 1/2 tbsp of butter into the screaming hot pan just to coat the surface, then immediately add the steak tips in a single layer.\n\nLet them sear undisturbed for 2 minutes to build a deep, brown crust, then flip with your metal spatula and cook for another 1 to 2 minutes. Slide the steak cubes out of the pan and set them aside on a plate to rest. Do not clean out the skillet."
+                "2. High-Heat Sear",
+                "The Sear: Get your heavy skillet smoking hot over high heat. Add 1/2 tbsp of butter. Place the whole steak in the pan and let it sear undisturbed for 90 to 120 seconds to build a beautiful brown crust. Flip the steak and sear the other side for another 60 to 90 seconds."
             ),
             MealStep(
-                "3. Sauté the Mushrooms",
-                "The Veg: Turn the burner down to medium heat. Toss 100g of sliced white mushrooms and 1/4 tsp of dried thyme leaves directly into the hot pan with the leftover steak fats.\n\nLet them sit flat for 2 minutes to get color, then stir. Sauté for another 2 to 3 minutes until they turn a rich, golden brown and absorb the pan flavors.\n\nStir in 1 tsp of minced garlic during the final 30 seconds of cooking, moving it constantly so it becomes fragrant without burning."
+                "3. Slice and Rest",
+                "The Cut: Pull the steak out of the pan onto a cutting board. Slice it into bite-sized cubes immediately, then transfer the cubes to a plate and tent tightly with foil to rest. (Make sure to save all the rich juices that pool on the cutting board and plate)."
             ),
             MealStep(
-                "4. The Butter Finish",
-                "The Finish: Turn off the burner completely and slide the pan off the heat. Drop the remaining butter into the hot mushrooms, stirring quickly until it melts and glazes them.\n\nToss the rested sirloin tips and any juices from the plate back into the pan with the garlic-thyme mushrooms. Coat everything evenly and plate immediately."
+                "4. Bloom the Garlic & Thyme",
+                "The Base: Lower the skillet heat to medium-low. Add the remaining 1/2 tbsp of butter to the pan. Drop in 1 tsp of minced garlic and 1/2 tsp of dried thyme leaves. Stir constantly for 30 seconds until the garlic becomes fragrant and golden."
+            ),
+            MealStep(
+                "5. Toss and Serve",
+                "The Finish: Dump 3/4 cup of cooked jasmine rice directly into the garlic-thyme butter and stir for about 30 seconds to coat the grains. Turn off the heat completely. Pour the sliced steak cubes and every drop of the rich juices from the cutting board and plate right into the rice. Toss everything together one final time and serve."
             )
         )
     )
