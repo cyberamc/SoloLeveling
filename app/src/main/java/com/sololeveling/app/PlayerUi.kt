@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -72,6 +73,7 @@ fun PlayerScreen() {
 @Composable
 fun TasksScreen() {
     var refreshTrigger by remember { mutableIntStateOf(0) }
+    val noRouteScope = rememberCoroutineScope()
     var dailyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var allWeeklyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -82,6 +84,8 @@ fun TasksScreen() {
     var showNotepad by remember { mutableStateOf(false) }
     var showNofapNotepad by remember { mutableStateOf(false) }
     var showGoingOut by remember { mutableStateOf(false) }
+    var showNoRouteConfirm by remember { mutableStateOf(false) }
+    var noRouteWorking by remember { mutableStateOf(false) }
     var protocolBanner by remember { mutableStateOf<String?>(null) }
 
     if (showRoutine) {
@@ -99,6 +103,44 @@ fun TasksScreen() {
     if (showNofapNotepad) {
         NofapNotepadScreen(onBack = { showNofapNotepad = false })
         return
+    }
+
+    if (showNoRouteConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!noRouteWorking) showNoRouteConfirm = false },
+            containerColor = Color(0xFF1a1a1a),
+            title = { Text("Activate No Route Protocol?", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Today's routine will be replaced with the No Route routine. Tasks before 10 AM will be marked complete. This resets today's progress.",
+                    color = Color(0xFFB0B0B0), fontSize = 14.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !noRouteWorking,
+                    onClick = {
+                        noRouteWorking = true
+                        noRouteScope.launch {
+                            try {
+                                postToApi("/api/protocol/noroute/activate")
+                                showNoRouteConfirm = false
+                                refreshTrigger++
+                            } catch (e: Exception) {
+                                // leave dialog open on error
+                            } finally {
+                                noRouteWorking = false
+                            }
+                        }
+                    }
+                ) { Text(if (noRouteWorking) "Activating..." else "Activate", color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(enabled = !noRouteWorking, onClick = { showNoRouteConfirm = false }) {
+                    Text("Cancel", color = Color(0xFF888899))
+                }
+            }
+        )
     }
 
     // Load player data once on first launch only
@@ -173,16 +215,6 @@ fun TasksScreen() {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Going Out",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFF59E0B),
-                    modifier = Modifier
-                        .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
-                        .clickable { showGoingOut = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-                Text(
                     text = "Notepad",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -202,6 +234,32 @@ fun TasksScreen() {
                         .clickable { showRoutine = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
+                // Going Out — only Friday (5) or Saturday (6)
+                if (todayWeekday == 5 || todayWeekday == 6) {
+                    Text(
+                        text = "Going Out",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFF59E0B),
+                        modifier = Modifier
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                            .clickable { showGoingOut = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+                // No Route — only Tuesday (2) or Wednesday (3)
+                if (todayWeekday == 2 || todayWeekday == 3) {
+                    Text(
+                        text = "No Route",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFF59E0B),
+                        modifier = Modifier
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                            .clickable { showNoRouteConfirm = true }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -1210,8 +1268,10 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
         val proto = questData["protocol"] as? Map<*, *>
         val activeToday = proto?.get("activeToday") as? String
         val armedDay = proto?.get("armedDay") as? String
+        val noRouteActive = (proto?.get("noRouteActive") as? Boolean) ?: false
         fun dayLabel(d: String?) = if (d == "SAT") "Saturday" else if (d == "SUN") "Sunday" else null
         val protocolBannerText: String? = when {
+            noRouteActive -> "No Route Protocol Active"
             activeToday != null -> "Recovery Routine Active"
             armedDay != null -> "Going-Out Protocol armed for ${dayLabel(armedDay)}"
             else -> null
