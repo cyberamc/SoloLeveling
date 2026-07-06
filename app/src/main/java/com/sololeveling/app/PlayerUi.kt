@@ -5,6 +5,8 @@ import androidx.compose.ui.platform.LocalContext
 import okhttp3.RequestBody
 import androidx.compose.foundation.shape.RoundedCornerShape
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -65,6 +67,11 @@ private fun createUnsafeHttpClient(): OkHttpClient {
         .build()
 }
 
+// Application-level scope for fire-and-refresh network calls (quest toggles, protocol
+// activation). Using a scope tied to a composable causes "coroutine scope left the
+// composition" when a completion toggle triggers a reload that disposes the item mid-call.
+val appNetworkScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
 @Composable
 fun PlayerScreen() {
     TasksScreen()
@@ -73,7 +80,6 @@ fun PlayerScreen() {
 @Composable
 fun TasksScreen() {
     var refreshTrigger by remember { mutableIntStateOf(0) }
-    val noRouteScope = rememberCoroutineScope()
     var dailyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var allWeeklyQuestsState by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -121,7 +127,7 @@ fun TasksScreen() {
                     enabled = !noRouteWorking,
                     onClick = {
                         noRouteWorking = true
-                        noRouteScope.launch {
+                        appNetworkScope.launch {
                             try {
                                 postToApi("/api/protocol/noroute/activate")
                                 showNoRouteConfirm = false
@@ -1069,7 +1075,6 @@ fun QuestItem(
 ) {
     var checked by remember(isCompleted) { mutableStateOf(isCompleted) }
     var isLoading by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(isCompleted) {
         checked = isCompleted
@@ -1090,7 +1095,7 @@ fun QuestItem(
                 if (!isLoading) {
                     isLoading = true
                     checked = newValue
-                    scope.launch(Dispatchers.IO) {
+                    appNetworkScope.launch {
                         try {
                             val endpoint = if (newValue) "/complete" else "/uncomplete"
                             val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
