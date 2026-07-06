@@ -221,16 +221,6 @@ fun TasksScreen() {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Notepad",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
-                    modifier = Modifier
-                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
-                        .clickable { showNotepad = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-                Text(
                     text = "View Routine",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -238,6 +228,16 @@ fun TasksScreen() {
                     modifier = Modifier
                         .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showRoutine = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+                Text(
+                    text = "Notepad",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier
+                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                        .clickable { showNotepad = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
                 // Going Out — only Friday (5) or Saturday (6)
