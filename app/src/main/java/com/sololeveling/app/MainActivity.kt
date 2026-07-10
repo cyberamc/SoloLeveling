@@ -28,6 +28,11 @@ class MainActivity : ComponentActivity() {
         TaskReminder.createChannel(this)
         TaskReminder.schedule(this)
 
+        // Shower reminder: channel + daily 3 AM arm + arm today now (network → background thread)
+        ShowerReminder.createChannel(this)
+        ShowerReminder.scheduleDailyArm(this)
+        Thread { ShowerReminder.armToday(this@MainActivity) }.start()
+
         setContent {
             MainTabScreen()
         }
