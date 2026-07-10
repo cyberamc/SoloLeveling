@@ -242,6 +242,7 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
 
             DayRow(label = "Tuesday", billable = week.tueBillable, pay = week.tuePay,
                 isExpanded = expandedDay == "tue", onClick = { expandedDay = if (expandedDay == "tue") null else "tue" })
+            DayQuotaLine(delivered = week.tueDelivered, billable = week.tueBillable, pay = week.tuePay, rate = week.tueRate)
 
             if (expandedDay == "tue") {
                 Spacer(Modifier.height(10.dp))
@@ -274,6 +275,7 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
 
             DayRow(label = "Wednesday", billable = week.wedBillable, pay = week.wedPay,
                 isExpanded = expandedDay == "wed", onClick = { expandedDay = if (expandedDay == "wed") null else "wed" })
+            DayQuotaLine(delivered = week.wedDelivered, billable = week.wedBillable, pay = week.wedPay, rate = week.wedRate)
 
             if (expandedDay == "wed") {
                 Spacer(Modifier.height(10.dp))
@@ -311,6 +313,7 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
                 Column {
                     Text("Weekly Total", fontSize = 12.sp, color = Color(0xFF888899))
                     Text("${week.totalBillable} packages", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    WeeklyQuotaLine(week = week)
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("$${String.format("%.2f", week.totalPay)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
@@ -319,6 +322,56 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
             }
         }
     }
+}
+
+// Quota targets: $125 per delivery day, evaluated per-day (a strong day does not
+// cover a weak one). Weekly line reports how many days individually met $125.
+const val DAILY_QUOTA = 125.0
+
+@Composable
+fun DayQuotaLine(delivered: Int, billable: Int, pay: Double, rate: Double) {
+    // Hidden until the day has activity, so an un-worked day doesn't read as "short".
+    if (delivered <= 0) return
+    val met = pay >= DAILY_QUOTA
+    Spacer(Modifier.height(4.dp))
+    if (met) {
+        val over = pay - DAILY_QUOTA
+        Text(
+            text = "✓ Quota met · $${String.format("%.2f", over)} over",
+            fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF97C459),
+            modifier = Modifier.padding(start = 12.dp)
+        )
+    } else {
+        val short = DAILY_QUOTA - pay
+        // Additional billable packages needed at this day's current rate.
+        val needBillable = Math.ceil(DAILY_QUOTA / rate).toInt()
+        val morePackages = maxOf(0, needBillable - billable)
+        Text(
+            text = "⚠ $${String.format("%.2f", short)} short · $morePackages more packages",
+            fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFE0A030),
+            modifier = Modifier.padding(start = 12.dp)
+        )
+    }
+}
+
+@Composable
+fun WeeklyQuotaLine(week: DeliveryWeek) {
+    // Count only days that have been worked; report how many hit $125 each.
+    val workedDays = mutableListOf<Boolean>()
+    if (week.tueDelivered > 0) workedDays.add(week.tuePay >= DAILY_QUOTA)
+    if (week.wedDelivered > 0) workedDays.add(week.wedPay >= DAILY_QUOTA)
+    if (workedDays.isEmpty()) return
+    val metCount = workedDays.count { it }
+    val total = workedDays.size
+    val allMet = metCount == total
+    Spacer(Modifier.height(3.dp))
+    Text(
+        text = if (allMet && total == 2) "✓ Both days met"
+        else if (allMet) "✓ $metCount of $total days met"
+        else "⚠ $metCount of $total days met",
+        fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+        color = if (allMet) Color(0xFF97C459) else Color(0xFFE0A030)
+    )
 }
 
 @Composable
