@@ -9,9 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Calendar
 
 object TaskReminder {
@@ -21,8 +18,6 @@ object TaskReminder {
 
     private const val HOUR_24 = 20   // 8 PM
     private const val MINUTE = 0     // :00 -> 8:00 PM
-
-    private const val BASE_URL = "https://mysololeveling.us"
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -71,55 +66,8 @@ object TaskReminder {
         }
     }
 
-    /**
-     * Fetch today's remaining task count (incomplete dailies + today's incomplete required quests).
-     * Returns null if the fetch fails for any reason.
-     */
-    private fun fetchRemainingCount(): Int? {
-        return try {
-            val url = URL("$BASE_URL/api/quests")
-            val conn = url.openConnection() as HttpURLConnection
-            conn.requestMethod = "GET"
-            conn.connectTimeout = 4000
-            conn.readTimeout = 4000
-            val text = conn.inputStream.bufferedReader().readText()
-            conn.disconnect()
-            val obj = JSONObject(text)
-
-            val totalDailies = obj.optInt("totalDailies", 0)
-            val dailiesCompleted = obj.optInt("dailiesCompleted", 0)
-            val remainingDailies = maxOf(0, totalDailies - dailiesCompleted)
-
-            // Today's required (non-optional) weekly quests that aren't completed
-            val todayWeekday = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1 // Calendar.SUNDAY=1 -> 0
-            var remainingWeekly = 0
-            val weekly = obj.optJSONArray("weeklyQuests")
-            if (weekly != null) {
-                for (i in 0 until weekly.length()) {
-                    val q = weekly.getJSONObject(i)
-                    val optional = q.optInt("optional", 0)
-                    val completed = q.optInt("completed", 0)
-                    val weekday = q.optInt("weekday", -1)
-                    if (optional == 0 && completed == 0 && weekday == todayWeekday) {
-                        remainingWeekly++
-                    }
-                }
-            }
-            remainingDailies + remainingWeekly
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     fun showNotification(context: Context) {
-        val count = fetchRemainingCount()
-
-        val text = when {
-            count == null -> "Final stretch — clear your remaining quests"
-            count == 0 -> "All quests cleared. Nice work."
-            count == 1 -> "Final stretch — 1 quest remaining"
-            else -> "Final stretch — $count quests remaining"
-        }
+        val text = "Do not vape until you finish your evening tasks"
 
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -146,17 +94,8 @@ object TaskReminder {
 
 class TaskReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        // Network call must run off the main thread; use a background thread within the
-        // receiver's goAsync() window so onReceive returns promptly.
-        val pending = goAsync()
-        Thread {
-            try {
-                TaskReminder.showNotification(context)
-            } finally {
-                // Re-arm for tomorrow, then release.
-                TaskReminder.schedule(context)
-                pending.finish()
-            }
-        }.start()
+        TaskReminder.showNotification(context)
+        // Re-arm for tomorrow.
+        TaskReminder.schedule(context)
     }
 }
