@@ -2,6 +2,7 @@ package com.sololeveling.app
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -40,6 +41,19 @@ fun currentDeliveryPayMonth(): String {
     // Sunday + 3 = Wednesday, + 16 = pay date
     cal.add(Calendar.DAY_OF_MONTH, 19)
     return SimpleDateFormat("yyyy-MM", Locale.US).format(cal.time)
+}
+
+// True if the given week_start (a Sunday, "yyyy-MM-dd") is the week containing today.
+fun isCurrentDeliveryWeek(weekStart: String): Boolean {
+    return try {
+        val cal = Calendar.getInstance()
+        // Back up to this week's Sunday
+        while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+            cal.add(Calendar.DAY_OF_MONTH, -1)
+        }
+        val todaySunday = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(cal.time)
+        todaySunday == weekStart
+    } catch (e: Exception) { false }
 }
 
 data class DeliveryWeek(
@@ -184,8 +198,12 @@ fun deleteDeliveryWeek(baseUrl: String, id: Int) {
 }
 
 @Composable
-fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
+fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (DeliveryWeek) -> Unit) {
     var expandedDay by remember { mutableStateOf<String?>(null) }
+    // Active week is always editable. Other weeks start locked; unlocking is a
+    // deliberate per-card action that re-locks immediately after a save.
+    var unlocked by remember(week) { mutableStateOf(false) }
+    val editable = isActiveWeek || unlocked
 
     var tueDelivered by remember(week) { mutableStateOf(week.tueDelivered.toString()) }
     var tueDuplicates by remember(week) { mutableStateOf(week.tueDuplicates.toString()) }
@@ -197,13 +215,27 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
     var tueRateMode by remember(week) { mutableStateOf(if (week.tueRoute324) 1 else if (week.tueRoute121) 2 else 0) }
     var wedRateMode by remember(week) { mutableStateOf(if (week.wedRoute324) 1 else if (week.wedRoute121) 2 else 0) }
 
-    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF12122A))) {
+    val cardModifier = if (isActiveWeek) {
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+            .border(2.dp, Color(0xFF3B6D11), RoundedCornerShape(12.dp))
+            .background(Color(0xFF12122A))
+    } else {
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Color(0xFF12122A))
+    }
+    Column(modifier = cardModifier) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
                 Text(text = "Week of ${week.weekLabel()}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7B8CDE))
-                if (week.checkNumber > 0) {
-                    Text(text = "SpeedX Check ${week.checkNumber}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4CAF50))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (week.checkNumber > 0) {
+                        Text(text = "SpeedX Check ${week.checkNumber}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4CAF50))
+                    }
+                    when {
+                        isActiveWeek -> Text(text = "● ACTIVE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF97C459))
+                        unlocked -> Text(text = "🔓 Unlocked", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFD4B84A))
+                        else -> Text(text = "🔒 Locked", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF888899))
+                    }
                 }
             }
             Spacer(Modifier.height(12.dp))
@@ -213,20 +245,28 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
 
             if (expandedDay == "tue") {
                 Spacer(Modifier.height(10.dp))
-                RouteRateSelector(mode = tueRateMode, onCycle = { tueRateMode = (tueRateMode + 1) % 3 })
-                Spacer(Modifier.height(10.dp))
-                DeliveryInputRow(delivered = tueDelivered, duplicates = tueDuplicates, undeliverable = tueUndeliverable,
-                    rate = rateForMode(tueRateMode),
-                    onDeliveredChange = { tueDelivered = it }, onDuplicatesChange = { tueDuplicates = it },
-                    onUndeliverableChange = { tueUndeliverable = it },
-                    onSave = {
-                        expandedDay = null
-                        onSave(week.copy(tueDelivered = tueDelivered.toIntOrNull() ?: 0,
-                            tueDuplicates = tueDuplicates.toIntOrNull() ?: 0,
-                            tueUndeliverable = tueUndeliverable.toIntOrNull() ?: 0,
-                            tueRoute324 = tueRateMode == 1,
-                            tueRoute121 = tueRateMode == 2))
-                    })
+                if (editable) {
+                    RouteRateSelector(mode = tueRateMode, onCycle = { tueRateMode = (tueRateMode + 1) % 3 })
+                    Spacer(Modifier.height(10.dp))
+                    DeliveryInputRow(delivered = tueDelivered, duplicates = tueDuplicates, undeliverable = tueUndeliverable,
+                        rate = rateForMode(tueRateMode),
+                        onDeliveredChange = { tueDelivered = it }, onDuplicatesChange = { tueDuplicates = it },
+                        onUndeliverableChange = { tueUndeliverable = it },
+                        onSave = {
+                            expandedDay = null
+                            if (!isActiveWeek) unlocked = false
+                            onSave(week.copy(tueDelivered = tueDelivered.toIntOrNull() ?: 0,
+                                tueDuplicates = tueDuplicates.toIntOrNull() ?: 0,
+                                tueUndeliverable = tueUndeliverable.toIntOrNull() ?: 0,
+                                tueRoute324 = tueRateMode == 1,
+                                tueRoute121 = tueRateMode == 2))
+                        })
+                } else {
+                    LockedDaySummary(delivered = week.tueDelivered, duplicates = week.tueDuplicates,
+                        undeliverable = week.tueUndeliverable, rateMode = tueRateMode)
+                    Spacer(Modifier.height(10.dp))
+                    UnlockButton(onUnlock = { unlocked = true })
+                }
                 Spacer(Modifier.height(10.dp))
             }
 
@@ -237,20 +277,28 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
 
             if (expandedDay == "wed") {
                 Spacer(Modifier.height(10.dp))
-                RouteRateSelector(mode = wedRateMode, onCycle = { wedRateMode = (wedRateMode + 1) % 3 })
-                Spacer(Modifier.height(10.dp))
-                DeliveryInputRow(delivered = wedDelivered, duplicates = wedDuplicates, undeliverable = wedUndeliverable,
-                    rate = rateForMode(wedRateMode),
-                    onDeliveredChange = { wedDelivered = it }, onDuplicatesChange = { wedDuplicates = it },
-                    onUndeliverableChange = { wedUndeliverable = it },
-                    onSave = {
-                        expandedDay = null
-                        onSave(week.copy(wedDelivered = wedDelivered.toIntOrNull() ?: 0,
-                            wedDuplicates = wedDuplicates.toIntOrNull() ?: 0,
-                            wedUndeliverable = wedUndeliverable.toIntOrNull() ?: 0,
-                            wedRoute324 = wedRateMode == 1,
-                            wedRoute121 = wedRateMode == 2))
-                    })
+                if (editable) {
+                    RouteRateSelector(mode = wedRateMode, onCycle = { wedRateMode = (wedRateMode + 1) % 3 })
+                    Spacer(Modifier.height(10.dp))
+                    DeliveryInputRow(delivered = wedDelivered, duplicates = wedDuplicates, undeliverable = wedUndeliverable,
+                        rate = rateForMode(wedRateMode),
+                        onDeliveredChange = { wedDelivered = it }, onDuplicatesChange = { wedDuplicates = it },
+                        onUndeliverableChange = { wedUndeliverable = it },
+                        onSave = {
+                            expandedDay = null
+                            if (!isActiveWeek) unlocked = false
+                            onSave(week.copy(wedDelivered = wedDelivered.toIntOrNull() ?: 0,
+                                wedDuplicates = wedDuplicates.toIntOrNull() ?: 0,
+                                wedUndeliverable = wedUndeliverable.toIntOrNull() ?: 0,
+                                wedRoute324 = wedRateMode == 1,
+                                wedRoute121 = wedRateMode == 2))
+                        })
+                } else {
+                    LockedDaySummary(delivered = week.wedDelivered, duplicates = week.wedDuplicates,
+                        undeliverable = week.wedUndeliverable, rateMode = wedRateMode)
+                    Spacer(Modifier.height(10.dp))
+                    UnlockButton(onUnlock = { unlocked = true })
+                }
                 Spacer(Modifier.height(10.dp))
             }
 
@@ -270,6 +318,36 @@ fun DeliveryWeekCard(week: DeliveryWeek, onSave: (DeliveryWeek) -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun LockedDaySummary(delivered: Int, duplicates: Int, undeliverable: Int, rateMode: Int) {
+    val rate = when (rateMode) { 1 -> 1.90; 2 -> 1.80; else -> 1.60 }
+    val rateLabel = when (rateMode) { 1 -> "$1.90 · Route 324"; 2 -> "$1.80 · Route 121"; else -> "$1.60 · Standard" }
+    val billable = maxOf(0, delivered - duplicates - undeliverable)
+    val pay = billable * rate
+    Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF0e0e1e)).padding(12.dp)) {
+        Text(text = rateLabel, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF888899),
+            modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+        Spacer(Modifier.height(8.dp))
+        Text(text = "$delivered - $duplicates - $undeliverable = $billable packages → $${String.format("%.2f", pay)}",
+            fontSize = 12.sp, color = Color(0xFF7B8CDE), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+fun UnlockButton(onUnlock: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF1a1a2e))
+            .clickable { onUnlock() }
+            .padding(vertical = 11.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = "🔓 Unlock to edit", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF7B8CDE))
     }
 }
 
@@ -458,6 +536,7 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
                     items(weeks, key = { it.id }) { week ->
                         DeliveryWeekCard(
                             week = week,
+                            isActiveWeek = isCurrentDeliveryWeek(week.weekStart),
                             onSave = { updated ->
                                 weeks = weeks.map { if (it.id == updated.id) updated else it }
                                 scope.launch {
