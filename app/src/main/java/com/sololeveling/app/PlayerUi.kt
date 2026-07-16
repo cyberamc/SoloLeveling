@@ -1442,28 +1442,34 @@ val BREAKFAST_MEALS = listOf(
 
 val LUNCH_MEALS = listOf(
     Meal(
-        name = "Beef & Eggs",
+        name = "Loaded Beef & Bacon Melt",
         mealType = "Lunch",
-        macros = Macros(calories = 730, protein = 52, fat = 54, netCarbs = "5"),
+        macros = Macros(calories = 730, protein = 52, fat = 55, netCarbs = "2"),
         ingredients = listOf(
-            "5 oz 80/20 ground beef",
+            "3 slices Member's Mark bacon",
+            "5 oz 96/4 extra-lean ground beef",
             "40g diced white onion",
             "1 tsp minced garlic",
-            "3 large eggs",
-            "2 oz shredded cheese",
-            "pinch of salt",
-            "black pepper",
-            "splash of water or heavy cream",
-            "small sliver of butter (if needed)"
+            "2 oz (approx. 8 tbsp) shredded cheddar or Monterey jack",
+            "sea salt",
+            "black pepper"
         ),
         steps = listOf(
             MealStep(
-                "1. Crisp the Beef & Aromatics First",
-                "The Prep: Heat your skillet over medium-high heat. Whisk your 3 large eggs in a bowl with a pinch of salt, black pepper, and a tiny splash of water or heavy cream. Whisk vigorously until the eggs are completely uniform and bubbly—this incorporates air for maximum fluffiness.\n\nDrop in your 5 oz of 80/20 ground beef. Let it sit untouched for 2–3 minutes before breaking it up. This lets it develop a deep, brown, flavorful crust.\n\nOnce you break it apart, toss in your 40g of diced white onion and 1 tsp of minced garlic. Sauté everything until the onions are translucent and the beef is fully cooked and crispy."
+                "1. Fry the Bacon (Nonstick Griddle)",
+                "Lay the bacon slices flat on the griddle (cut in half first if needed to fit) and turn heat to medium. Fry 8–10 min, flipping occasionally, until perfectly crispy — keep heat at medium so the fat renders slowly and doesn't pool to the edges. Transfer to a paper towel, let cool, then chop into bite-sized pieces."
             ),
             MealStep(
-                "2. The Fresh \"Soft-Fold\" Egg Technique",
-                "The Switch: Turn the burner heat down to medium-low. Push the crispy beef and onions to one side of the pan. If the pan looks dry, drop a tiny sliver of butter onto the empty side.\n\nThe Pour: Pour the whisked eggs into the empty side of the pan. Let them sit for about 30 seconds until the edges just start to set.\n\nThe Melt & Fold: Sprinkle 2 oz of shredded cheese evenly over the eggs. Using a spatula, gently push the eggs and cheese from the outside edge toward the center, creating long, folding sheets. As they become semi-solid, gently fold the crispy beef and onions back into the cheesy eggs.\n\nPull the Heat: Turn off the burner while the eggs still look a tiny bit glossy and wet. The residual heat of the pan will finish melting the cheese and cooking the eggs to perfection in the 10 seconds it takes to plate them."
+                "2. Cook the Beef, Onions & Garlic (Cast Iron)",
+                "Heat the cast iron skillet over medium with a touch of oil (96/4 beef renders almost no fat, so this keeps it from sticking). Add 40g diced onion and sauté 1–2 min until translucent. Add 1 tsp minced garlic and stir 30 sec until fragrant. Add 5 oz ground beef, season generously with salt and pepper, and break apart with a spatula. Cook until fully browned and sizzling. Drain off excess liquid, then return the beef mixture to the pan."
+            ),
+            MealStep(
+                "3. Melt the Cheese",
+                "Turn heat to low. Spread the beef mixture evenly across the bottom of the skillet. Sprinkle 2 oz shredded cheese flat over the top, then scatter the chopped bacon into the cheese."
+            ),
+            MealStep(
+                "4. Plate & Serve",
+                "Turn the burner OFF (cast iron holds enough residual heat to melt the cheese without scorching). Cover with a lid for 60 seconds to let the cheese melt into a thick, gooey blanket. Slide onto a plate and enjoy fresh and hot.\n\nNote: Cooking bacon separately and draining the 96/4 beef cuts the fat below the original 55g estimate — the macros above run slightly high now."
             )
         )
     )
@@ -1614,8 +1620,8 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MacroBox("Calories", "2,235", Modifier.weight(1f))
                     MacroBox("Protein", "166g", Modifier.weight(1f))
-                    MacroBox("Fat", "136g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "53.5g", Modifier.weight(1f))
+                    MacroBox("Fat", "137g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "50.5g", Modifier.weight(1f))
                 }
             }
         }
