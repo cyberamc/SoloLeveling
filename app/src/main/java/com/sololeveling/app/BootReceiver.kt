@@ -19,9 +19,11 @@ class BootReceiver : BroadcastReceiver() {
             SleepReminder.createChannel(context)
             TaskReminder.createChannel(context)
             ShowerReminder.createChannel(context)
+            DeliveryReminder.createChannel(context)
             SleepReminder.scheduleAll(context)
             TaskReminder.schedule(context)
             ShowerReminder.scheduleDailyArm(context)
+            DeliveryReminder.scheduleAll(context)
             // Arm today's shower now (network → background thread) so a reboot mid-day
             // still sets today's reminder, not just the next 3 AM arm.
             Thread { ShowerReminder.armToday(context) }.start()

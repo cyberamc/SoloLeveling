@@ -33,6 +33,10 @@ class MainActivity : ComponentActivity() {
         ShowerReminder.scheduleDailyArm(this)
         Thread { ShowerReminder.armToday(this@MainActivity) }.start()
 
+        // Delivery reminder: channel + schedule Tue/Wed 7:35 AM package cap
+        DeliveryReminder.createChannel(this)
+        DeliveryReminder.scheduleAll(this)
+
         setContent {
             MainTabScreen()
         }
