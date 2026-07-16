@@ -1471,38 +1471,39 @@ val LUNCH_MEALS = listOf(
 
 val DINNER_MEALS = listOf(
     Meal(
-        name = "Garlic-Herb Steak & Rice",
+        name = "Garlic-Herb Braised Pork & Rice",
         mealType = "Dinner",
-        macros = Macros(calories = 595, protein = 48, fat = 27, netCarbs = "32"),
+        macros = Macros(calories = 640, protein = 47, fat = 24, netCarbs = "32"),
         ingredients = listOf(
-            "8 oz sirloin tip steak",
+            "8 oz pork stew meat (boneless)",
+            "1 tbsp butter (split)",
             "3/4 cup cooked jasmine rice",
-            "1 tbsp butter",
             "1 tsp minced garlic",
             "1/2 tsp dried thyme",
+            "1/3 cup water + 1/2 beef bouillon cube (for braising)",
             "sea salt",
             "freshly cracked black pepper"
         ),
         steps = listOf(
             MealStep(
-                "1. Season the Steak Whole",
-                "The Prep: Pat your 8 oz sirloin tip steak completely dry with paper towels. Season the whole steak generously on all sides with your sea salt and freshly cracked black pepper."
+                "1. Season the Cubes",
+                "Pat pork stew meat dry with paper towels. Season on all sides with salt and pepper (go light — bouillon adds salt later)."
             ),
             MealStep(
-                "2. High-Heat Sear",
-                "The Sear: Get your heavy skillet smoking hot over high heat. Add 1/2 tbsp of butter. Place the whole steak in the pan and let it sear undisturbed for 90 to 120 seconds to build a beautiful brown crust. Flip the steak and sear the other side for another 60 to 90 seconds."
+                "2. Hard Sear",
+                "Get skillet smoking hot over high heat. Add 1/2 tbsp butter. Sear cubes in a single layer (don't crowd — work in batches), 60–90 sec per side until deeply browned."
             ),
             MealStep(
-                "3. Slice and Rest",
-                "The Cut: Pull the steak out of the pan onto a cutting board. Slice it into bite-sized cubes immediately, then transfer the cubes to a plate and tent tightly with foil to rest. (Make sure to save all the rich juices that pool on the cutting board and plate)."
+                "3. Braise Until Tender",
+                "Lower heat to medium-low. Add 1/3 cup water with 1/2 beef bouillon cube dissolved in. Cover and simmer 20–30 min until fork-tender, adding a splash more liquid if it dries out. Cook down to a few spoonfuls of concentrated jus."
             ),
             MealStep(
-                "4. Bloom the Garlic & Thyme",
-                "The Base: Lower the skillet heat to medium-low. Add the remaining 1/2 tbsp of butter to the pan. Drop in 1 tsp of minced garlic and 1/2 tsp of dried thyme leaves. Stir constantly for 30 seconds until the garlic becomes fragrant and golden."
+                "4. Bloom Garlic & Thyme",
+                "Push pork aside. Add remaining 1/2 tbsp butter, 1 tsp garlic, 1/2 tsp thyme. Stir 30 sec until fragrant and golden."
             ),
             MealStep(
-                "5. Toss and Serve",
-                "The Finish: Dump 3/4 cup of cooked jasmine rice directly into the garlic-thyme butter and stir for about 30 seconds to coat the grains. Turn off the heat completely. Pour the sliced steak cubes and every drop of the rich juices from the cutting board and plate right into the rice. Toss everything together one final time and serve."
+                "5. Toss & Serve",
+                "Add rice to the garlic-thyme butter, stir 30 sec to coat. Turn off heat. Fold pork and all pan juices back in, toss, and taste before adding any salt — you may not need any.\n\nNote: Trim visible fat and drop to 6 oz to lower fat further. Braise adds ~20–25 min — good for batch prep. Sodium runs higher with bouillon."
             )
         )
     )
@@ -1611,9 +1612,9 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,190", Modifier.weight(1f))
-                    MacroBox("Protein", "167g", Modifier.weight(1f))
-                    MacroBox("Fat", "139g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,235", Modifier.weight(1f))
+                    MacroBox("Protein", "166g", Modifier.weight(1f))
+                    MacroBox("Fat", "136g", Modifier.weight(1f))
                     MacroBox("Net Carbs", "53.5g", Modifier.weight(1f))
                 }
             }
