@@ -16,8 +16,8 @@ object TaskReminder {
     private const val NOTIFICATION_ID = 2000
     private const val REQ_DAILY = 2001
 
-    private const val HOUR_24 = 20   // 8 PM
-    private const val MINUTE = 0     // :00 -> 8:00 PM
+    private const val HOUR_24 = 21   // 9 PM
+    private const val MINUTE = 30    // :30 -> 9:30 PM
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -25,13 +25,13 @@ object TaskReminder {
                 CHANNEL_ID,
                 "Task Reminder",
                 NotificationManager.IMPORTANCE_HIGH
-            ).apply { description = "Evening reminder to finish remaining tasks" }
+            ).apply { description = "Nightly reminder to check off completed tasks" }
             val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             mgr.createNotificationChannel(channel)
         }
     }
 
-    /** Schedule (or reschedule) the daily 8 PM reminder. Safe to call repeatedly. */
+    /** Schedule (or reschedule) the daily 9:30 PM reminder. Safe to call repeatedly. */
     fun schedule(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
@@ -42,7 +42,7 @@ object TaskReminder {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        // If 8 PM already passed today, push to tomorrow.
+        // If 9:30 PM already passed today, push to tomorrow.
         if (next.timeInMillis <= now.timeInMillis) {
             next.add(Calendar.DAY_OF_YEAR, 1)
         }
@@ -67,7 +67,7 @@ object TaskReminder {
     }
 
     fun showNotification(context: Context) {
-        val text = "Do not vape until you finish your evening tasks"
+        val text = "Check off everything you completed today."
 
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
