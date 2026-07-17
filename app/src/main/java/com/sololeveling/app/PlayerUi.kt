@@ -1417,24 +1417,29 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake",
         mealType = "Breakfast",
-        macros = Macros(calories = 360, protein = 60, fat = 8, netCarbs = "12"),
+        macros = Macros(calories = 410, protein = 60, fat = 13, netCarbs = "13"),
         ingredients = listOf(
             "2 scoops body fortress whey protein powder",
             "8 to 12 oz cold water",
+            "7g pecans (about 1 tbsp chopped, ~10 halves)",
             "2 to 3 ice cubes (optional)"
         ),
         steps = listOf(
             MealStep(
                 "1. Measure the Base",
-                "The Liquid: Pour 8 to 12 oz of cold water into the shaker.\n\n(Optional Tip: If you prefer a thicker shake, stick to 8 oz of water. If you prefer it more fluid, go up to 12 oz. For an ice-cold texture, drop 2 to 3 ice cubes into the liquid.)"
+                "Pour 8 to 12 oz of cold water into the Ninja blender jar.\n\n(Thicker shake: stick to 8 oz. More fluid: go up to 12 oz. For an ice-cold texture, add 2 to 3 ice cubes.)"
             ),
             MealStep(
-                "2. Add the Powder",
-                "The Protein: Using the scoop from your tub, add exactly 2 level scoops of Body Fortress Whey Protein powder on top of the water."
+                "2. Add Powder & Pecans",
+                "Add 2 level scoops of Body Fortress whey protein and 7g pecans."
             ),
             MealStep(
-                "3. Mix and Emulsify",
-                "The Mix: Screw the lid on tightly and snap the flip-cap completely shut. Mix vigorously for 20 to 30 seconds until the powder is fully dissolved and the shake is completely smooth, frothy, and emulsified. Let it sit for 30 seconds to allow the foam to settle before drinking."
+                "3. Blend",
+                "Secure the lid and blend 20–30 seconds until fully smooth and the pecans are broken down and incorporated."
+            ),
+            MealStep(
+                "4. Finish",
+                "Let it sit 30 seconds for the foam to settle, then pour and drink.\n\nNote: Pecans add ~50 cal and 5g fat over the original — blend rather than shake so they fully break down."
             )
         )
     )
@@ -1618,10 +1623,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,035", Modifier.weight(1f))
+                    MacroBox("Calories", "2,085", Modifier.weight(1f))
                     MacroBox("Protein", "157g", Modifier.weight(1f))
-                    MacroBox("Fat", "119g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "51.5g", Modifier.weight(1f))
+                    MacroBox("Fat", "124g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "52.5g", Modifier.weight(1f))
                 }
             }
         }
