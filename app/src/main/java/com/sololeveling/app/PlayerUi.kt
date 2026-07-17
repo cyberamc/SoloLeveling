@@ -1444,10 +1444,10 @@ val LUNCH_MEALS = listOf(
     Meal(
         name = "Loaded Beef & Bacon Melt",
         mealType = "Lunch",
-        macros = Macros(calories = 730, protein = 52, fat = 55, netCarbs = "2"),
+        macros = Macros(calories = 530, protein = 43, fat = 37, netCarbs = "3"),
         ingredients = listOf(
             "3 slices Member's Mark bacon",
-            "5 oz 96/4 extra-lean ground beef",
+            "2.5 oz 96/4 extra-lean ground beef",
             "40g diced white onion",
             "1 tsp minced garlic",
             "2 oz (approx. 8 tbsp) shredded cheddar or Monterey jack",
@@ -1461,7 +1461,7 @@ val LUNCH_MEALS = listOf(
             ),
             MealStep(
                 "2. Cook the Beef, Onions & Garlic (Cast Iron)",
-                "Heat the cast iron skillet over medium with a touch of oil (96/4 beef renders almost no fat, so this keeps it from sticking). Add 40g diced onion and sauté 1–2 min until translucent. Add 1 tsp minced garlic and stir 30 sec until fragrant. Add 5 oz ground beef, season generously with salt and pepper, and break apart with a spatula. Cook until fully browned and sizzling. Drain off excess liquid, then return the beef mixture to the pan."
+                "Heat the cast iron skillet over medium with a touch of oil (96/4 beef renders almost no fat, so this keeps it from sticking). Add 40g diced onion and sauté 1–2 min until translucent. Add 1 tsp minced garlic and stir 30 sec until fragrant. Add 2.5 oz ground beef, season generously with salt and pepper, and break apart with a spatula. Cook until fully browned and sizzling. Drain off excess liquid, then return the beef mixture to the pan."
             ),
             MealStep(
                 "3. Melt the Cheese",
@@ -1469,7 +1469,7 @@ val LUNCH_MEALS = listOf(
             ),
             MealStep(
                 "4. Plate & Serve",
-                "Turn the burner OFF (cast iron holds enough residual heat to melt the cheese without scorching). Cover with a lid for 60 seconds to let the cheese melt into a thick, gooey blanket. Slide onto a plate and enjoy fresh and hot.\n\nNote: Cooking bacon separately and draining the 96/4 beef cuts the fat below the original 55g estimate — the macros above run slightly high now."
+                "Turn the burner OFF (cast iron holds enough residual heat to melt the cheese without scorching). Cover with a lid for 60 seconds to let the cheese melt into a thick, gooey blanket. Slide onto a plate and enjoy fresh and hot.\n\nNote: Cheese and bacon are now the biggest fat/calorie sources — trim either if you want it leaner. For 50g+ protein, bump beef back toward 4 oz."
             )
         )
     )
@@ -1618,10 +1618,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,235", Modifier.weight(1f))
-                    MacroBox("Protein", "166g", Modifier.weight(1f))
-                    MacroBox("Fat", "137g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "50.5g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,035", Modifier.weight(1f))
+                    MacroBox("Protein", "157g", Modifier.weight(1f))
+                    MacroBox("Fat", "119g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "51.5g", Modifier.weight(1f))
                 }
             }
         }
