@@ -42,6 +42,10 @@ class MainActivity : ComponentActivity() {
         RoutineReminder.scheduleDailyArm(this)
         Thread { RoutineReminder.armToday(this@MainActivity) }.start()
 
+        // Vape reminder: channel + schedule daily 8:30 PM
+        VapeReminder.createChannel(this)
+        VapeReminder.schedule(this)
+
         setContent {
             MainTabScreen()
         }

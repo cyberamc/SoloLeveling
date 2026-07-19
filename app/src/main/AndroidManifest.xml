@@ -49,6 +49,10 @@
             android:exported="false" />
 
         <receiver
+            android:name=".VapeReminderReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".BootReceiver"
             android:exported="true">
             <intent-filter>
