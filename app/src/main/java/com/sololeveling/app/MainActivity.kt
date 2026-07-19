@@ -37,6 +37,11 @@ class MainActivity : ComponentActivity() {
         DeliveryReminder.createChannel(this)
         DeliveryReminder.scheduleAll(this)
 
+        // Routine reminder: channel + daily 3 AM arm + arm today now (network → background thread)
+        RoutineReminder.createChannel(this)
+        RoutineReminder.scheduleDailyArm(this)
+        Thread { RoutineReminder.armToday(this@MainActivity) }.start()
+
         setContent {
             MainTabScreen()
         }
