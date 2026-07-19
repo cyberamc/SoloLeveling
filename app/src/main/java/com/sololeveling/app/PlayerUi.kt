@@ -1449,13 +1449,13 @@ val LUNCH_MEALS = listOf(
     Meal(
         name = "Loaded Beef & Bacon Melt",
         mealType = "Lunch",
-        macros = Macros(calories = 530, protein = 43, fat = 37, netCarbs = "3"),
+        macros = Macros(calories = 420, protein = 36, fat = 28, netCarbs = "3"),
         ingredients = listOf(
             "3 slices Member's Mark bacon",
             "2.5 oz 96/4 extra-lean ground beef",
             "40g diced white onion",
             "1 tsp minced garlic",
-            "2 oz (approx. 8 tbsp) shredded cheddar or Monterey jack",
+            "1 oz (approx. 4 tbsp) shredded cheddar or Monterey jack",
             "sea salt",
             "black pepper"
         ),
@@ -1470,11 +1470,11 @@ val LUNCH_MEALS = listOf(
             ),
             MealStep(
                 "3. Melt the Cheese",
-                "Turn heat to low. Spread the beef mixture evenly across the bottom of the skillet. Sprinkle 2 oz shredded cheese flat over the top, then scatter the chopped bacon into the cheese."
+                "Turn heat to low. Spread the beef mixture evenly across the bottom of the skillet. Sprinkle 1 oz shredded cheese flat over the top, then scatter the chopped bacon into the cheese."
             ),
             MealStep(
                 "4. Plate & Serve",
-                "Turn the burner OFF (cast iron holds enough residual heat to melt the cheese without scorching). Cover with a lid for 60 seconds to let the cheese melt into a thick, gooey blanket. Slide onto a plate and enjoy fresh and hot.\n\nNote: Cheese and bacon are now the biggest fat/calorie sources — trim either if you want it leaner. For 50g+ protein, bump beef back toward 4 oz."
+                "Turn the burner OFF (cast iron holds enough residual heat to melt the cheese without scorching). Cover with a lid for 60 seconds to let the cheese melt and coat the beef. Slide onto a plate and enjoy fresh and hot.\n\nNote: Bacon is now the biggest fat/calorie source — trim it if you want it leaner. For 50g+ protein, bump beef back toward 4 oz."
             )
         )
     )
@@ -1623,9 +1623,9 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,085", Modifier.weight(1f))
-                    MacroBox("Protein", "157g", Modifier.weight(1f))
-                    MacroBox("Fat", "124g", Modifier.weight(1f))
+                    MacroBox("Calories", "1,975", Modifier.weight(1f))
+                    MacroBox("Protein", "150g", Modifier.weight(1f))
+                    MacroBox("Fat", "115g", Modifier.weight(1f))
                     MacroBox("Net Carbs", "52.5g", Modifier.weight(1f))
                 }
             }
