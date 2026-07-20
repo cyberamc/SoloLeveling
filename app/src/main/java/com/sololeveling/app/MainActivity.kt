@@ -24,9 +24,10 @@ class MainActivity : ComponentActivity() {
         ensureNotificationPermission()
         SleepReminder.scheduleAll(this)
 
-        // Task reminder: channel + schedule daily 8 PM (live remaining-task count)
+        // Task reminder: channel + daily 3 AM arm + arm today now (network → background thread)
         TaskReminder.createChannel(this)
-        TaskReminder.schedule(this)
+        TaskReminder.scheduleDailyArm(this)
+        Thread { TaskReminder.armToday(this@MainActivity) }.start()
 
         // Shower reminder: channel + daily 3 AM arm + arm today now (network → background thread)
         ShowerReminder.createChannel(this)
