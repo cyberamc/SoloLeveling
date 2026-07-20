@@ -22,18 +22,22 @@ class BootReceiver : BroadcastReceiver() {
             DeliveryReminder.createChannel(context)
             RoutineReminder.createChannel(context)
             VapeReminder.createChannel(context)
+            UserReminder.createChannel(context)
             SleepReminder.scheduleAll(context)
             TaskReminder.scheduleDailyArm(context)
             ShowerReminder.scheduleDailyArm(context)
             DeliveryReminder.scheduleAll(context)
             RoutineReminder.scheduleDailyArm(context)
             VapeReminder.schedule(context)
+            UserReminder.enqueuePolling(context)
             // Arm today's shower, routine, and task reminders now (network → background thread)
             // so a reboot mid-day still sets today's reminders, not just the next 3 AM arm.
+            // User reminders are re-armed here too, since alarms don't survive a reboot.
             Thread {
                 ShowerReminder.armToday(context)
                 RoutineReminder.armToday(context)
                 TaskReminder.armToday(context)
+                UserReminder.armAllNow(context)
             }.start()
         }
     }

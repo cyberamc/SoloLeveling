@@ -60,6 +60,9 @@ dependencies {
     // Lifecycle & ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 
+    // Background polling for user-created reminders
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

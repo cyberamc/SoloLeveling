@@ -88,6 +88,7 @@ fun TasksScreen() {
     var nofapStreak by remember { mutableIntStateOf(0) }
     var showRoutine by remember { mutableStateOf(false) }
     var showNotepad by remember { mutableStateOf(false) }
+    var showReminders by remember { mutableStateOf(false) }
     var showNofapNotepad by remember { mutableStateOf(false) }
     var showGoingOut by remember { mutableStateOf(false) }
     var showNoRouteConfirm by remember { mutableStateOf(false) }
@@ -100,6 +101,10 @@ fun TasksScreen() {
     }
     if (showNotepad) {
         NotepadScreen(onBack = { showNotepad = false })
+        return
+    }
+    if (showReminders) {
+        RemindersScreen(onBack = { showReminders = false })
         return
     }
     if (showGoingOut) {
@@ -238,6 +243,16 @@ fun TasksScreen() {
                     modifier = Modifier
                         .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showNotepad = true }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+                Text(
+                    text = "Reminders",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier
+                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                        .clickable { showReminders = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
                 // Going Out — only Friday (5) or Saturday (6)

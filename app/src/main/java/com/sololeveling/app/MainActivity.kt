@@ -47,6 +47,11 @@ class MainActivity : ComponentActivity() {
         VapeReminder.createChannel(this)
         VapeReminder.schedule(this)
 
+        // User reminders: channel + periodic poll + arm anything due soon right now
+        UserReminder.createChannel(this)
+        UserReminder.enqueuePolling(this)
+        Thread { UserReminder.armAllNow(this@MainActivity) }.start()
+
         setContent {
             MainTabScreen()
         }
