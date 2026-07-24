@@ -43,6 +43,12 @@ fun currentDeliveryPayMonth(): String {
     return SimpleDateFormat("yyyy-MM", Locale.US).format(cal.time)
 }
 
+// The YYYY-MM this calendar month — the tracker groups weeks by the month they're
+// WORKED in (Wednesday's month), so the current worked week always shows immediately.
+fun currentWorkedMonth(): String {
+    return SimpleDateFormat("yyyy-MM", Locale.US).format(Calendar.getInstance().time)
+}
+
 // True if the given week_start (a Sunday, "yyyy-MM-dd") is the week containing today.
 fun isCurrentDeliveryWeek(weekStart: String): Boolean {
     return try {
@@ -104,12 +110,27 @@ data class DeliveryWeek(
             "${fmt.format(start)} - ${fmt.format(end)}"
         } catch (e: Exception) { weekStart }
     }
+
+    // Dated labels for the two worked days: week_start (Sunday) + 2 = Tue, + 3 = Wed.
+    private fun dayLabel(offsetDays: Int, dayName: String): String {
+        return try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+            val start = sdf.parse(weekStart) ?: return dayName
+            val cal = Calendar.getInstance().apply {
+                time = start
+                add(Calendar.DAY_OF_MONTH, offsetDays)
+            }
+            "$dayName ${SimpleDateFormat("MMM d", Locale.US).format(cal.time)}"
+        } catch (e: Exception) { dayName }
+    }
+    fun tueDate(): String = dayLabel(2, "Tue")
+    fun wedDate(): String = dayLabel(3, "Wed")
 }
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
-fun fetchDeliveryWeeks(baseUrl: String, monthId: Int? = null): List<DeliveryWeek> {
-    val url = URL("$baseUrl/api/delivery-weeks" + (if (monthId != null) "?month_id=$monthId" else ""))
+fun fetchDeliveryWeeks(baseUrl: String, workedMonth: String? = null): List<DeliveryWeek> {
+    val url = URL("$baseUrl/api/delivery-weeks" + (if (workedMonth != null) "?worked_month=$workedMonth" else ""))
     val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
@@ -224,9 +245,8 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
     }
     Column(modifier = cardModifier) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "Week of ${week.weekLabel()}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF7B8CDE))
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (week.checkNumber > 0) {
                         Text(text = "SpeedX Check ${week.checkNumber}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4CAF50))
@@ -240,7 +260,7 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
             }
             Spacer(Modifier.height(12.dp))
 
-            DayRow(label = "Tuesday", billable = week.tueBillable, pay = week.tuePay,
+            DayRow(label = week.tueDate(), billable = week.tueBillable, pay = week.tuePay,
                 isExpanded = expandedDay == "tue", onClick = { expandedDay = if (expandedDay == "tue") null else "tue" })
             DayQuotaLine(delivered = week.tueDelivered, billable = week.tueBillable, pay = week.tuePay, rate = week.tueRate)
 
@@ -273,7 +293,7 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
 
             Spacer(Modifier.height(8.dp))
 
-            DayRow(label = "Wednesday", billable = week.wedBillable, pay = week.wedPay,
+            DayRow(label = week.wedDate(), billable = week.wedBillable, pay = week.wedPay,
                 isExpanded = expandedDay == "wed", onClick = { expandedDay = if (expandedDay == "wed") null else "wed" })
             DayQuotaLine(delivered = week.wedDelivered, billable = week.wedBillable, pay = week.wedPay, rate = week.wedRate)
 
@@ -513,7 +533,7 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
         scope.launch {
             try {
                 weeks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    fetchDeliveryWeeks(baseUrl, month.id)
+                    fetchDeliveryWeeks(baseUrl, month.month)
                 }
             } catch (e: Exception) { errorMsg = e.message }
         }
@@ -525,11 +545,12 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
                 fetchBookkeepingMonths(baseUrl)
             }
             months = m
-            val sel = m.find { it.month == currentDeliveryPayMonth() } ?: m.firstOrNull()
+            // Default to the current worked (calendar) month so this week always shows.
+            val sel = m.find { it.month == currentWorkedMonth() } ?: m.maxByOrNull { it.month }
             selectedMonth = sel
             weeks = if (sel != null) {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    fetchDeliveryWeeks(baseUrl, sel.id)
+                    fetchDeliveryWeeks(baseUrl, sel.month)
                 }
             } else {
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
