@@ -1654,10 +1654,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "1,975", Modifier.weight(1f))
+                    MacroBox("Calories", "2,135", Modifier.weight(1f))
                     MacroBox("Protein", "150g", Modifier.weight(1f))
-                    MacroBox("Fat", "115g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "52.5g", Modifier.weight(1f))
+                    MacroBox("Fat", "131g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "53.5g", Modifier.weight(1f))
                 }
             }
         }
