@@ -1477,34 +1477,35 @@ val BREAKFAST_MEALS = listOf(
 
 val LUNCH_MEALS = listOf(
     Meal(
-        name = "Loaded Beef & Bacon Melt",
+        name = "Bacon & Italian Sausage Skillet",
         mealType = "Lunch",
-        macros = Macros(calories = 420, protein = 36, fat = 28, netCarbs = "3"),
+        macros = Macros(calories = 580, protein = 36, fat = 44, netCarbs = "4"),
         ingredients = listOf(
             "3 slices Member's Mark bacon",
-            "2.5 oz 96/4 extra-lean ground beef",
+            "1 link (86g) Member's Mark Mild Italian sausage, casing removed",
+            "1.5 oz cooked/rotisserie chicken, shredded",
             "40g diced white onion",
             "1 tsp minced garlic",
-            "1 oz (approx. 4 tbsp) shredded cheddar or Monterey jack",
+            "1 oz (approx. 4 tbsp) shredded cheese",
             "sea salt",
             "black pepper"
         ),
         steps = listOf(
             MealStep(
-                "1. Fry the Bacon (Nonstick Griddle)",
-                "Lay the bacon slices flat on the griddle (cut in half first if needed to fit) and turn heat to medium. Fry 8–10 min, flipping occasionally, until perfectly crispy — keep heat at medium so the fat renders slowly and doesn't pool to the edges. Transfer to a paper towel, let cool, then chop into bite-sized pieces."
+                "1. Fry the Bacon (Griddle)",
+                "Fry bacon over medium 8–10 min until crispy. Set aside on paper towel, then chop."
             ),
             MealStep(
-                "2. Cook the Beef, Onions & Garlic (Cast Iron)",
-                "Heat the cast iron skillet over medium with a touch of oil (96/4 beef renders almost no fat, so this keeps it from sticking). Add 40g diced onion and sauté 1–2 min until translucent. Add 1 tsp minced garlic and stir 30 sec until fragrant. Add 2.5 oz ground beef, season generously with salt and pepper, and break apart with a spatula. Cook until fully browned and sizzling. Drain off excess liquid, then return the beef mixture to the pan."
+                "2. Brown the Sausage (Cast Iron)",
+                "Squeeze the Italian sausage out of its casing into the hot skillet. Break apart and brown 4–5 min until cooked through. Add 40g onion, sauté 1–2 min. Add garlic, stir 30 sec. Stir in the shredded chicken to warm through. Drain excess fat."
             ),
             MealStep(
                 "3. Melt the Cheese",
-                "Turn heat to low. Spread the beef mixture evenly across the bottom of the skillet. Sprinkle 1 oz shredded cheese flat over the top, then scatter the chopped bacon into the cheese."
+                "Turn heat to low. Spread the meat flat, sprinkle 1 oz cheese over top, scatter the chopped bacon in. Cover 60 sec to melt (or kill the heat and let the cast iron do it)."
             ),
             MealStep(
                 "4. Plate & Serve",
-                "Turn the burner OFF (cast iron holds enough residual heat to melt the cheese without scorching). Cover with a lid for 60 seconds to let the cheese melt and coat the beef. Slide onto a plate and enjoy fresh and hot.\n\nNote: Bacon is now the biggest fat/calorie source — trim it if you want it leaner. For 50g+ protein, bump beef back toward 4 oz."
+                "Slide onto a plate and enjoy hot."
             )
         )
     )
