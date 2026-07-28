@@ -1517,16 +1517,16 @@ val LUNCH_MEALS = listOf(
 
 val DINNER_MEALS = listOf(
     Meal(
-        name = "Garlic-Herb Pork & Rice",
+        name = "Garlic-Herb Pork Blade Steak & Rice",
         mealType = "Dinner",
         macros = Macros(calories = 640, protein = 47, fat = 24, netCarbs = "32"),
         ingredients = listOf(
-            "8 oz pork stew meat (boneless)",
+            "1 bone-in pork shoulder blade steak (~10 oz raw, to net ~6-7 oz cooked meat off the bone)",
             "3/4 cup jasmine rice (uncooked)",
             "1/2 to 1 tbsp butter",
             "1 tsp minced garlic",
             "1/2 tsp dried thyme",
-            "1/3 cup water + 1/2 tsp Knorr Granulated Beef Bouillon (for pork braise)",
+            "1/3 cup water + 1/2 tsp Knorr Granulated Beef Bouillon (for braise)",
             "~1.5 cups water (for rice)",
             "sea salt",
             "black pepper"
@@ -1534,11 +1534,15 @@ val DINNER_MEALS = listOf(
         steps = listOf(
             MealStep(
                 "Pork 1. Sear (Cast Iron)",
-                "Preheat oven to 300–325°F. Pat pork cubes dry, season with salt and pepper. Heat cast iron over medium-high with a touch of oil. Sear cubes hard, 60–90 sec per side, until deeply browned."
+                "Preheat oven to 300–325°F. Pat the steak dry, season both sides with salt and pepper. Heat cast iron over medium-high with a touch of oil. Sear the whole steak hard, ~2–3 min per side, until deeply browned."
             ),
             MealStep(
                 "Pork 2. Oven Braise",
-                "Stir 1/2 tsp bouillon into 1/3 cup water, add to the pan, bring to a simmer. Cover (lid or foil) and move the cast iron into the oven. Braise 1.5–2 hrs until fork-tender. Check around 1 hr; add a splash of water if drying out."
+                "Stir 1/2 tsp bouillon into 1/3 cup water, pour into the pan, bring to a simmer. Cover (lid or foil) and move to the oven. Braise 1.5–2 hrs until fork-tender and the meat pulls easily from the bone. Check around 1 hr; add a splash of water if drying out."
+            ),
+            MealStep(
+                "Pork 3. Rest & Debone",
+                "Pull the steak out, let it rest a few minutes, then remove the bone and any large fat pieces. Slice or shred the meat and stir it back into the pan juices."
             ),
             MealStep(
                 "Rice 1. Bloom Garlic & Thyme",
@@ -1550,7 +1554,7 @@ val DINNER_MEALS = listOf(
             ),
             MealStep(
                 "Combine",
-                "Fold the pork and its jus into the garlic-thyme rice, toss, and serve.\n\nNote: Keep total butter around 1 tbsp to stay near 24g fat. Bouillon is salty — taste before adding salt. Keep this braise and jus away from Luna's food (Knorr contains onion/garlic, toxic to dogs)."
+                "Fold the sliced/shredded pork and its jus into the garlic-thyme rice, toss, and serve.\n\nNote: Bone-in means tray weight includes bone — buy ~10 oz raw to net your portion. Keep total butter ~1 tbsp for 24g fat. Bouillon is salty — taste before salting. Keep braise and jus away from Luna's food (Knorr has onion/garlic, toxic to dogs)."
             )
         )
     )
