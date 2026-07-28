@@ -1477,35 +1477,39 @@ val BREAKFAST_MEALS = listOf(
 
 val LUNCH_MEALS = listOf(
     Meal(
-        name = "Bacon & Italian Sausage Skillet",
+        name = "Bacon & Ham Sliders",
         mealType = "Lunch",
-        macros = Macros(calories = 580, protein = 36, fat = 44, netCarbs = "4"),
+        macros = Macros(calories = 620, protein = 43, fat = 26, netCarbs = "36"),
         ingredients = listOf(
-            "3 slices Member's Mark bacon",
-            "1 link (86g) Member's Mark Mild Italian sausage, casing removed",
-            "1.5 oz cooked/rotisserie chicken, shredded",
-            "40g diced white onion",
-            "1 tsp minced garlic",
-            "1 oz (approx. 4 tbsp) shredded cheese",
-            "sea salt",
-            "black pepper"
+            "3 slices Member's Mark bacon (or 2 slices thick-cut)",
+            "5 oz Member's Mark Uncured Black Forest Ham, sliced",
+            "2 Member's Mark brioche slider buns",
+            "1 oz (approx. 4 tbsp) Member's Mark Mexican Style Finely Shredded Cheese"
         ),
         steps = listOf(
             MealStep(
                 "1. Fry the Bacon (Griddle)",
-                "Fry bacon over medium 8–10 min until crispy. Set aside on paper towel, then chop."
+                "Lay the bacon flat on the griddle, heat to medium. Fry 8–10 min, flipping occasionally, until crispy. Transfer to a paper towel. If using regular slices, break each in half so they stack cleanly on the small buns."
             ),
             MealStep(
-                "2. Brown the Sausage (Cast Iron)",
-                "Squeeze the Italian sausage out of its casing into the hot skillet. Break apart and brown 4–5 min until cooked through. Add 40g onion, sauté 1–2 min. Add garlic, stir 30 sec. Stir in the shredded chicken to warm through. Drain excess fat."
+                "2. Warm the Ham (Cast Iron)",
+                "Wipe the skillet or use a clean one over medium heat. Lay the ham slices down and warm 30–60 sec per side — just enough to heat through and get a little color on the edges. Deli ham is already cooked, so this is about flavor and warmth, not cooking it through. With 5 oz you'll have a generous stack — pile it high on each slider."
             ),
             MealStep(
-                "3. Melt the Cheese",
-                "Turn heat to low. Spread the meat flat, sprinkle 1 oz cheese over top, scatter the chopped bacon in. Cover 60 sec to melt (or kill the heat and let the cast iron do it)."
+                "3. Melt the Cheese onto the Ham",
+                "While the ham is still in the warm pan, split your 1 oz shredded cheese into two little piles and sprinkle it directly over the ham (half per slider's worth). Cover the pan with a lid for 30–45 sec so the trapped heat melts the cheese right into the ham. Turn off the heat."
             ),
             MealStep(
-                "4. Plate & Serve",
-                "Slide onto a plate and enjoy hot."
+                "4. Toast the Buns",
+                "Split the slider buns. Toast them cut-side down — either in the empty griddle for 30–60 sec until golden, or under a broiler for a minute. Toasting keeps the brioche from going soggy under the warm ham."
+            ),
+            MealStep(
+                "5. Build the Sliders",
+                "On each bottom bun, stack: cheesy ham, then bacon (halved slices laid flat). Cap with the top bun. Press gently so it holds together."
+            ),
+            MealStep(
+                "6. Serve",
+                "Eat right away while the cheese is melty and the bacon is crisp. On delivery days, these hold up wrapped in foil for eating one-handed in the truck."
             )
         )
     )
@@ -1655,10 +1659,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,135", Modifier.weight(1f))
-                    MacroBox("Protein", "150g", Modifier.weight(1f))
-                    MacroBox("Fat", "131g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "53.5g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,175", Modifier.weight(1f))
+                    MacroBox("Protein", "157g", Modifier.weight(1f))
+                    MacroBox("Fat", "113g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "85.5g", Modifier.weight(1f))
                 }
             }
         }
