@@ -1513,39 +1513,40 @@ val LUNCH_MEALS = listOf(
 
 val DINNER_MEALS = listOf(
     Meal(
-        name = "Garlic-Herb Braised Pork & Rice",
+        name = "Garlic-Herb Pork & Rice",
         mealType = "Dinner",
         macros = Macros(calories = 640, protein = 47, fat = 24, netCarbs = "32"),
         ingredients = listOf(
             "8 oz pork stew meat (boneless)",
-            "1 tbsp butter (split)",
-            "3/4 cup cooked jasmine rice",
+            "3/4 cup jasmine rice (uncooked)",
+            "1/2 to 1 tbsp butter",
             "1 tsp minced garlic",
             "1/2 tsp dried thyme",
-            "1/3 cup water + 1/2 beef bouillon cube (for braising)",
+            "1/3 cup water + 1/2 tsp Knorr Granulated Beef Bouillon (for pork braise)",
+            "~1.5 cups water (for rice)",
             "sea salt",
-            "freshly cracked black pepper"
+            "black pepper"
         ),
         steps = listOf(
             MealStep(
-                "1. Season the Cubes",
-                "Pat pork stew meat dry with paper towels. Season on all sides with salt and pepper (go light — bouillon adds salt later)."
+                "Pork 1. Sear (Cast Iron)",
+                "Preheat oven to 300–325°F. Pat pork cubes dry, season with salt and pepper. Heat cast iron over medium-high with a touch of oil. Sear cubes hard, 60–90 sec per side, until deeply browned."
             ),
             MealStep(
-                "2. Hard Sear",
-                "Get skillet smoking hot over high heat. Add 1/2 tbsp butter. Sear cubes in a single layer (don't crowd — work in batches), 60–90 sec per side until deeply browned."
+                "Pork 2. Oven Braise",
+                "Stir 1/2 tsp bouillon into 1/3 cup water, add to the pan, bring to a simmer. Cover (lid or foil) and move the cast iron into the oven. Braise 1.5–2 hrs until fork-tender. Check around 1 hr; add a splash of water if drying out."
             ),
             MealStep(
-                "3. Braise Until Tender",
-                "Lower heat to medium-low. Add 1/3 cup water with 1/2 beef bouillon cube dissolved in. Cover and simmer 20–30 min until fork-tender, adding a splash more liquid if it dries out. Cook down to a few spoonfuls of concentrated jus."
+                "Rice 1. Bloom Garlic & Thyme",
+                "Stage rice and water first. Heat pot over medium, add 1/2–1 tbsp butter, then 1 tsp garlic + 1/2 tsp thyme. Bloom 30 sec until fragrant (don't brown the garlic)."
             ),
             MealStep(
-                "4. Bloom Garlic & Thyme",
-                "Push pork aside. Add remaining 1/2 tbsp butter, 1 tsp garlic, 1/2 tsp thyme. Stir 30 sec until fragrant and golden."
+                "Rice 2. Boil & Simmer",
+                "Add ~1.5 cups water, raise to HIGH, bring to a boil. Add rice, stir once, drop to LOW, cover, simmer ~15 min until absorbed. Heat arc: medium → high → low. Start the rice about 20 min before the pork is done so both finish together."
             ),
             MealStep(
-                "5. Toss & Serve",
-                "Add rice to the garlic-thyme butter, stir 30 sec to coat. Turn off heat. Fold pork and all pan juices back in, toss, and taste before adding any salt — you may not need any.\n\nNote: Trim visible fat and drop to 6 oz to lower fat further. Braise adds ~20–25 min — good for batch prep. Sodium runs higher with bouillon."
+                "Combine",
+                "Fold the pork and its jus into the garlic-thyme rice, toss, and serve.\n\nNote: Keep total butter around 1 tbsp to stay near 24g fat. Bouillon is salty — taste before adding salt. Keep this braise and jus away from Luna's food (Knorr contains onion/garlic, toxic to dogs)."
             )
         )
     )
