@@ -1555,7 +1555,7 @@ val DINNER_MEALS = listOf(
             ),
             MealStep(
                 "Combine",
-                "Plate the whole steak alongside the garlic-thyme rice. Spoon the pan jus over the top.\n\nNote: Bone-in means tray weight includes bone — buy ~10 oz raw to net your portion. Keep total butter ~1 tbsp for 24g fat. Bouillon is salty — taste before salting. Keep braise and jus away from Luna's food (Knorr has onion/garlic, toxic to dogs)."
+                "Plate the whole steak alongside the garlic-thyme rice. Spoon the pan jus over the top."
             )
         )
     )
