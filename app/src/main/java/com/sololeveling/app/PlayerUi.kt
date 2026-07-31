@@ -1521,40 +1521,41 @@ val DINNER_MEALS = listOf(
         mealType = "Dinner",
         macros = Macros(calories = 640, protein = 47, fat = 24, netCarbs = "32"),
         ingredients = listOf(
-            "1 bone-in pork shoulder blade steak (~10 oz raw, to net ~6-7 oz cooked meat off the bone)",
+            "1 bone-in pork shoulder blade steak (~10 oz raw)",
             "3/4 cup jasmine rice (uncooked)",
-            "1/2 to 1 tbsp butter",
+            "1/2 tbsp butter",
             "1 tsp minced garlic",
             "1/2 tsp dried thyme",
             "1/3 cup water + 1/2 tsp Knorr Granulated Beef Bouillon (for braise)",
-            "~1.5 cups water (for rice)",
+            "1/2 tsp Knorr Granulated Beef Bouillon (for rice)",
+            "Water for rice (per the cooker's fill line for 3/4 cup rice)",
             "sea salt",
             "black pepper"
         ),
         steps = listOf(
             MealStep(
                 "Pork 1. Sear (Cast Iron)",
-                "Preheat oven to 300–325°F. Pat the steak dry, season both sides with salt and pepper. Heat cast iron over medium-high with a touch of oil. Sear the whole steak hard, ~2–3 min per side, until deeply browned."
+                "Preheat oven to 300°F. Pat the steak dry, season both sides with salt and pepper. Heat cast iron over medium-high with a touch of oil. Sear the whole steak hard, ~2–3 min per side, until deeply browned."
             ),
             MealStep(
-                "Pork 2. Oven Braise",
-                "Stir 1/2 tsp bouillon into 1/3 cup water, pour into the pan, bring to a simmer. Cover (lid or foil) and move to the oven. Braise 1.5–2 hrs until fork-tender and the meat pulls easily from the bone. Check around 1 hr; add a splash of water if drying out."
+                "Pork 2. Braise",
+                "Stir 1/2 tsp bouillon into 1/3 cup water, pour into the pan, bring to a simmer. Cover (lid or foil) and braise 20–30 min, until cooked through and tender to your liking. Add a splash of water if it dries out. (At this length you can keep it on the stovetop over low heat instead of using the oven.)"
             ),
             MealStep(
-                "Pork 3. Rest & Debone",
-                "Pull the steak out, let it rest a few minutes, then remove the bone and any large fat pieces. Slice or shred the meat and stir it back into the pan juices."
+                "Pork 3. Rest & Serve",
+                "Rest a few minutes. Serve whole, bone-in — cut and eat at the plate."
             ),
             MealStep(
-                "Rice 1. Bloom Garlic & Thyme",
-                "Stage rice and water first. Heat pot over medium, add 1/2–1 tbsp butter, then 1 tsp garlic + 1/2 tsp thyme. Bloom 30 sec until fragrant (don't brown the garlic)."
+                "Rice 1. Preheat & Bloom (Aroma ARC-5204SB)",
+                "Press RISOTTO (the Sauté-then-Simmer function). Add 1/2 tbsp butter to the inner pot, close the lid, preheat 2–4 min. Open the lid, add 1 tsp garlic + 1/2 tsp thyme. Stir 30 sec until fragrant (don't brown the garlic)."
             ),
             MealStep(
-                "Rice 2. Boil & Simmer",
-                "Add ~1.5 cups water, raise to HIGH, bring to a boil. Add rice, stir once, drop to LOW, cover, simmer ~15 min until absorbed. Heat arc: medium → high → low. Start the rice about 20 min before the pork is done so both finish together."
+                "Rice 2. Cook & Fluff",
+                "Add the 3/4 cup jasmine rice and water to the cooker's fill line. Stir in 1/2 tsp bouillon until dissolved. Stir once more. Close the lid — it switches to simmer automatically. When it beeps to Keep Warm, let it rest 5 min, then fluff with the spatula (lift and turn, don't stir)."
             ),
             MealStep(
                 "Combine",
-                "Fold the sliced/shredded pork and its jus into the garlic-thyme rice, toss, and serve.\n\nNote: Bone-in means tray weight includes bone — buy ~10 oz raw to net your portion. Keep total butter ~1 tbsp for 24g fat. Bouillon is salty — taste before salting. Keep braise and jus away from Luna's food (Knorr has onion/garlic, toxic to dogs)."
+                "Plate the whole steak alongside the garlic-thyme rice. Spoon the pan jus over the top.\n\nNote: Bone-in means tray weight includes bone — buy ~10 oz raw to net your portion. Keep total butter ~1 tbsp for 24g fat. Bouillon is salty — taste before salting. Keep braise and jus away from Luna's food (Knorr has onion/garlic, toxic to dogs)."
             )
         )
     )
