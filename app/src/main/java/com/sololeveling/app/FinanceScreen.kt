@@ -295,7 +295,8 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
 
             DayRow(label = week.wedDate(), billable = week.wedBillable, pay = week.wedPay,
                 isExpanded = expandedDay == "wed", onClick = { expandedDay = if (expandedDay == "wed") null else "wed" })
-            DayQuotaLine(delivered = week.wedDelivered, billable = week.wedBillable, pay = week.wedPay, rate = week.wedRate)
+            DayQuotaLine(delivered = week.wedDelivered, billable = week.wedBillable, pay = week.wedPay, rate = week.wedRate,
+                target = WEEKLY_QUOTA - week.tuePay)
 
             if (expandedDay == "wed") {
                 Spacer(Modifier.height(10.dp))
@@ -344,28 +345,33 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
     }
 }
 
-// Quota targets: $125 per delivery day, evaluated per-day (a strong day does not
-// cover a weak one). Weekly line reports how many days individually met $125.
+// Quota targets: $125 per delivery day; $250 for the week. Tuesday is measured
+// against the daily $125. Wednesday is measured against whatever remains of the
+// $250 weekly goal after Tuesday's pay, so a strong Tuesday shrinks Wednesday's
+// target. The weekly line reports the week's total against $250.
 const val DAILY_QUOTA = 125.0
+const val WEEKLY_QUOTA = 250.0
 
 @Composable
-fun DayQuotaLine(delivered: Int, billable: Int, pay: Double, rate: Double) {
+fun DayQuotaLine(delivered: Int, billable: Int, pay: Double, rate: Double, target: Double = DAILY_QUOTA) {
     // Hidden until the day has activity, so an un-worked day doesn't read as "short".
     if (delivered <= 0) return
-    val met = pay >= DAILY_QUOTA
+    // If the remaining target is already covered (e.g. a strong Tuesday cleared the
+    // weekly goal), treat the day as met with no shortfall.
+    val effectiveTarget = maxOf(0.0, target)
+    val met = pay >= effectiveTarget
     Spacer(Modifier.height(4.dp))
     if (met) {
-        val over = pay - DAILY_QUOTA
+        val over = pay - effectiveTarget
         Text(
             text = "✓ Quota met · $${String.format("%.2f", over)} over",
             fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF97C459),
             modifier = Modifier.padding(start = 12.dp)
         )
     } else {
-        val short = DAILY_QUOTA - pay
-        // Additional billable packages needed at this day's current rate.
-        val needBillable = Math.ceil(DAILY_QUOTA / rate).toInt()
-        val morePackages = maxOf(0, needBillable - billable)
+        val short = effectiveTarget - pay
+        // Additional billable packages needed at this day's current rate to close the gap.
+        val morePackages = maxOf(0, Math.ceil(short / rate).toInt())
         Text(
             text = "⚠ $${String.format("%.2f", short)} short · $morePackages more packages",
             fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFE0A030),
@@ -376,22 +382,28 @@ fun DayQuotaLine(delivered: Int, billable: Int, pay: Double, rate: Double) {
 
 @Composable
 fun WeeklyQuotaLine(week: DeliveryWeek) {
-    // Count only days that have been worked; report how many hit $125 each.
-    val workedDays = mutableListOf<Boolean>()
-    if (week.tueDelivered > 0) workedDays.add(week.tuePay >= DAILY_QUOTA)
-    if (week.wedDelivered > 0) workedDays.add(week.wedPay >= DAILY_QUOTA)
-    if (workedDays.isEmpty()) return
-    val metCount = workedDays.count { it }
-    val total = workedDays.size
-    val allMet = metCount == total
+    // Report the week's total pay against the $250 weekly goal. Hidden until at
+    // least one day has been worked.
+    if (week.tueDelivered <= 0 && week.wedDelivered <= 0) return
+    val met = week.totalPay >= WEEKLY_QUOTA
     Spacer(Modifier.height(3.dp))
-    Text(
-        text = if (allMet && total == 2) "✓ Both days met"
-        else if (allMet) "✓ $metCount of $total days met"
-        else "⚠ $metCount of $total days met",
-        fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
-        color = if (allMet) Color(0xFF97C459) else Color(0xFFE0A030)
-    )
+    if (met) {
+        val over = week.totalPay - WEEKLY_QUOTA
+        Text(
+            text = "✓ Weekly quota met · $${String.format("%.2f", over)} over",
+            fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF97C459)
+        )
+    } else {
+        val short = WEEKLY_QUOTA - week.totalPay
+        // Packages needed to close the gap, at Wednesday's rate (the remaining workday);
+        // fall back to the standard rate if Wednesday isn't set yet.
+        val closingRate = if (week.wedRate > 0) week.wedRate else 1.60
+        val morePackages = maxOf(0, Math.ceil(short / closingRate).toInt())
+        Text(
+            text = "⚠ $${String.format("%.2f", short)} short · $morePackages more packages",
+            fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFE0A030)
+        )
+    }
 }
 
 @Composable
