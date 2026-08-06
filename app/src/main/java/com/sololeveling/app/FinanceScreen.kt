@@ -334,7 +334,6 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
                 Column {
                     Text("Weekly Total", fontSize = 12.sp, color = Color(0xFF888899))
                     Text("${week.totalBillable} packages", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
-                    WeeklyQuotaLine(week = week)
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("$${String.format("%.2f", week.totalPay)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
