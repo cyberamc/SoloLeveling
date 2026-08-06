@@ -93,7 +93,7 @@ data class DeliveryWeek(
             val cal = Calendar.getInstance()
             cal.time = start
             cal.add(Calendar.DAY_OF_MONTH, 3) // Sunday + 3 = Wednesday
-            cal.add(Calendar.DAY_OF_MONTH, 16) // Wednesday + 16
+            cal.add(Calendar.DAY_OF_MONTH, 20) // Wednesday + 20
             SimpleDateFormat("MMM d", Locale.US).format(cal.time)
         } catch (e: Exception) { "" }
     }
