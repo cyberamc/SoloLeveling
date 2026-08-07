@@ -1479,37 +1479,29 @@ val LUNCH_MEALS = listOf(
     Meal(
         name = "Bacon & Ham Sliders",
         mealType = "Lunch",
-        macros = Macros(calories = 620, protein = 43, fat = 26, netCarbs = "36"),
+        macros = Macros(calories = 620, protein = 55, fat = 26, netCarbs = "36"),
         ingredients = listOf(
-            "3 slices Member's Mark bacon (or 2 slices thick-cut)",
-            "5 oz Member's Mark Uncured Black Forest Ham, sliced",
+            "2 slices Member's Mark Double Smoked Thick Cut Bacon",
+            "6 slices Member's Mark Uncured Black Forest Ham",
             "2 Member's Mark brioche slider buns",
-            "1 oz (approx. 4 tbsp) Member's Mark Mexican Style Finely Shredded Cheese"
+            "1 oz (approx. 1/3 cup) Member's Mark Mexican Style Finely Shredded Cheese"
         ),
         steps = listOf(
             MealStep(
-                "1. Fry the Bacon (Griddle)",
-                "Lay the bacon flat on the griddle, heat to medium. Fry 8–10 min, flipping occasionally, until crispy. Transfer to a paper towel. If using regular slices, break each in half so they stack cleanly on the small buns."
+                "1. Air Fry the Bacon",
+                "Lay the thick-cut bacon in a single layer in the air fryer basket (cut in half if needed to fit, don't overlap). Air fry at 350°F for 14 min, until crispy. No need to flip. Drain on a paper towel. Thick-cut renders a lot of fat, so manage grease partway through to cut smoke."
             ),
             MealStep(
-                "2. Warm the Ham (Cast Iron)",
-                "Wipe the skillet or use a clean one over medium heat. Lay the ham slices down and warm 30–60 sec per side — just enough to heat through and get a little color on the edges. Deli ham is already cooked, so this is about flavor and warmth, not cooking it through. With 5 oz you'll have a generous stack — pile it high on each slider."
+                "2. Warm the Ham, Cheese & Buns (Oven)",
+                "Preheat oven to 300°F. Lay the 6 ham slices on a baking sheet (3 per slider), sprinkle the cheese over the ham, and add the split buns cut-side up alongside. Warm everything 5 min — ham heated through, cheese melted, buns lightly toasted."
             ),
             MealStep(
-                "3. Melt the Cheese onto the Ham",
-                "While the ham is still in the warm pan, split your 1 oz shredded cheese into two little piles and sprinkle it directly over the ham (half per slider's worth). Cover the pan with a lid for 30–45 sec so the trapped heat melts the cheese right into the ham. Turn off the heat."
+                "3. Build the Sliders",
+                "On each bottom bun, stack the cheesy ham (3 slices, folded to fit), then the bacon (halved slices laid flat). Cap with the top bun. Press gently."
             ),
             MealStep(
-                "4. Toast the Buns",
-                "Split the slider buns. Toast them cut-side down — either in the empty griddle for 30–60 sec until golden, or under a broiler for a minute. Toasting keeps the brioche from going soggy under the warm ham."
-            ),
-            MealStep(
-                "5. Build the Sliders",
-                "On each bottom bun, stack: cheesy ham, then bacon (halved slices laid flat). Cap with the top bun. Press gently so it holds together."
-            ),
-            MealStep(
-                "6. Serve",
-                "Eat right away while the cheese is melty and the bacon is crisp. On delivery days, these hold up wrapped in foil for eating one-handed in the truck."
+                "4. Serve",
+                "Eat while the cheese is melty and the bacon is crisp. On delivery days, wrap in foil to eat one-handed in the truck."
             )
         )
     )
@@ -1517,45 +1509,40 @@ val LUNCH_MEALS = listOf(
 
 val DINNER_MEALS = listOf(
     Meal(
-        name = "Garlic-Herb Pork Blade Steak & Rice",
+        name = "Reverse-Sear Pork Blade Steak & Bouillon Rice",
         mealType = "Dinner",
         macros = Macros(calories = 640, protein = 47, fat = 24, netCarbs = "32"),
         ingredients = listOf(
             "1 bone-in pork shoulder blade steak (~10 oz raw)",
             "3/4 cup jasmine rice (uncooked)",
-            "1/2 tbsp butter",
-            "1 tsp minced garlic",
-            "1/2 tsp dried thyme",
-            "1/3 cup water + 1/2 tsp Knorr Granulated Beef Bouillon (for braise)",
-            "1/2 tsp Knorr Granulated Beef Bouillon (for rice)",
+            "1 tsp Knorr Granulated Beef Bouillon (for rice)",
             "Water for rice (per the cooker's fill line for 3/4 cup rice)",
-            "sea salt",
-            "black pepper"
+            "Touch of oil, sea salt & black pepper"
         ),
         steps = listOf(
             MealStep(
-                "Pork 1. Sear (Cast Iron)",
-                "Preheat oven to 300°F. Pat the steak dry, season both sides with salt and pepper. Heat cast iron over medium-high with a touch of oil. Sear the whole steak hard, ~2–3 min per side, until deeply browned."
+                "Pork 1. Oven (Reverse Sear)",
+                "Preheat oven to 275°F. Pat the steak dry, season both sides with salt and pepper. Place the steak on a rack over a baking sheet. Cook in the oven until it reaches ~135–140°F internal (about 20–30 min depending on thickness). Use a meat thermometer — this is the key to reverse sear."
             ),
             MealStep(
-                "Pork 2. Braise",
-                "Stir 1/2 tsp bouillon into 1/3 cup water, pour into the pan, bring to a simmer. Cover (lid or foil) and braise 20–30 min, until cooked through and tender to your liking. Add a splash of water if it dries out. (At this length you can keep it on the stovetop over low heat instead of using the oven.)"
+                "Pork 2. Sear (Cast Iron)",
+                "Pull it out and let it rest a few minutes while you heat the pan. Get a cast iron skillet screaming hot over high heat with a touch of oil. Sear the steak hard, ~1 min per side, just to build a deep crust. Don't overcook — the interior is already done."
             ),
             MealStep(
                 "Pork 3. Rest & Serve",
-                "Rest a few minutes. Serve whole, bone-in — cut and eat at the plate."
+                "Rest a couple minutes. Serve whole, bone-in — cut and eat at the plate."
             ),
             MealStep(
-                "Rice 1. Preheat & Bloom (Aroma ARC-5204SB)",
-                "Press RISOTTO (the Sauté-then-Simmer function). Add 1/2 tbsp butter to the inner pot, close the lid, preheat 2–4 min. Open the lid, add 1 tsp garlic + 1/2 tsp thyme. Stir 30 sec until fragrant (don't brown the garlic)."
+                "Rice 1. Cook (Aroma ARC-5204SB)",
+                "Add the 3/4 cup rice and water to the cooker's fill line. Stir in 1 tsp bouillon until dissolved. Close the lid, select White Rice, and start."
             ),
             MealStep(
-                "Rice 2. Cook & Fluff",
-                "Add the 3/4 cup jasmine rice and water to the cooker's fill line. Stir in 1/2 tsp bouillon until dissolved. Stir once more. Close the lid — it switches to simmer automatically. When it beeps to Keep Warm, let it rest 5 min, then fluff with the spatula (lift and turn, don't stir)."
+                "Rice 2. Fluff",
+                "When it switches to Keep Warm, let it rest 5 min, then fluff with the spatula (lift and turn, don't stir)."
             ),
             MealStep(
                 "Combine",
-                "Plate the whole steak alongside the garlic-thyme rice. Spoon the pan jus over the top."
+                "Plate the whole steak alongside the bouillon rice.\n\nNote: Use a thermometer for the reverse sear — pull at ~135–140°F, then sear hot and fast. Use the cooker's fill line. Don't add extra salt to the rice; the bouillon seasons it."
             )
         )
     )
@@ -1665,7 +1652,7 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     MacroBox("Calories", "2,175", Modifier.weight(1f))
-                    MacroBox("Protein", "157g", Modifier.weight(1f))
+                    MacroBox("Protein", "169g", Modifier.weight(1f))
                     MacroBox("Fat", "113g", Modifier.weight(1f))
                     MacroBox("Net Carbs", "85.5g", Modifier.weight(1f))
                 }
