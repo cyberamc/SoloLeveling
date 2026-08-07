@@ -1560,31 +1560,40 @@ val SNACK_MEALS = listOf(
 
 val DESSERT_MEALS = listOf(
     Meal(
-        name = "Pecan Mousse",
+        name = "Chocolate Pecan Fat Bombs",
         mealType = "Dessert",
-        macros = Macros(calories = 295, protein = 4, fat = 29, netCarbs = "3.5"),
+        macros = Macros(calories = 145, protein = 1, fat = 15, netCarbs = "1.5"),
         ingredients = listOf(
-            "2 oz heavy whipping cream",
-            "1 tbsp cocoa powder",
-            "1 tbsp sweetener",
-            "7g pecan halves"
+            "1/2 cup (1 stick) butter, softened — or 1/2 cup coconut oil",
+            "1/4 cup cocoa powder",
+            "3–4 tbsp sweetener (to taste)",
+            "33g pecans (weighed whole, then chopped)",
+            "Pinch of salt (optional, sharpens the chocolate)"
         ),
         steps = listOf(
             MealStep(
-                "1. Chill and Prep Your Tools: 1 minute",
-                "For the fastest results, use a small metal or glass bowl. If you have an extra 60 seconds, drop the bowl and your whisk (or hand mixer beaters) into the freezer to get them cold. Cold tools make heavy cream whip up twice as fast."
+                "1. Melt the Base",
+                "Gently melt the butter (or coconut oil) — microwave 20–30 sec or a small pan on low. Don't boil it, just liquefy."
             ),
             MealStep(
-                "2. Combine the Base: 2 minutes",
-                "Pour the 2 oz of heavy whipping cream straight into the chilled bowl. Sift or dump in the 1 tbsp of cocoa powder and 1 tbsp of sweetener."
+                "2. Mix",
+                "Stir in the cocoa powder, sweetener, and pinch of salt until smooth with no lumps. Taste and adjust sweetener now."
             ),
             MealStep(
-                "3. Whip to Thick Peaks: 2 minutes",
-                "Using a hand whisk, beat the mixture vigorously.\n\nMove your wrist in a rapid, circular motion to incorporate air. Watch it closely—after about 90 to 120 seconds, the liquid cream will suddenly transform into a thick, velvety, scoopable mousse that holds its shape. Stop beating immediately once it reaches this point so it doesn't turn into chocolate butter."
+                "3. Add Pecans",
+                "Chop the 33g pecans and stir them in so they're evenly distributed."
             ),
             MealStep(
-                "4. The Pecan Crunch Finish: 1 minute",
-                "Spoon the mousse into a small bowl or glass. Take your 7g of pecan halves, give them a quick chop with a kitchen knife, and scatter them generously over the top."
+                "4. Fill the Mold",
+                "Pour into the silicone ice cube tray, filling each cavity to the top. The batch fills about 6 large cavities."
+            ),
+            MealStep(
+                "5. Freeze",
+                "Freeze at least 1–2 hours until solid."
+            ),
+            MealStep(
+                "6. Store & Serve",
+                "Keep in the freezer in a bag or container. To release, let the tray sit at room temp ~60 sec, then flex the silicone to pop them out. Eat cold — butter-based bombs soften fast in your hand.\n\nMakes ~6 pieces · Per piece: ~145 cal, 1g protein, 15g fat, 1.5g net carb"
             )
         )
     )
@@ -1651,10 +1660,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,175", Modifier.weight(1f))
-                    MacroBox("Protein", "169g", Modifier.weight(1f))
-                    MacroBox("Fat", "113g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "85.5g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,025", Modifier.weight(1f))
+                    MacroBox("Protein", "166g", Modifier.weight(1f))
+                    MacroBox("Fat", "99g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "83.5g", Modifier.weight(1f))
                 }
             }
         }
