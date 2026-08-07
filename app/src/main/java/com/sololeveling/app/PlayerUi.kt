@@ -1509,7 +1509,7 @@ val LUNCH_MEALS = listOf(
 
 val DINNER_MEALS = listOf(
     Meal(
-        name = "Reverse-Sear Pork Blade Steak & Bouillon Rice",
+        name = "Pork Blade Steak & Rice",
         mealType = "Dinner",
         macros = Macros(calories = 640, protein = 47, fat = 24, netCarbs = "32"),
         ingredients = listOf(
