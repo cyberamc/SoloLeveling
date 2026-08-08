@@ -1096,10 +1096,11 @@ fun ThisWeekHeader(expanded: Boolean, onToggle: () -> Unit) {
     }
 }
 
-// The everyday core routine — the autopilot tasks done every day, kept here as a
-// read-only reference rather than as checkable quests. Same list all seven days.
-// Edit this list to change the reference (it is not stored in the database).
-val DAILY_ROUTINE_CORE = listOf(
+// The everyday core routine — the autopilot tasks done every day, shown read-only.
+// Single source of truth is the server's routine_reference table, fetched via
+// /api/routine-reference. This hardcoded list is only an offline fallback so the
+// card still shows something if the network is unavailable.
+val DAILY_ROUTINE_CORE_FALLBACK = listOf(
     "Turn Off Front & Back Yard Light",
     "Walk Toby (AM)",
     "Organize Quarters",
@@ -1125,9 +1126,37 @@ val DAILY_ROUTINE_CORE = listOf(
     "Held The Line"
 )
 
+// Fetches the core routine list from the server. Returns null on failure so the
+// caller can fall back to the baked-in list.
+fun fetchRoutineReference(): List<String>? {
+    return try {
+        val url = URL("https://mysololeveling.us/api/routine-reference")
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "GET"
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
+        try {
+            if (conn.responseCode != 200) return null
+            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            val data = Gson().fromJson(body, List::class.java)
+            data.mapNotNull {
+                if (it is Map<*, *>) (it["title"] as? String) else null
+            }.takeIf { it.isNotEmpty() }
+        } finally { conn.disconnect() }
+    } catch (e: Exception) { null }
+}
+
 @Composable
 fun DailyRoutineReference() {
     var expanded by remember { mutableStateOf(false) }
+    var tasks by remember { mutableStateOf(DAILY_ROUTINE_CORE_FALLBACK) }
+
+    // Load from the server once; keep the fallback if the fetch fails.
+    LaunchedEffect(Unit) {
+        val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchRoutineReference() }
+        if (fetched != null) tasks = fetched
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1148,7 +1177,7 @@ fun DailyRoutineReference() {
         }
         if (expanded) {
             Spacer(Modifier.height(8.dp))
-            DAILY_ROUTINE_CORE.forEach { task ->
+            tasks.forEach { task ->
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                     verticalAlignment = Alignment.CenterVertically
