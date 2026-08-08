@@ -355,6 +355,9 @@ fun TasksScreen() {
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                item(key = "daily-routine-reference") {
+                    DailyRoutineReference()
+                }
                 item(key = "today-header") {
                     SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
                 }
@@ -1090,6 +1093,71 @@ fun ThisWeekHeader(expanded: Boolean, onToggle: () -> Unit) {
     ) {
         Text(text = "THIS WEEK", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), letterSpacing = 2.sp)
         Text(text = if (expanded) "▲" else "▼", fontSize = 14.sp, color = Color(0xFFFFD700))
+    }
+}
+
+// The everyday core routine — the autopilot tasks done every day, kept here as a
+// read-only reference rather than as checkable quests. Same list all seven days.
+// Edit this list to change the reference (it is not stored in the database).
+val DAILY_ROUTINE_CORE = listOf(
+    "Turn Off Front & Back Yard Light",
+    "Walk Toby (AM)",
+    "Organize Quarters",
+    "Add Ice To Water Jug",
+    "Gym (not on rest days: Wed & Sun)",
+    "Turn On Air Humidifier",
+    "Protein Shake",
+    "Prepare Supplements & Clothes For Tomorrow",
+    "Empty Trash (if needed)",
+    "Feed Toby & Luna",
+    "Meditate",
+    "Shower",
+    "Brush Teeth (AM)",
+    "Clean Hearing Aids",
+    "Make Breakfast",
+    "Make Dinner",
+    "Make Dessert",
+    "Take Evening Supplements",
+    "Prepare Tomorrow's L-Theanine Mix, Hydration, & Soda",
+    "Brush Teeth (PM)",
+    "Turn On Front & Back Yard Light",
+    "Walk Toby (PM)",
+    "Held The Line"
+)
+
+@Composable
+fun DailyRoutineReference() {
+    var expanded by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1f1f1f), shape = RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "DAILY ROUTINE",
+                fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                color = Color(0xFF8A8A8A), letterSpacing = 2.sp
+            )
+            Text(text = if (expanded) "▲" else "▼", fontSize = 13.sp, color = Color(0xFF8A8A8A))
+        }
+        if (expanded) {
+            Spacer(Modifier.height(8.dp))
+            DAILY_ROUTINE_CORE.forEach { task ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "•", fontSize = 13.sp, color = Color(0xFF6A6A6A), modifier = Modifier.padding(end = 8.dp))
+                    Text(text = task, fontSize = 13.sp, color = Color(0xFFBFBFBF))
+                }
+            }
+        }
     }
 }
 
