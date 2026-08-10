@@ -1647,10 +1647,13 @@ val DINNER_MEALS = listOf(
 
 val SNACK_MEALS = listOf(
     Meal(
-        name = "Pecan Halves",
+        name = "Protein Snack",
         mealType = "Snack",
-        macros = Macros(calories = 210, protein = 3, fat = 21, netCarbs = "1"),
-        ingredients = listOf("Member's Mark Natural Pecan Halves — 30g"),
+        macros = Macros(calories = 300, protein = 12, fat = 27, netCarbs = "2"),
+        ingredients = listOf(
+            "30g Member's Mark Natural Pecan Halves — 210 cal · 3g protein · 21g fat · 1g net carb",
+            "1 grass-fed beef stick (28g / 1 oz) — 90 cal · 9g protein · 6g fat · 1g net carb"
+        ),
         steps = emptyList()
     )
 )
@@ -1757,10 +1760,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,025", Modifier.weight(1f))
-                    MacroBox("Protein", "166g", Modifier.weight(1f))
-                    MacroBox("Fat", "99g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "83.5g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,115", Modifier.weight(1f))
+                    MacroBox("Protein", "175g", Modifier.weight(1f))
+                    MacroBox("Fat", "105g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "84.5g", Modifier.weight(1f))
                 }
             }
         }
