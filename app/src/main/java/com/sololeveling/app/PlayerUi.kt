@@ -1651,8 +1651,9 @@ val SNACK_MEALS = listOf(
         mealType = "Snack",
         macros = Macros(calories = 300, protein = 12, fat = 27, netCarbs = "2"),
         ingredients = listOf(
-            "30g Member's Mark Natural Pecan Halves — 210 cal · 3g protein · 21g fat · 1g net carb",
-            "1 grass-fed beef stick (28g / 1 oz) — 90 cal · 9g protein · 6g fat · 1g net carb"
+            "30g Member's Mark Natural Pecan Halves",
+            "1 grass-fed beef stick (28g / 1 oz)",
+            "Note: Pecans — 210 cal · 3p · 21f · 1nc\n      Beef stick — 90 cal · 9p · 6f · 1nc"
         ),
         steps = emptyList()
     )
@@ -1925,7 +1926,11 @@ fun MealDetailScreen(meal: Meal, onBack: () -> Unit) {
                         Column {
                             Text(text = "Ingredients", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700), modifier = Modifier.padding(bottom = 8.dp))
                             meal.ingredients.forEach { ingredient ->
-                                Text(text = "• $ingredient", fontSize = 14.sp, color = Color.White, modifier = Modifier.padding(vertical = 2.dp))
+                                if (ingredient.startsWith("Note:")) {
+                                    Text(text = ingredient, fontSize = 13.sp, color = Color(0xFF9A9A9A), lineHeight = 18.sp, modifier = Modifier.padding(top = 8.dp))
+                                } else {
+                                    Text(text = "• $ingredient", fontSize = 14.sp, color = Color.White, modifier = Modifier.padding(vertical = 2.dp))
+                                }
                             }
                         }
                     }
