@@ -1544,9 +1544,9 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake",
         mealType = "Breakfast",
-        macros = Macros(calories = 410, protein = 60, fat = 13, netCarbs = "13"),
+        macros = Macros(calories = 200, protein = 30, fat = 7, netCarbs = "4"),
         ingredients = listOf(
-            "2 scoops body fortress whey protein powder",
+            "2 scoops (39g) Premier Protein Vanilla Milkshake powder",
             "8 to 12 oz cold water",
             "7g pecans (about 1 tbsp chopped, ~10 halves)",
             "2 to 3 ice cubes (optional)"
@@ -1554,19 +1554,19 @@ val BREAKFAST_MEALS = listOf(
         steps = listOf(
             MealStep(
                 "1. Measure the Base",
-                "Pour 8 to 12 oz of cold water into the Ninja blender jar.\n\n(Thicker shake: stick to 8 oz. More fluid: go up to 12 oz. For an ice-cold texture, add 2 to 3 ice cubes.)"
+                "Pour 8 to 12 oz of cold water into the Ninja blender jar. (Thicker shake: stick to 8 oz. More fluid: go up to 12 oz. For ice-cold texture, add 2 to 3 ice cubes.)"
             ),
             MealStep(
                 "2. Add Powder & Pecans",
-                "Add 2 level scoops of Body Fortress whey protein and 7g pecans."
+                "Add 2 scoops of Premier Protein powder and 7g pecans."
             ),
             MealStep(
                 "3. Blend",
-                "Secure the lid and blend 20–30 seconds until fully smooth and the pecans are broken down and incorporated."
+                "Secure the lid and blend 20–30 seconds until smooth and the pecans are broken down."
             ),
             MealStep(
                 "4. Finish",
-                "Let it sit 30 seconds for the foam to settle, then pour and drink.\n\nNote: Pecans add ~50 cal and 5g fat over the original — blend rather than shake so they fully break down."
+                "Let it sit 30 seconds for foam to settle, then pour and drink."
             )
         )
     )
@@ -1576,9 +1576,9 @@ val LUNCH_MEALS = listOf(
     Meal(
         name = "Bacon & Ham Sliders",
         mealType = "Lunch",
-        macros = Macros(calories = 620, protein = 55, fat = 26, netCarbs = "36"),
+        macros = Macros(calories = 710, protein = 63, fat = 33, netCarbs = "36"),
         ingredients = listOf(
-            "2 slices Member's Mark Double Smoked Thick Cut Bacon",
+            "3 slices Member's Mark Double Smoked Thick Cut Bacon",
             "6 slices Member's Mark Uncured Black Forest Ham",
             "2 Member's Mark brioche slider buns",
             "1 oz (approx. 1/3 cup) Member's Mark Mexican Style Finely Shredded Cheese"
@@ -1594,7 +1594,7 @@ val LUNCH_MEALS = listOf(
             ),
             MealStep(
                 "3. Build the Sliders",
-                "On each bottom bun, stack the cheesy ham (3 slices, folded to fit), then the bacon (halved slices laid flat). Cap with the top bun. Press gently."
+                "On each bottom bun, stack the cheesy ham (3 slices, folded to fit), then the bacon. With 3 slices, put 1.5 slices per slider (halve as needed to fit). Cap with the top bun. Press gently."
             ),
             MealStep(
                 "4. Serve",
@@ -1761,10 +1761,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,115", Modifier.weight(1f))
-                    MacroBox("Protein", "175g", Modifier.weight(1f))
-                    MacroBox("Fat", "105g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "84.5g", Modifier.weight(1f))
+                    MacroBox("Calories", "1,995", Modifier.weight(1f))
+                    MacroBox("Protein", "153g", Modifier.weight(1f))
+                    MacroBox("Fat", "106g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "75.5g", Modifier.weight(1f))
                 }
             }
         }
