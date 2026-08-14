@@ -1556,25 +1556,27 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake",
         mealType = "Breakfast",
-        macros = Macros(calories = 200, protein = 30, fat = 7, netCarbs = "4"),
+        macros = Macros(calories = 300, protein = 32, fat = 8, netCarbs = "22"),
         ingredients = listOf(
             "2 scoops (39g) Premier Protein Vanilla Milkshake powder",
-            "8 to 12 oz cold water",
+            "1/2 banana (~60g), frozen",
+            "1 tbsp cocoa powder",
             "7g pecans (about 1 tbsp chopped, ~10 halves)",
-            "2 to 3 ice cubes (optional)"
+            "Swerve sweetener, to taste (start with 1–2 tsp)",
+            "8 to 12 oz cold water"
         ),
         steps = listOf(
             MealStep(
                 "1. Measure the Base",
-                "Pour 8 to 12 oz of cold water into the Ninja blender jar. (Thicker shake: stick to 8 oz. More fluid: go up to 12 oz. For ice-cold texture, add 2 to 3 ice cubes.)"
+                "Pour 8 to 12 oz of cold water into the Ninja blender jar. (Thicker shake: stick to 8 oz. More fluid: go up to 12 oz.)"
             ),
             MealStep(
-                "2. Add Powder & Pecans",
-                "Add 2 scoops of Premier Protein powder and 7g pecans."
+                "2. Add Everything",
+                "Add the frozen banana, 2 scoops of Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."
             ),
             MealStep(
                 "3. Blend",
-                "Secure the lid and blend 20–30 seconds until smooth and the pecans are broken down."
+                "Secure the lid and blend 20–30 seconds until smooth and the pecans and banana are broken down."
             ),
             MealStep(
                 "4. Finish",
@@ -1773,10 +1775,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "1,995", Modifier.weight(1f))
-                    MacroBox("Protein", "153g", Modifier.weight(1f))
-                    MacroBox("Fat", "106g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "75.5g", Modifier.weight(1f))
+                    MacroBox("Calories", "2,095", Modifier.weight(1f))
+                    MacroBox("Protein", "155g", Modifier.weight(1f))
+                    MacroBox("Fat", "107g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", "93.5g", Modifier.weight(1f))
                 }
             }
         }
