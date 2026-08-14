@@ -1100,35 +1100,40 @@ fun ThisWeekHeader(expanded: Boolean, onToggle: () -> Unit) {
 // Single source of truth is the server's routine_reference table, fetched via
 // /api/routine-reference. This hardcoded list is only an offline fallback so the
 // card still shows something if the network is unavailable.
+// Offline fallback for the routine reference. The server returns today's schedule
+// (WFM or Delivery) with a label; when unreachable we show this generic WFM list.
 val DAILY_ROUTINE_CORE_FALLBACK = listOf(
-    "Turn Off Front & Back Yard Light",
-    "Walk Toby (AM)",
-    "Organize Quarters",
-    "Add Ice To Water Jug",
-    "Gym (not on rest days: Wed & Sun)",
-    "Turn On Air Humidifier",
-    "Protein Shake",
-    "Prepare Supplements & Clothes For Tomorrow",
-    "Empty Trash (if needed)",
-    "Feed Toby & Luna",
-    "Meditate",
-    "Shower",
-    "Brush Teeth (AM)",
-    "Clean Hearing Aids",
-    "Make Breakfast",
-    "Make Dinner",
-    "Make Dessert",
-    "Take Evening Supplements",
-    "Prepare Tomorrow's L-Theanine Mix, Hydration, & Soda",
-    "Brush Teeth (PM)",
-    "Turn On Front & Back Yard Light",
-    "Walk Toby (PM)",
-    "Held The Line"
+    "5:45 AM - Wake Up",
+    "Bathroom, Teeth, Clothes, Hair, & Supplement Drink",
+    "6:00 AM - Walk Toby & Turn Off Lights",
+    "6:15 AM - Bed, Trash, Supplement Drink, Ice, & Protein Shake",
+    "6:30 AM - Pickup Dad",
+    "6:45 AM - Gym (Mon, Tues, & Thurs to Sat)",
+    "7:30 AM - Air Humidifier & Protein Shake",
+    "7:35 AM - One Hour Of Day Specific Tasks",
+    "9:00 AM - Prepare Clothes & Shower",
+    "9:20 AM - Clean Hearing Aids & Meditate",
+    "9:30 AM - Feed Toby & Luna",
+    "9:40 AM - Chill",
+    "10:10 AM - Cook Lunch, Eat, Clean, & Prepare Dinner",
+    "11:00 AM - Study",
+    "11:45 AM - Prepare For Work & Air Humidifier",
+    "3:00 PM - Cook Rice",
+    "3:30 PM - Bake Pork",
+    "4:00 PM - Sear Pork",
+    "4:20 PM - Eat Dessert",
+    "4:40 PM - Clean & Prepare Soda",
+    "7:00 PM - Brush Teeth",
+    "8:00 PM - Take & Prepare Evening Supplement",
+    "9:00 PM - Walk Toby & Turn On Lights"
 )
 
-// Fetches the core routine list from the server. Returns null on failure so the
-// caller can fall back to the baked-in list.
-fun fetchRoutineReference(): List<String>? {
+// Holds the routine reference response: a label (WFM / Delivery Day) plus the items.
+data class RoutineReference(val label: String, val items: List<String>)
+
+// Fetches today's routine from the server. Returns null on failure so the caller
+// can fall back to the baked-in list.
+fun fetchRoutineReference(): RoutineReference? {
     return try {
         val url = URL("https://mysololeveling.us/api/routine-reference")
         val conn = url.openConnection() as HttpURLConnection
@@ -1138,10 +1143,13 @@ fun fetchRoutineReference(): List<String>? {
         try {
             if (conn.responseCode != 200) return null
             val body = conn.inputStream.bufferedReader().use { it.readText() }
-            val data = Gson().fromJson(body, List::class.java)
-            data.mapNotNull {
+            val obj = Gson().fromJson(body, Map::class.java)
+            val label = (obj["label"] as? String) ?: "Daily Routine"
+            val rawItems = obj["items"] as? List<*> ?: return null
+            val items = rawItems.mapNotNull {
                 if (it is Map<*, *>) (it["title"] as? String) else null
-            }.takeIf { it.isNotEmpty() }
+            }
+            if (items.isEmpty()) null else RoutineReference(label, items)
         } finally { conn.disconnect() }
     } catch (e: Exception) { null }
 }
@@ -1150,11 +1158,15 @@ fun fetchRoutineReference(): List<String>? {
 fun DailyRoutineReference() {
     var expanded by remember { mutableStateOf(false) }
     var tasks by remember { mutableStateOf(DAILY_ROUTINE_CORE_FALLBACK) }
+    var headerLabel by remember { mutableStateOf("DAILY ROUTINE") }
 
     // Load from the server once; keep the fallback if the fetch fails.
     LaunchedEffect(Unit) {
         val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchRoutineReference() }
-        if (fetched != null) tasks = fetched
+        if (fetched != null) {
+            tasks = fetched.items
+            headerLabel = "DAILY ROUTINE · " + fetched.label.uppercase()
+        }
     }
 
     Column(
@@ -1169,7 +1181,7 @@ fun DailyRoutineReference() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "DAILY ROUTINE",
+                text = headerLabel,
                 fontSize = 12.sp, fontWeight = FontWeight.Bold,
                 color = Color(0xFF8A8A8A), letterSpacing = 2.sp
             )
