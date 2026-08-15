@@ -1987,7 +1987,6 @@ fun SupplementsScreen() {
                             category = "Capsule",
                             supplements = listOf(
                                 "Caffeine" to "400 mg",
-                                "L-Tyrosine" to "1000 mg",
                                 "Alpha-GPC" to "600 mg",
                                 "One A Day Multivitamin for Men" to "1 tablet",
                                 "Allergy Relief" to "1 tablet"
@@ -2000,7 +1999,8 @@ fun SupplementsScreen() {
                                 "Beta-Alanine" to "3.2g",
                                 "Betaine Anhydrous" to "3g",
                                 "Creatine" to "5g",
-                                "L-Theanine" to "400 mg"
+                                "L-Theanine" to "400 mg",
+                                "L-Tyrosine" to "1000 mg"
                             )
                         )
                     )
