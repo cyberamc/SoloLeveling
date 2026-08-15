@@ -298,27 +298,19 @@ fun TasksScreen() {
                 }
             }
             Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "\"The Pain Of Discipline Or The Pain Of Regret.\"",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.White,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-            )
-            Spacer(modifier = Modifier.height(4.dp))
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "$requiredDailiesCompleted/${requiredDailies.size} Daily · $requiredTodayWeeklyCompleted/${requiredTodayWeekly.size} Required$overdueText",
-                    fontSize = 13.sp,
-                    color = Color(0xFFFFD700)
+                    text = "\"The Pain Of Discipline Or The Pain Of Regret.\"",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.White,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = "  ·  ",
-                    fontSize = 13.sp,
-                    color = Color(0xFFFFD700)
-                )
+                Spacer(modifier = Modifier.width(8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.pointerInput(Unit) {
