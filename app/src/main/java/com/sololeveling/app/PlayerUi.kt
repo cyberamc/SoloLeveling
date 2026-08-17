@@ -91,6 +91,7 @@ fun TasksScreen() {
     var showReminders by remember { mutableStateOf(false) }
     var showLuna by remember { mutableStateOf(false) }
     var showNofapNotepad by remember { mutableStateOf(false) }
+    var showTimerDialog by remember { mutableStateOf(false) }
     var showGoingOut by remember { mutableStateOf(false) }
     var showNoRouteConfirm by remember { mutableStateOf(false) }
     var noRouteWorking by remember { mutableStateOf(false) }
@@ -119,6 +120,10 @@ fun TasksScreen() {
     if (showNofapNotepad) {
         NofapNotepadScreen(onBack = { showNofapNotepad = false })
         return
+    }
+
+    if (showTimerDialog) {
+        TimerDialog(onDismiss = { showTimerDialog = false })
     }
 
     if (showNoRouteConfirm) {
@@ -307,8 +312,7 @@ fun TasksScreen() {
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    modifier = Modifier.weight(1f)
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Row(
@@ -321,6 +325,14 @@ fun TasksScreen() {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
                 }
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = "⏱",
+                    fontSize = 20.sp,
+                    modifier = Modifier
+                        .pointerInput(Unit) { detectTapGestures(onTap = { showTimerDialog = true }) }
+                        .padding(start = 8.dp)
+                )
             }
             if (protocolBanner != null) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -1144,6 +1156,92 @@ fun fetchRoutineReference(): RoutineReference? {
             if (items.isEmpty()) null else RoutineReference(label, items)
         } finally { conn.disconnect() }
     } catch (e: Exception) { null }
+}
+
+@Composable
+fun TimerDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    // Two presets (editable). label -> default minutes.
+    val presets = listOf("Meditation" to 2, "Vaping & Video Games" to 30)
+    var selected by remember { mutableStateOf(0) }
+    var minutes by remember { mutableStateOf(presets[0].second.toString()) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1a1a1a),
+        title = { Text("Timer", color = Color.White, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                presets.forEachIndexed { i, (label, def) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .pointerInput(Unit) {
+                                detectTapGestures(onTap = {
+                                    selected = i
+                                    minutes = def.toString()
+                                })
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (selected == i) "●" else "○",
+                            fontSize = 16.sp,
+                            color = if (selected == i) Color(0xFFFFD700) else Color(0xFF777777),
+                            modifier = Modifier.padding(end = 10.dp)
+                        )
+                        Text(text = label, fontSize = 15.sp, color = Color.White)
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Text("Minutes", fontSize = 11.sp, color = Color(0xFF777777))
+                OutlinedTextField(
+                    value = minutes,
+                    onValueChange = { v -> minutes = v.filter { it.isDigit() }.take(3) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFF7b8cde),
+                        unfocusedBorderColor = Color(0xFF2a2a3a)
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Text(
+                text = "Start",
+                color = Color(0xFF7b8cde),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        val mins = minutes.toIntOrNull() ?: 0
+                        if (mins > 0) {
+                            val (label, _) = presets[selected]
+                            val doneText = if (label == "Meditation")
+                                "Meditation complete" else "Time's up — done vaping & gaming"
+                            TimerService.start(context, label, mins * 60, doneText)
+                            onDismiss()
+                        }
+                    })
+                }.padding(8.dp)
+            )
+        },
+        dismissButton = {
+            Text(
+                text = "Stop",
+                color = Color(0xFFa55),
+                modifier = Modifier.pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        TimerService.stop(context)
+                        onDismiss()
+                    })
+                }.padding(8.dp)
+            )
+        }
+    )
 }
 
 @Composable
