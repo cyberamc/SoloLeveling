@@ -326,9 +326,7 @@ fun TasksScreen() {
                     Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    text = "⏱",
-                    fontSize = 20.sp,
+                TimerIconCanvas(
                     modifier = Modifier
                         .pointerInput(Unit) { detectTapGestures(onTap = { showTimerDialog = true }) }
                         .padding(start = 8.dp)
@@ -1156,6 +1154,37 @@ fun fetchRoutineReference(): RoutineReference? {
             if (items.isEmpty()) null else RoutineReference(label, items)
         } finally { conn.disconnect() }
     } catch (e: Exception) { null }
+}
+
+@Composable
+fun TimerIconCanvas(modifier: Modifier = Modifier) {
+    val gold = Color(0xFFFFD700)
+    androidx.compose.foundation.Canvas(
+        modifier = modifier.size(22.dp)
+    ) {
+        val w = size.width
+        val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f)
+        // Body circle (leave room at top for the stem/button)
+        val cx = w / 2f
+        val cy = h * 0.58f
+        val r = w * 0.36f
+        drawCircle(color = gold, radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy), style = stroke)
+        // Top stem (little button on top of the stopwatch)
+        drawLine(
+            color = gold,
+            start = androidx.compose.ui.geometry.Offset(cx, h * 0.06f),
+            end = androidx.compose.ui.geometry.Offset(cx, cy - r),
+            strokeWidth = w * 0.10f
+        )
+        // Clock hand (pointing up-right)
+        drawLine(
+            color = gold,
+            start = androidx.compose.ui.geometry.Offset(cx, cy),
+            end = androidx.compose.ui.geometry.Offset(cx + r * 0.55f, cy - r * 0.45f),
+            strokeWidth = w * 0.08f
+        )
+    }
 }
 
 @Composable
