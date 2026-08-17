@@ -218,6 +218,153 @@ fun deleteDeliveryWeek(baseUrl: String, id: Int) {
     }
 }
 
+// ─── SpeedX paychecks ─────────────────────────────────────────────────────────
+data class SpeedxCheck(
+    val id: Int,
+    val checkNumber: Int,
+    val payDate: String,
+    val amount: Double,
+    val paid: Boolean
+)
+
+fun fetchSpeedxChecks(baseUrl: String): Pair<String?, List<SpeedxCheck>> {
+    val url = URL("$baseUrl/api/speedx-checks")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "GET"
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        if (conn.responseCode != 200) return Pair(null, emptyList())
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        val obj = JSONObject(body)
+        val month = obj.optString("month", null)
+        val arr = obj.optJSONArray("checks") ?: JSONArray()
+        val list = mutableListOf<SpeedxCheck>()
+        for (i in 0 until arr.length()) {
+            val c = arr.getJSONObject(i)
+            list.add(
+                SpeedxCheck(
+                    id = c.getInt("id"),
+                    checkNumber = c.getInt("check_number"),
+                    payDate = c.getString("pay_date"),
+                    amount = c.getDouble("amount"),
+                    paid = c.optInt("paid", 0) == 1
+                )
+            )
+        }
+        return Pair(month, list)
+    } finally {
+        conn.disconnect()
+    }
+}
+
+fun patchSpeedxCheckPaid(baseUrl: String, id: Int, paid: Boolean) {
+    val url = URL("$baseUrl/api/speedx-checks/$id")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "PATCH"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        conn.outputStream.use { it.write(JSONObject().put("paid", if (paid) 1 else 0).toString().toByteArray()) }
+        conn.responseCode
+    } finally {
+        conn.disconnect()
+    }
+}
+
+// Format "2026-08-14" -> "Aug 14"
+fun formatPayDate(iso: String): String {
+    return try {
+        val parser = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val d = parser.parse(iso)
+        SimpleDateFormat("MMM d", Locale.US).format(d!!)
+    } catch (e: Exception) { iso }
+}
+
+@Composable
+fun SpeedxChecksScreen(baseUrl: String, onBack: () -> Unit) {
+    var month by remember { mutableStateOf<String?>(null) }
+    var checks by remember { mutableStateOf<List<SpeedxCheck>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    fun reload() {
+        scope.launch {
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try { fetchSpeedxChecks(baseUrl) } catch (e: Exception) { Pair(null, emptyList<SpeedxCheck>()) }
+            }
+            month = result.first
+            checks = result.second
+            loading = false
+        }
+    }
+
+    LaunchedEffect(Unit) { reload() }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A)).padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 20.dp, bottom = 16.dp)) {
+            Text("‹ Back", color = Color(0xFF7B8CDE), fontSize = 16.sp,
+                modifier = Modifier.clickable { onBack() })
+            Spacer(Modifier.width(16.dp))
+            Text("SpeedX Paychecks", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        month?.let {
+            Text(it, color = Color(0xFF888899), fontSize = 13.sp, modifier = Modifier.padding(bottom = 12.dp))
+        }
+
+        if (loading) {
+            Text("Loading…", color = Color(0xFF888899), fontSize = 14.sp)
+        } else if (checks.isEmpty()) {
+            Text("No checks for this month.", color = Color(0xFF888899), fontSize = 14.sp)
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(checks, key = { it.id }) { check ->
+                    var isPaid by remember(check.paid) { mutableStateOf(check.paid) }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF12122A))
+                            .clickable {
+                                isPaid = !isPaid
+                                scope.launch {
+                                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        try { patchSpeedxCheckPaid(baseUrl, check.id, isPaid) } catch (e: Exception) {}
+                                    }
+                                }
+                            }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Check ${check.checkNumber}", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                            Text("$${String.format("%.2f", check.amount)} · pays ${formatPayDate(check.payDate)}",
+                                color = Color(0xFF888899), fontSize = 12.sp)
+                        }
+                        Checkbox(
+                            checked = isPaid,
+                            onCheckedChange = { checked ->
+                                isPaid = checked
+                                scope.launch {
+                                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                        try { patchSpeedxCheckPaid(baseUrl, check.id, checked) } catch (e: Exception) {}
+                                    }
+                                }
+                            },
+                            colors = CheckboxDefaults.colors(checkedColor = Color(0xFF7B8CDE))
+                        )
+                        Text(if (isPaid) "Paid" else "Unpaid",
+                            color = if (isPaid) Color(0xFF6ac46a) else Color(0xFF888899),
+                            fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (DeliveryWeek) -> Unit) {
     var expandedDay by remember { mutableStateOf<String?>(null) }
@@ -653,6 +800,7 @@ fun FinanceScreen(baseUrl: String) {
     when (currentView) {
         "delivery" -> DeliveryTrackerScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "bookkeeping" -> BookkeepingScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        "speedxchecks" -> SpeedxChecksScreen(baseUrl = baseUrl, onBack = { currentView = null })
         else -> {
             Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A)).padding(16.dp)) {
                 Text("FINANCE", color = Color(0xFF7B8CDE), fontSize = 20.sp,
@@ -678,6 +826,18 @@ fun FinanceScreen(baseUrl: String) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("💰  Bookkeeping", color = Color.White, fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = { currentView = "speedxchecks" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("🪙  SpeedX Paychecks", color = Color.White, fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold)
                 }
             }
