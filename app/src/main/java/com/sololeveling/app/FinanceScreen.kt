@@ -31,15 +31,15 @@ import java.util.*
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
 // The YYYY-MM that today's delivery week pays out in.
-// Today's week_start (Sunday) -> Wednesday (+3) -> pay date (+16) -> that month.
+// Today's week_start (Sunday) -> Wednesday (+3) -> pay date (+17) -> that month.
 fun currentDeliveryPayMonth(): String {
     val cal = Calendar.getInstance()
     // Back up to this week's Sunday
     while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
         cal.add(Calendar.DAY_OF_MONTH, -1)
     }
-    // Sunday + 3 = Wednesday, + 16 = pay date
-    cal.add(Calendar.DAY_OF_MONTH, 19)
+    // Sunday + 3 = Wednesday, + 17 = pay date
+    cal.add(Calendar.DAY_OF_MONTH, 20)
     return SimpleDateFormat("yyyy-MM", Locale.US).format(cal.time)
 }
 
@@ -93,7 +93,7 @@ data class DeliveryWeek(
             val cal = Calendar.getInstance()
             cal.time = start
             cal.add(Calendar.DAY_OF_MONTH, 3) // Sunday + 3 = Wednesday
-            cal.add(Calendar.DAY_OF_MONTH, 20) // Wednesday + 20
+            cal.add(Calendar.DAY_OF_MONTH, 17) // Wednesday + 17
             SimpleDateFormat("MMM d", Locale.US).format(cal.time)
         } catch (e: Exception) { "" }
     }
