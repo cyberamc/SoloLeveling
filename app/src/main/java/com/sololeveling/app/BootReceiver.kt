@@ -5,9 +5,9 @@ import android.content.Context
 import android.content.Intent
 
 /**
- * Re-arms all scheduled reminders after a device reboot. AlarmManager alarms do not
- * survive a reboot, so without this the sleep, task, and shower reminders would stay
- * cleared until the app is next opened. Listens for BOOT_COMPLETED.
+ * Re-arms user reminders after a device reboot. AlarmManager alarms do not survive a
+ * reboot, so without this the website-created reminders would stay cleared until the
+ * app is next opened. Listens for BOOT_COMPLETED.
  */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -16,27 +16,10 @@ class BootReceiver : BroadcastReceiver() {
             action == "android.intent.action.QUICKBOOT_POWERON" ||
             action == "android.intent.action.LOCKED_BOOT_COMPLETED") {
             // Channels must exist before scheduling/notifying.
-            SleepReminder.createChannel(context)
-            TaskReminder.createChannel(context)
-            ShowerReminder.createChannel(context)
-            DeliveryReminder.createChannel(context)
-            RoutineReminder.createChannel(context)
-            VapeReminder.createChannel(context)
             UserReminder.createChannel(context)
-            SleepReminder.scheduleAll(context)
-            TaskReminder.scheduleDailyArm(context)
-            ShowerReminder.scheduleDailyArm(context)
-            DeliveryReminder.scheduleAll(context)
-            RoutineReminder.scheduleDailyArm(context)
-            VapeReminder.schedule(context)
             UserReminder.enqueuePolling(context)
-            // Arm today's shower, routine, and task reminders now (network → background thread)
-            // so a reboot mid-day still sets today's reminders, not just the next 3 AM arm.
-            // User reminders are re-armed here too, since alarms don't survive a reboot.
+            // User reminders are re-armed here, since alarms don't survive a reboot.
             Thread {
-                ShowerReminder.armToday(context)
-                RoutineReminder.armToday(context)
-                TaskReminder.armToday(context)
                 UserReminder.armAllNow(context)
             }.start()
         }

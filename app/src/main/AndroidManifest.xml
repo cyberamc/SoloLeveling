@@ -29,30 +29,6 @@
         </activity>
 
         <receiver
-            android:name=".SleepReminderReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name=".TaskReminderReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name=".ShowerReminderReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name=".DeliveryReminderReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name=".RoutineReminderReceiver"
-            android:exported="false" />
-
-        <receiver
-            android:name=".VapeReminderReceiver"
-            android:exported="false" />
-
-        <receiver
             android:name=".UserReminderReceiver"
             android:exported="false" />
 
