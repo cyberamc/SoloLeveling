@@ -1529,16 +1529,16 @@ val DESSERT_MEALS = listOf(
         mealType = "Dessert",
         macros = Macros(calories = 145, protein = 1, fat = 15, netCarbs = "1.5"),
         ingredients = listOf(
-            "1/2 cup (1 stick) butter, softened — or 1/2 cup coconut oil",
-            "1/4 cup cocoa powder",
-            "3–4 tbsp sweetener (to taste)",
-            "33g pecans (weighed whole, then chopped)",
+            "3/4 cup (1.5 sticks) butter, softened — or 3/4 cup coconut oil",
+            "6 tbsp cocoa powder",
+            "7 tbsp sweetener (to taste)",
+            "47g pecans (weighed whole, then chopped)",
             "Pinch of salt (optional, sharpens the chocolate)"
         ),
         steps = listOf(
             MealStep(
                 "1. Melt the Base",
-                "Gently melt the butter (or coconut oil) — microwave 20–30 sec or a small pan on low. Don't boil it, just liquefy."
+                "Gently melt the butter (or coconut oil) — microwave 30–40 sec or a small pan on low. Don't boil it, just liquefy."
             ),
             MealStep(
                 "2. Mix",
@@ -1546,11 +1546,11 @@ val DESSERT_MEALS = listOf(
             ),
             MealStep(
                 "3. Add Pecans",
-                "Chop the 33g pecans and stir them in so they're evenly distributed."
+                "Chop the 47g pecans and stir them in so they're evenly distributed."
             ),
             MealStep(
                 "4. Fill the Mold",
-                "Pour into the silicone ice cube tray, filling each cavity to the top. The batch fills about 6 large cavities."
+                "Pour into the silicone ice cube tray, filling each cavity to the top. This batch fills about 10 cavities."
             ),
             MealStep(
                 "5. Freeze",
@@ -1558,7 +1558,7 @@ val DESSERT_MEALS = listOf(
             ),
             MealStep(
                 "6. Store & Serve",
-                "Keep in the freezer in a bag or container. To release, let the tray sit at room temp ~60 sec, then flex the silicone to pop them out. Eat cold — butter-based bombs soften fast in your hand.\n\nMakes ~6 pieces · Per piece: ~145 cal, 1g protein, 15g fat, 1.5g net carb"
+                "Pop the whole batch out of the tray at once (let it sit at room temp ~60 sec first, then flex the silicone), and store the pieces loose in a freezer bag or container. Each day, just grab one. Let it soften ~1–2 min before eating.\n\nMakes ~10 pieces · Per piece: ~145 cal, 1g protein, 15g fat, 1.5g net carb"
             )
         )
     )
