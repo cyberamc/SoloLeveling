@@ -1478,19 +1478,28 @@ val DINNER_MEALS = listOf(
             "3/4 cup jasmine rice (uncooked)",
             "1 tsp Knorr Granulated Beef Bouillon (for rice)",
             "Water for rice (per the cooker's fill line for 3/4 cup rice)",
-            "Touch of oil, sea salt & black pepper"
+            "Tony Chachere's Original Creole Seasoning",
+            "Touch of oil, black pepper"
         ),
         steps = listOf(
             MealStep(
-                "Pork 1. Oven (Reverse Sear)",
-                "Preheat oven to 275°F. Pat the steak dry, season both sides with salt and pepper. Place the steak on a rack over a baking sheet. Cook in the oven until it reaches ~135–140°F internal (about 20–30 min depending on thickness). Use a meat thermometer — this is the key to reverse sear."
+                "Pork 1. Season & Oven",
+                "Preheat oven to 300°F. Pat the steak dry, season both sides with Tony Chachere's and black pepper."
             ),
             MealStep(
-                "Pork 2. Sear (Cast Iron)",
-                "Pull it out and let it rest a few minutes while you heat the pan. Get a cast iron skillet screaming hot over high heat with a touch of oil. Sear the steak hard, ~1 min per side, just to build a deep crust. Don't overcook — the interior is already done."
+                "Pork 2. Cook To Temp",
+                "Place the steak on a rack over a baking sheet. Cook in the oven until it reaches ~135–140°F internal (about 20–30 min depending on thickness). Use a meat thermometer — this is the key to reverse sear."
             ),
             MealStep(
-                "Pork 3. Rest & Serve",
+                "Pork 3. Rest & Heat Pan",
+                "Pull it out and let it rest a few minutes while you heat the pan."
+            ),
+            MealStep(
+                "Pork 4. Sear (Cast Iron)",
+                "Get a cast iron skillet screaming hot over high heat with a touch of oil. Sear the steak hard, ~1 min per side, just to build a deep crust. Don't overcook — the interior is already done."
+            ),
+            MealStep(
+                "Pork 5. Rest & Serve",
                 "Rest a couple minutes. Serve whole, bone-in — cut and eat at the plate."
             ),
             MealStep(
@@ -1503,7 +1512,7 @@ val DINNER_MEALS = listOf(
             ),
             MealStep(
                 "Combine",
-                "Plate the whole steak alongside the bouillon rice.\n\nNote: Use a thermometer for the reverse sear — pull at ~135–140°F, then sear hot and fast. Use the cooker's fill line. Don't add extra salt to the rice; the bouillon seasons it."
+                "Plate the whole steak alongside the bouillon rice.\n\nNote: Tony Chachere's is salt-based — it seasons and salts in one, so no separate salt needed. Between the Creole seasoning and the bouillon rice, sodium runs high — keep water up on delivery days."
             )
         )
     )
