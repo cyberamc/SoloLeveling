@@ -1697,6 +1697,25 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
             }
             item {
                 Text(
+                    text = "Snack",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+            items(SNACK_MEALS, key = { it.name }) { meal ->
+                Button(
+                    onClick = { onMealSelected(meal) },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+            item {
+                Text(
                     text = "Dinner",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
@@ -1717,25 +1736,6 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White
                     )
-                }
-            }
-            item {
-                Text(
-                    text = "Snack",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF999999),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-            items(SNACK_MEALS, key = { it.name }) { meal ->
-                Button(
-                    onClick = { onMealSelected(meal) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
             }
             item {
