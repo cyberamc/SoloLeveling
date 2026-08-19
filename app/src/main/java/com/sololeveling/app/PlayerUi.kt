@@ -90,6 +90,7 @@ fun TasksScreen() {
     var showNotepad by remember { mutableStateOf(false) }
     var showReminders by remember { mutableStateOf(false) }
     var showLuna by remember { mutableStateOf(false) }
+    var showHydration by remember { mutableStateOf(false) }
     var showNofapNotepad by remember { mutableStateOf(false) }
     var showTimerDialog by remember { mutableStateOf(false) }
 
@@ -103,6 +104,10 @@ fun TasksScreen() {
     }
     if (showReminders) {
         RemindersScreen(onBack = { showReminders = false })
+        return
+    }
+    if (showHydration) {
+        HydrationScreen(onBack = { showHydration = false })
         return
     }
     if (showLuna) {
@@ -227,6 +232,11 @@ fun TasksScreen() {
                         .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showLuna = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
+                )
+                WaterJugIconCanvas(
+                    modifier = Modifier
+                        .clickable { showHydration = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -898,6 +908,165 @@ fun fetchRoutineReference(): RoutineReference? {
             if (items.isEmpty()) null else RoutineReference(label, items)
         } finally { conn.disconnect() }
     } catch (e: Exception) { null }
+}
+
+// Hydration schedule reference — static, no per-pull tracking. One jug per day.
+data class HydrationBlock(val title: String, val subtitle: String, val pulls: List<String>)
+
+val HYDRATION_SCHEDULE = listOf(
+    HydrationBlock(
+        "WFH Gym Days (Mon, Tue, Thu–Sat)",
+        "",
+        listOf(
+            "7:35 AM tasks → 8 oz",
+            "9 AM shower → 8 oz",
+            "10 AM lunch → 8 oz",
+            "11 AM Study → 8 oz (halfway)",
+            "2 PM pork out → 8 oz",
+            "3:30 PM bake → 8 oz",
+            "4:20 PM dessert → 8 oz",
+            "7 PM teeth/walk → 8 oz (finish)"
+        )
+    ),
+    HydrationBlock(
+        "Rest Days (Sun & Wed)",
+        "plasma, no gym",
+        listOf(
+            "6:50 AM Donate Plasma → 8 oz (hydrate before, helps the draw)",
+            "8:30 AM chores block → 8 oz",
+            "10 AM lunch → 8 oz",
+            "11 AM Study → 8 oz (halfway — jug should be at 32 oz)",
+            "~2 PM → 8 oz",
+            "~4 PM dessert → 8 oz",
+            "~7 PM → 8 oz",
+            "Evening → 8 oz (finish)"
+        )
+    ),
+    HydrationBlock(
+        "Delivery Days",
+        "anchor to packages, not clock",
+        listOf(
+            "Sorting at WH → 8 oz",
+            "Every ~25 delivered → 8 oz (package ~60 = halfway)",
+            "Route done → 8 oz",
+            "Dinner → 8 oz (finish)"
+        )
+    )
+)
+
+@Composable
+fun WaterJugIconCanvas(modifier: Modifier = Modifier) {
+    val blue = Color(0xFF5AC8FA)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(22.dp)) {
+        val w = size.width
+        val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f)
+        // Jug body
+        val left = w * 0.22f
+        val right = w * 0.82f
+        val top = h * 0.26f
+        val bottom = h * 0.94f
+        drawRoundRect(
+            color = blue,
+            topLeft = androidx.compose.ui.geometry.Offset(left, top),
+            size = androidx.compose.ui.geometry.Size(right - left, bottom - top),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.12f, w * 0.12f),
+            style = stroke
+        )
+        // Cap / neck
+        drawLine(
+            color = blue,
+            start = androidx.compose.ui.geometry.Offset(w * 0.40f, h * 0.10f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.64f, h * 0.10f),
+            strokeWidth = w * 0.11f
+        )
+        drawLine(
+            color = blue,
+            start = androidx.compose.ui.geometry.Offset(w * 0.52f, h * 0.10f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.52f, top),
+            strokeWidth = w * 0.09f
+        )
+        // Handle
+        drawLine(
+            color = blue,
+            start = androidx.compose.ui.geometry.Offset(right, h * 0.40f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.95f, h * 0.52f),
+            strokeWidth = w * 0.08f
+        )
+        // Water line
+        drawLine(
+            color = blue,
+            start = androidx.compose.ui.geometry.Offset(left, h * 0.60f),
+            end = androidx.compose.ui.geometry.Offset(right, h * 0.60f),
+            strokeWidth = w * 0.07f
+        )
+    }
+}
+
+@Composable
+fun HydrationScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0A0A0A))
+            .systemBarsPadding()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+            Text(
+                text = "‹ Back",
+                color = Color(0xFFFFD700),
+                fontSize = 16.sp,
+                modifier = Modifier.clickable { onBack() }
+            )
+            Spacer(Modifier.width(16.dp))
+            Text("Hydration", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        Text(
+            text = "One jug a day — finish it. Reference only.",
+            fontSize = 13.sp,
+            color = Color(0xFF888888),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(HYDRATION_SCHEDULE, key = { it.title }) { block ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = block.title,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5AC8FA)
+                    )
+                    if (block.subtitle.isNotEmpty()) {
+                        Text(
+                            text = block.subtitle,
+                            fontSize = 12.sp,
+                            color = Color(0xFF888888),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    block.pulls.forEach { pull ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                            Text(
+                                text = "•",
+                                fontSize = 13.sp,
+                                color = Color(0xFF6A6A6A),
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(text = pull, fontSize = 13.sp, color = Color(0xFFCFCFCF), lineHeight = 19.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
