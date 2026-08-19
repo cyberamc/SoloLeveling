@@ -1015,9 +1015,9 @@ fun HydrationScreen(onBack: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
             Text(
-                text = "‹ Back",
+                text = "←",
                 color = Color(0xFFFFD700),
-                fontSize = 16.sp,
+                fontSize = 24.sp,
                 modifier = Modifier.clickable { onBack() }
             )
             Spacer(Modifier.width(16.dp))
