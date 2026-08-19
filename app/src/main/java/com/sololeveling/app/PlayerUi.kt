@@ -89,7 +89,7 @@ fun TasksScreen() {
     var nofapStreak by remember { mutableIntStateOf(0) }
     var showRoutine by remember { mutableStateOf(false) }
     var showNotepad by remember { mutableStateOf(false) }
-    var showReminders by remember { mutableStateOf(false) }
+    var showSteps by remember { mutableStateOf(false) }
     var showLuna by remember { mutableStateOf(false) }
     var showHydration by remember { mutableStateOf(false) }
     var showUrgeCard by remember { mutableStateOf(false) }
@@ -103,8 +103,8 @@ fun TasksScreen() {
         NotepadScreen(onBack = { showNotepad = false })
         return
     }
-    if (showReminders) {
-        RemindersScreen(onBack = { showReminders = false })
+    if (showSteps) {
+        StepsScreen(onBack = { showSteps = false })
         return
     }
     if (showHydration) {
@@ -215,16 +215,6 @@ fun TasksScreen() {
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
                 Text(
-                    text = "Reminders",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
-                    modifier = Modifier
-                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
-                        .clickable { showReminders = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
-                )
-                Text(
                     text = "Luna",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
@@ -237,6 +227,11 @@ fun TasksScreen() {
                 WaterJugIconCanvas(
                     modifier = Modifier
                         .clickable { showHydration = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+                StepsIconCanvas(
+                    modifier = Modifier
+                        .clickable { showSteps = true }
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
@@ -896,6 +891,183 @@ val URGE_STEPS = listOf(
     "10 minutes minimum. The wave passes. It always passes.",
     "Two wins, one move. Steps banked. Loop broken. Same pad, both jobs."
 )
+
+// Daily step target reference — static.
+data class StepBlock(val title: String, val subtitle: String, val lines: List<String>)
+
+val STEP_SCHEDULE = listOf(
+    StepBlock(
+        "WFH Days",
+        "where the steps come from",
+        listOf(
+            "9:30 AM Chill → 10 min pad, then PC games",
+            "Idle shift windows → pad during low-call stretches",
+            "7:00 PM Toby walk → outdoor steps",
+            "Evening → pad while watching YouTube/anime",
+            "Urge hits? → pad. Steps + loop broken, same move."
+        )
+    ),
+    StepBlock(
+        "Delivery Days",
+        "",
+        listOf(
+            "Route handles it — 100–120 packages on foot clears 12k easily. No pad needed."
+        )
+    )
+)
+
+@Composable
+fun StepsIconCanvas(modifier: Modifier = Modifier) {
+    val green = Color(0xFF6ACB6A)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(22.dp)) {
+        val w = size.width
+        val h = size.height
+        // Two footprints, offset diagonally
+        // Back foot (lower left)
+        drawOval(
+            color = green,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.08f, h * 0.44f),
+            size = androidx.compose.ui.geometry.Size(w * 0.30f, h * 0.40f)
+        )
+        drawOval(
+            color = green,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.11f, h * 0.30f),
+            size = androidx.compose.ui.geometry.Size(w * 0.24f, h * 0.16f)
+        )
+        // Front foot (upper right)
+        drawOval(
+            color = green,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.55f, h * 0.24f),
+            size = androidx.compose.ui.geometry.Size(w * 0.30f, h * 0.40f)
+        )
+        drawOval(
+            color = green,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.58f, h * 0.10f),
+            size = androidx.compose.ui.geometry.Size(w * 0.24f, h * 0.16f)
+        )
+    }
+}
+
+@Composable
+fun StepsScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0A0A0A))
+            .systemBarsPadding()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 12.dp)) {
+            Text(
+                text = "←",
+                color = Color(0xFFFFD700),
+                fontSize = 24.sp,
+                modifier = Modifier.clickable { onBack() }
+            )
+            Spacer(Modifier.width(16.dp))
+            Text("Steps", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+
+        // Target header
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF14261A), shape = RoundedCornerShape(10.dp))
+                .padding(14.dp)
+        ) {
+            Text(
+                text = "DAILY TARGET: 12,000 STEPS",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF6ACB6A),
+                letterSpacing = 1.sp
+            )
+            Text(
+                text = "Pad minimum: 30 min @ 2 mph total (~2,000 steps / ~1 mile)",
+                fontSize = 13.sp,
+                color = Color(0xFF9FBF9F),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(STEP_SCHEDULE, key = { it.title }) { block ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = block.title,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6ACB6A)
+                    )
+                    if (block.subtitle.isNotEmpty()) {
+                        Text(
+                            text = block.subtitle,
+                            fontSize = 12.sp,
+                            color = Color(0xFF888888),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    block.lines.forEach { line ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                            Text(
+                                text = "•",
+                                fontSize = 13.sp,
+                                color = Color(0xFF6A6A6A),
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(text = line, fontSize = 13.sp, color = Color(0xFFCFCFCF), lineHeight = 19.sp)
+                        }
+                    }
+                }
+            }
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF141414), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = "THE RULE",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "Pad is the default for any idle-and-alone window. Don't sit idle — walk idle.",
+                        fontSize = 14.sp,
+                        color = Color(0xFFCFCFCF),
+                        lineHeight = 20.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        text = "PACE CHECK",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "~10,500 by end of shift = on track.",
+                        fontSize = 14.sp,
+                        color = Color(0xFFCFCFCF),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun UrgeCardScreen(onBack: () -> Unit) {
