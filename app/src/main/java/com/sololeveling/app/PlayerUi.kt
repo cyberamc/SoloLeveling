@@ -234,6 +234,11 @@ fun TasksScreen() {
                         .clickable { showSteps = true }
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
+                TimerIconCanvas(
+                    modifier = Modifier
+                        .clickable { showTimerDialog = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -258,12 +263,6 @@ fun TasksScreen() {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
                 }
-                Spacer(modifier = Modifier.weight(1f))
-                TimerIconCanvas(
-                    modifier = Modifier
-                        .pointerInput(Unit) { detectTapGestures(onTap = { showTimerDialog = true }) }
-                        .padding(start = 8.dp)
-                )
             }
         }
 
