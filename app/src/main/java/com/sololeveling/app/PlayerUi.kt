@@ -13,6 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.verticalScroll
@@ -91,7 +92,7 @@ fun TasksScreen() {
     var showReminders by remember { mutableStateOf(false) }
     var showLuna by remember { mutableStateOf(false) }
     var showHydration by remember { mutableStateOf(false) }
-    var showNofapNotepad by remember { mutableStateOf(false) }
+    var showUrgeCard by remember { mutableStateOf(false) }
     var showTimerDialog by remember { mutableStateOf(false) }
 
     if (showRoutine) {
@@ -114,8 +115,8 @@ fun TasksScreen() {
         LunaScreen(onBack = { showLuna = false })
         return
     }
-    if (showNofapNotepad) {
-        NofapNotepadScreen(onBack = { showNofapNotepad = false })
+    if (showUrgeCard) {
+        UrgeCardScreen(onBack = { showUrgeCard = false })
         return
     }
 
@@ -255,7 +256,7 @@ fun TasksScreen() {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.pointerInput(Unit) {
-                        detectTapGestures(onLongPress = { showNofapNotepad = true })
+                        detectTapGestures(onLongPress = { showUrgeCard = true })
                     }
                 ) {
                     Text(text = "🔥", fontSize = 13.sp)
@@ -679,121 +680,6 @@ fun saveNotepad(content: String) {
 }
 
 
-@Composable
-fun NofapNotepadScreen(onBack: () -> Unit) {
-    BackHandler { onBack() }
-    var noteText by remember { mutableStateOf("") }
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var status by remember { mutableStateOf("Saved") }
-    var loaded by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-    var lastSaved by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        try {
-            val response = fetchFromApi("/api/nofap-notepad")
-            val obj = Gson().fromJson(response, Map::class.java)
-            noteText = obj["content"] as? String ?: ""
-            lastSaved = noteText
-            loaded = true
-            loading = false
-        } catch (e: Exception) {
-            error = e.message
-            loading = false
-        }
-    }
-
-    LaunchedEffect(noteText) {
-        if (!loaded) return@LaunchedEffect
-        if (noteText == lastSaved) return@LaunchedEffect
-        status = "Editing..."
-        kotlinx.coroutines.delay(1500)
-        status = "Saving..."
-        try {
-            kotlinx.coroutines.withContext(Dispatchers.IO) { saveNofapNotepad(noteText) }
-            lastSaved = noteText
-            status = "Saved"
-        } catch (e: Exception) {
-            status = "Save failed"
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            if (loaded && noteText != lastSaved) {
-                val toSave = noteText
-                scope.launch(Dispatchers.IO) { try { saveNofapNotepad(toSave) } catch (e: Exception) {} }
-            }
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
-        Column(
-            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
-                .systemBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(text = "Notes", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text(text = status, fontSize = 12.sp, color = Color(0xFF4CAF50))
-                }
-                Text(
-                    text = "Back",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
-                    modifier = Modifier.clickable { onBack() }
-                )
-            }
-        }
-
-        when {
-            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFFD700))
-            }
-            error != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Error: $error", color = Color.Red)
-            }
-            else -> {
-                Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-                    OutlinedTextField(
-                        value = noteText,
-                        onValueChange = { noteText = it },
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        placeholder = { Text("Type your notes here...", color = Color(0xFF555577)) },
-                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFFFFD700),
-                            unfocusedBorderColor = Color(0xFF2a2a3a),
-                            cursorColor = Color(0xFFFFD700)
-                        )
-                    )
-                }
-            }
-        }
-    }
-}
-
-fun saveNofapNotepad(content: String) {
-    val url = URL("https://mysololeveling.us/api/nofap-notepad")
-    val conn = url.openConnection() as HttpURLConnection
-    conn.requestMethod = "PATCH"
-    conn.setRequestProperty("Content-Type", "application/json")
-    conn.doOutput = true
-    conn.connectTimeout = 5000
-    conn.readTimeout = 5000
-    try {
-        val payload = Gson().toJson(mapOf("content" to content))
-        conn.outputStream.use { it.write(payload.toByteArray()) }
-        conn.responseCode
-    } finally { conn.disconnect() }
-}
-
 fun sortQuestsByTime(quests: List<Quest>): List<Quest> {
     return quests.sortedBy { quest ->
         val timeRegex = Regex("@ (\\d{1,2}):(\\d{2}) ([AP]M)|@ (\\d{1,2}) ([AP]M)")
@@ -1000,6 +886,87 @@ fun WaterJugIconCanvas(modifier: Modifier = Modifier) {
             end = androidx.compose.ui.geometry.Offset(right, h * 0.60f),
             strokeWidth = w * 0.07f
         )
+    }
+}
+
+// Static reference shown on long-press of the streak counter.
+val URGE_STEPS = listOf(
+    "Feet on the pad. 2 mph. Now. Don't negotiate, just start walking.",
+    "The urge is a cue, not a command. It's your body flagging idle + alone. Answer it with motion.",
+    "10 minutes minimum. The wave passes. It always passes.",
+    "Two wins, one move. Steps banked. Loop broken. Same pad, both jobs."
+)
+
+@Composable
+fun UrgeCardScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0A0A0A))
+            .systemBarsPadding()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+            Text(
+                text = "←",
+                color = Color(0xFFFFD700),
+                fontSize = 24.sp,
+                modifier = Modifier.clickable { onBack() }
+            )
+            Spacer(Modifier.width(16.dp))
+            Text(
+                "When The Urge Hits",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        Text(
+            text = "STAND UP → PAD",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFFFD700),
+            letterSpacing = 2.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            itemsIndexed(URGE_STEPS) { index, step ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = "${index + 1}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                    Text(
+                        text = step,
+                        fontSize = 15.sp,
+                        color = Color(0xFFDDDDDD),
+                        lineHeight = 22.sp
+                    )
+                }
+            }
+            item {
+                Text(
+                    text = "If you're not near the pad: leave the room. Change what you're looking at. Then come back to the pad.",
+                    fontSize = 14.sp,
+                    color = Color(0xFF999999),
+                    lineHeight = 21.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .background(Color(0xFF141414), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                )
+            }
+        }
     }
 }
 
