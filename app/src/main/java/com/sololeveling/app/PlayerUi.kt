@@ -2152,7 +2152,7 @@ fun SupplementsScreen() {
                         SupplementGroup(
                             category = "Capsule",
                             supplements = listOf(
-                                "Caffeine" to "400 mg",
+                                "Caffeine" to "200 mg",
                                 "Alpha-GPC" to "600 mg",
                                 "One A Day Multivitamin for Men" to "1 tablet",
                                 "Allergy Relief" to "1 tablet"
@@ -2414,8 +2414,151 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                 modifier = Modifier.fillMaxSize().padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                item(key = "plateau-alerts") {
+                    PlateauAlerts()
+                }
                 items(routines, key = { it.routineId }) { routine ->
                     GymRoutineSection(routine = routine, onExerciseSelected = onExerciseSelected)
+                }
+            }
+        }
+    }
+}
+
+data class PlateauSuggestion(
+    val id: Int,
+    val exercise: String?,
+    val muscleGroup: String?,
+    val signal: String,
+    val severity: String,
+    val detail: String,
+    val fix: String
+)
+
+suspend fun fetchPlateauSuggestions(): List<PlateauSuggestion> {
+    val response = fetchFromApi("/api/gym/suggestions")
+    val obj = Gson().fromJson(response, Map::class.java)
+    val list = obj["suggestions"] as? List<*> ?: return emptyList()
+    return list.mapNotNull {
+        if (it is Map<*, *>) PlateauSuggestion(
+            id = (it["id"] as? Number)?.toInt() ?: return@mapNotNull null,
+            exercise = it["exercise"] as? String,
+            muscleGroup = it["muscle_group"] as? String,
+            signal = (it["signal"] as? String) ?: "",
+            severity = (it["severity"] as? String) ?: "medium",
+            detail = (it["detail"] as? String) ?: "",
+            fix = (it["fix"] as? String) ?: ""
+        ) else null
+    }
+}
+
+fun dismissPlateauSuggestion(id: Int) {
+    val url = URL("https://mysololeveling.us/api/gym/suggestions/$id/dismiss")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try { conn.responseCode } finally { conn.disconnect() }
+}
+
+// Collapsed badge at the top of the Gym tab; tap to expand the full list.
+@Composable
+fun PlateauAlerts() {
+    var expanded by remember { mutableStateOf(false) }
+    var suggestions by remember { mutableStateOf<List<PlateauSuggestion>>(emptyList()) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        suggestions = try { fetchPlateauSuggestions() } catch (e: Exception) { emptyList() }
+    }
+
+    if (suggestions.isEmpty()) return
+
+    val highCount = suggestions.count { it.severity == "high" }
+    val accent = if (highCount > 0) Color(0xFFf87171) else Color(0xFFFFD700)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "PLATEAU ALERTS",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                    letterSpacing = 1.5.sp
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "${suggestions.size}",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF0a0a0a),
+                    modifier = Modifier
+                        .background(accent, shape = RoundedCornerShape(10.dp))
+                        .padding(horizontal = 7.dp, vertical = 1.dp)
+                )
+            }
+            Text(text = if (expanded) "▲" else "▼", fontSize = 13.sp, color = accent)
+        }
+
+        if (expanded) {
+            Spacer(Modifier.height(10.dp))
+            suggestions.forEach { s ->
+                val sevColor = if (s.severity == "high") Color(0xFFf87171) else Color(0xFFFFD700)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 10.dp)
+                        .background(Color(0xFF141414), shape = RoundedCornerShape(8.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = s.exercise ?: (s.muscleGroup ?: "").replaceFirstChar { c -> c.uppercase() },
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = sevColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "×",
+                            fontSize = 18.sp,
+                            color = Color(0xFF777777),
+                            modifier = Modifier
+                                .clickable {
+                                    val gone = s.id
+                                    suggestions = suggestions.filter { it.id != gone }
+                                    scope.launch {
+                                        kotlinx.coroutines.withContext(Dispatchers.IO) {
+                                            try { dismissPlateauSuggestion(gone) } catch (e: Exception) {}
+                                        }
+                                    }
+                                }
+                                .padding(start = 10.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(text = s.detail, fontSize = 13.sp, color = Color(0xFFCFCFCF), lineHeight = 19.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = s.fix,
+                        fontSize = 13.sp,
+                        color = Color(0xFF9FBF9F),
+                        lineHeight = 19.sp
+                    )
                 }
             }
         }
