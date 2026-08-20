@@ -78,6 +78,17 @@ class TimerService : Service() {
         super.onDestroy()
     }
 
+    // Tapping either notification opens the app (Tasks screen).
+    private fun openAppIntent(): PendingIntent {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        return PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
+
     private fun buildOngoing(label: String, secondsLeft: Int): android.app.Notification {
         val mm = secondsLeft / 60
         val ss = secondsLeft % 60
@@ -96,6 +107,7 @@ class TimerService : Service() {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(openAppIntent())
             .addAction(0, "Stop", stopPending)
             .build()
     }
@@ -108,6 +120,7 @@ class TimerService : Service() {
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setContentIntent(openAppIntent())
             .build()
     }
 
