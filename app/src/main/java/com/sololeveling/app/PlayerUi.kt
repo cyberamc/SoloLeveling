@@ -93,6 +93,8 @@ fun TasksScreen() {
     var showLuna by remember { mutableStateOf(false) }
     var showHydration by remember { mutableStateOf(false) }
     var showUrgeCard by remember { mutableStateOf(false) }
+    var showConfidenceDialog by remember { mutableStateOf(false) }
+    var confidenceRefresh by remember { mutableIntStateOf(0) }
     var showTimerDialog by remember { mutableStateOf(false) }
 
     if (showRoutine) {
@@ -118,6 +120,13 @@ fun TasksScreen() {
     if (showUrgeCard) {
         UrgeCardScreen(onBack = { showUrgeCard = false })
         return
+    }
+
+    if (showConfidenceDialog) {
+        ConfidenceDialog(
+            onDismiss = { showConfidenceDialog = false },
+            onLogged = { confidenceRefresh++ }
+        )
     }
 
     if (showTimerDialog) {
@@ -263,7 +272,13 @@ fun TasksScreen() {
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
                 }
+                Spacer(modifier = Modifier.width(10.dp))
+                ShieldIconCanvas(
+                    modifier = Modifier.clickable { showConfidenceDialog = true }
+                )
             }
+            Spacer(modifier = Modifier.height(8.dp))
+            ConfidenceMeter(refreshKey = confidenceRefresh)
         }
 
         if (loading) {
@@ -1257,6 +1272,177 @@ fun HydrationScreen(onBack: () -> Unit) {
             }
         }
     }
+}
+
+data class ConfidenceState(
+    val value: Int,
+    val max: Int,
+    val hunger: Int,
+    val urge: Int,
+    val total: Int
+)
+
+suspend fun fetchConfidence(): ConfidenceState? {
+    return try {
+        val body = fetchFromApi("/api/confidence")
+        val o = Gson().fromJson(body, Map::class.java)
+        ConfidenceState(
+            value = (o["value"] as? Number)?.toInt() ?: 0,
+            max = (o["max"] as? Number)?.toInt() ?: 100,
+            hunger = (o["hunger"] as? Number)?.toInt() ?: 0,
+            urge = (o["urge"] as? Number)?.toInt() ?: 0,
+            total = (o["total"] as? Number)?.toInt() ?: 0
+        )
+    } catch (e: Exception) { null }
+}
+
+fun logConfidenceWin(type: String) {
+    val url = URL("https://mysololeveling.us/api/confidence")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        conn.outputStream.use { it.write("{\"type\":\"$type\"}".toByteArray()) }
+        conn.responseCode
+    } finally { conn.disconnect() }
+}
+
+// Small shield, tapped to log an overcome urge.
+@Composable
+fun ShieldIconCanvas(modifier: Modifier = Modifier) {
+    val teal = Color(0xFF4FD1C5)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(20.dp)) {
+        val w = size.width
+        val h = size.height
+        val path = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.5f, h * 0.06f)
+            lineTo(w * 0.90f, h * 0.24f)
+            lineTo(w * 0.90f, h * 0.55f)
+            cubicTo(w * 0.90f, h * 0.78f, w * 0.72f, h * 0.90f, w * 0.5f, h * 0.96f)
+            cubicTo(w * 0.28f, h * 0.90f, w * 0.10f, h * 0.78f, w * 0.10f, h * 0.55f)
+            lineTo(w * 0.10f, h * 0.24f)
+            close()
+        }
+        drawPath(
+            path = path,
+            color = teal,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.10f)
+        )
+    }
+}
+
+// 0-100 meter of recent wins over urges. Rises when logged, decays slowly.
+@Composable
+fun ConfidenceMeter(refreshKey: Int) {
+    var state by remember { mutableStateOf<ConfidenceState?>(null) }
+
+    LaunchedEffect(refreshKey) {
+        state = fetchConfidence()
+    }
+
+    val s = state ?: return
+    val pct = if (s.max > 0) (s.value.toFloat() / s.max.toFloat()).coerceIn(0f, 1f) else 0f
+    val barColor = when {
+        pct >= 0.66f -> Color(0xFF4FD1C5)
+        pct >= 0.33f -> Color(0xFFFFD700)
+        else -> Color(0xFFF59E0B)
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "CONFIDENCE",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF8A8A8A),
+                letterSpacing = 1.5.sp
+            )
+            Text(
+                text = "${s.value} / ${s.max}",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                color = barColor
+            )
+        }
+        Spacer(Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(Color(0xFF2a2a2a))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(pct)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(barColor)
+            )
+        }
+        Spacer(Modifier.height(3.dp))
+        Text(
+            text = "Hunger ${s.hunger} · Urges ${s.urge}",
+            fontSize = 10.sp,
+            color = Color(0xFF6A6A6A)
+        )
+    }
+}
+
+@Composable
+fun ConfidenceDialog(onDismiss: () -> Unit, onLogged: () -> Unit) {
+    val scope = rememberCoroutineScope()
+
+    fun log(type: String) {
+        scope.launch {
+            kotlinx.coroutines.withContext(Dispatchers.IO) {
+                try { logConfidenceWin(type) } catch (e: Exception) {}
+            }
+            onLogged()
+            onDismiss()
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1a1a1a),
+        title = { Text("Overcame an urge", color = Color.White, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                Text(
+                    "Log the win. Which one did you beat?",
+                    color = Color(0xFFB0B0B0),
+                    fontSize = 14.sp
+                )
+            }
+        },
+        confirmButton = {
+            Text(
+                text = "Hunger",
+                color = Color(0xFF4FD1C5),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable { log("hunger") }
+                    .padding(10.dp)
+            )
+        },
+        dismissButton = {
+            Text(
+                text = "Urge",
+                color = Color(0xFF4FD1C5),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable { log("urge") }
+                    .padding(10.dp)
+            )
+        }
+    )
 }
 
 @Composable
