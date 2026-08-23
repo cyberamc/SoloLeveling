@@ -1609,7 +1609,13 @@ fun TimerIconCanvas(modifier: Modifier = Modifier) {
 fun TimerDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     // Two presets (editable). label -> default minutes.
-    val presets = listOf("Meditation" to 2, "Vaping & Video Games" to 30)
+    // label, default minutes, notification text when it finishes
+    val presets = listOf(
+        Triple("Meditation", 2, "Meditation complete"),
+        Triple("Vaping & Video Games", 30, "Time's up — done vaping & gaming"),
+        Triple("Legs Up The Wall", 5, "Legs up the wall done — next: read"),
+        Triple("Read A Book", 20, "Reading done — lights out soon")
+    )
     var selected by remember { mutableStateOf(0) }
     var minutes by remember { mutableStateOf(presets[0].second.toString()) }
 
@@ -1619,7 +1625,7 @@ fun TimerDialog(onDismiss: () -> Unit) {
         title = { Text("Timer", color = Color.White, fontWeight = FontWeight.Bold) },
         text = {
             Column {
-                presets.forEachIndexed { i, (label, def) ->
+                presets.forEachIndexed { i, (label, def, _) ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1666,10 +1672,8 @@ fun TimerDialog(onDismiss: () -> Unit) {
                     detectTapGestures(onTap = {
                         val mins = minutes.toIntOrNull() ?: 0
                         if (mins > 0) {
-                            val (label, _) = presets[selected]
-                            val doneText = if (label == "Meditation")
-                                "Meditation complete" else "Time's up — done vaping & gaming"
-                            TimerService.start(context, label, mins * 60, doneText)
+                            val preset = presets[selected]
+                            TimerService.start(context, preset.first, mins * 60, preset.third)
                             onDismiss()
                         }
                     })
