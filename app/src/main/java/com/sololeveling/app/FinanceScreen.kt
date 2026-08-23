@@ -819,6 +819,27 @@ fun FinanceScreen(baseUrl: String) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 20.dp, bottom = 24.dp))
 
+                // Delivery-day reminder. Fri (6) / Sat (7) in Calendar's 1-based days.
+                val todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
+                if (todayDow == Calendar.FRIDAY || todayDow == Calendar.SATURDAY) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🍔", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Text(
+                            "Fast food to go — never dine in",
+                            color = Color(0xFFF59E0B),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
+
                 Button(
                     onClick = { currentView = "delivery" },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
