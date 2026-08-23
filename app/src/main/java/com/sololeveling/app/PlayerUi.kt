@@ -470,6 +470,9 @@ fun RoutineScreen(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxSize().padding(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    item(key = "core-reference") {
+                        RoutineCoreReference(weekday = selectedDay)
+                    }
                     item(key = "day-header") {
                         SectionHeader(label = fullDayNames[selectedDay].uppercase(), color = Color(0xFFFFD700))
                     }
@@ -477,6 +480,54 @@ fun RoutineScreen(onBack: () -> Unit) {
                         RoutineQuestItem(q)
                     }
                     item { Spacer(modifier = Modifier.height(8.dp)) }
+                }
+            }
+        }
+    }
+}
+
+// Core static routine for the selected weekday, shown above that day's quests on the
+// View Routine page. Collapsible so it doesn't push the checklist down.
+@Composable
+fun RoutineCoreReference(weekday: Int) {
+    var expanded by remember { mutableStateOf(false) }
+    var reference by remember(weekday) { mutableStateOf<RoutineReference?>(null) }
+
+    LaunchedEffect(weekday) {
+        reference = kotlinx.coroutines.withContext(Dispatchers.IO) {
+            try { fetchRoutineReference(weekday) } catch (e: Exception) { null }
+        }
+    }
+
+    val ref = reference ?: return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF1f1f1f), shape = RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "CORE ROUTINE · " + ref.label.uppercase(),
+                fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                color = Color(0xFF8A8A8A), letterSpacing = 2.sp
+            )
+            Text(text = if (expanded) "▲" else "▼", fontSize = 13.sp, color = Color(0xFF8A8A8A))
+        }
+        if (expanded) {
+            Spacer(Modifier.height(8.dp))
+            ref.items.forEach { task ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "•", fontSize = 13.sp, color = Color(0xFF6A6A6A), modifier = Modifier.padding(end = 8.dp))
+                    Text(text = task, fontSize = 13.sp, color = Color(0xFFBFBFBF))
                 }
             }
         }
@@ -769,9 +820,10 @@ data class RoutineReference(val label: String, val items: List<String>)
 
 // Fetches today's routine from the server. Returns null on failure so the caller
 // can fall back to the baked-in list.
-fun fetchRoutineReference(): RoutineReference? {
+fun fetchRoutineReference(weekday: Int? = null): RoutineReference? {
     return try {
-        val url = URL("https://mysololeveling.us/api/routine-reference")
+        val suffix = if (weekday != null) "?weekday=$weekday" else ""
+        val url = URL("https://mysololeveling.us/api/routine-reference$suffix")
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "GET"
         conn.connectTimeout = 5000
