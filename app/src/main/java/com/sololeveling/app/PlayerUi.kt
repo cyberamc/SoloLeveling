@@ -1947,6 +1947,59 @@ data class MealStep(
     val detail: String
 )
 
+// ─── Delivery-day diet ────────────────────────────────────────────────────────
+// Delivery days swap breakfast (double shake) and lunch (Whataburger on the road).
+// Dinner, snack, and dessert are the same as WFM days.
+val DELIVERY_BREAKFAST_MEALS = listOf(
+    Meal(
+        name = "Protein Shake (Double)",
+        mealType = "Breakfast",
+        macros = Macros(calories = 600, protein = 64, fat = 16, netCarbs = "44"),
+        ingredients = listOf(
+            "Makes 2 shakes — blend as 2 separate batches",
+            "Per batch — repeat twice:",
+            "2 scoops (39g) Premier Protein Vanilla Milkshake powder",
+            "1/2 banana (~60g), frozen",
+            "1 tbsp cocoa powder",
+            "7g pecans (about 1 tbsp chopped)",
+            "Swerve sweetener, to taste (1–2 tsp)",
+            "8 to 12 oz cold water"
+        ),
+        steps = listOf(
+            MealStep(
+                "1. Blend One Batch",
+                "Water in the Ninja jar, then banana, powder, cocoa, pecans, and Swerve. Blend 20–30 sec until smooth."
+            ),
+            MealStep(
+                "2. Pour",
+                "Pour and drink (or set aside)."
+            ),
+            MealStep(
+                "3. Repeat",
+                "Repeat for the second batch."
+            ),
+            MealStep(
+                "4. Space Them Out",
+                "Space them out if you like — one in the morning, one mid-route — for steadier protein through the day."
+            )
+        )
+    )
+)
+
+val DELIVERY_LUNCH_MEALS = listOf(
+    Meal(
+        name = "Whataburger Breakfast Burger Combo",
+        mealType = "Lunch",
+        macros = Macros(calories = 955, protein = 31, fat = 55, netCarbs = "83"),
+        ingredients = listOf(
+            "Breakfast Burger (670 cal · 28g P · 38g F · 51g C)",
+            "Large hash brown sticks (~285 cal · 3g P · 17g F · 32g C)",
+            "Diet soda (0 cal)"
+        ),
+        steps = emptyList()
+    )
+)
+
 val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake",
@@ -2121,6 +2174,13 @@ val DESSERT_MEALS = listOf(
 @Composable
 fun DietScreen() {
     var selectedMeal by remember { mutableStateOf<Meal?>(null) }
+    // Default to today's diet: Fri/Sat are delivery days, everything else is WFM.
+    val todayDow = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK)
+    var deliveryDiet by remember {
+        mutableStateOf(
+            todayDow == java.util.Calendar.FRIDAY || todayDow == java.util.Calendar.SATURDAY
+        )
+    }
 
     BackHandler(enabled = selectedMeal != null) {
         selectedMeal = null
@@ -2128,7 +2188,11 @@ fun DietScreen() {
 
     val meal = selectedMeal
     if (meal == null) {
-        DietListScreen(onMealSelected = { selectedMeal = it })
+        DietListScreen(
+            deliveryDiet = deliveryDiet,
+            onToggleDiet = { deliveryDiet = !deliveryDiet },
+            onMealSelected = { selectedMeal = it }
+        )
     } else {
         MealDetailScreen(meal = meal, onBack = { selectedMeal = null })
     }
@@ -2149,20 +2213,44 @@ fun MacroBox(label: String, value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DietListScreen(onMealSelected: (Meal) -> Unit) {
+fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelected: (Meal) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF0a0a0a))
             .padding(16.dp)
     ) {
-        Text(
-            text = "Diet",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Diet",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = if (deliveryDiet) "Delivery Day" else "WFM",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFD700),
+                    letterSpacing = 1.sp
+                )
+            }
+            Text(
+                text = if (deliveryDiet) "View WFM" else "View Delivery",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFFFFD700),
+                modifier = Modifier
+                    .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                    .clickable { onToggleDiet() }
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            )
+        }
 
         // Daily macro summary
         Box(
@@ -2179,10 +2267,10 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", "2,095", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet) "2,640" else "2,095", Modifier.weight(1f))
                     MacroBox("Protein", "155g", Modifier.weight(1f))
-                    MacroBox("Fat", "107g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", "93.5g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet) "137g" else "107g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", if (deliveryDiet) "162.5g" else "93.5g", Modifier.weight(1f))
                 }
             }
         }
@@ -2201,7 +2289,7 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-            items(BREAKFAST_MEALS, key = { it.name }) { meal ->
+            items(if (deliveryDiet) DELIVERY_BREAKFAST_MEALS else BREAKFAST_MEALS, key = { it.name }) { meal ->
                 Button(
                     onClick = { onMealSelected(meal) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -2225,7 +2313,7 @@ fun DietListScreen(onMealSelected: (Meal) -> Unit) {
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-            items(LUNCH_MEALS, key = { it.name }) { meal ->
+            items(if (deliveryDiet) DELIVERY_LUNCH_MEALS else LUNCH_MEALS, key = { it.name }) { meal ->
                 Button(
                     onClick = { onMealSelected(meal) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
