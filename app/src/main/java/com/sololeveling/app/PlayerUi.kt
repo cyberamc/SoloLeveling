@@ -1954,33 +1954,27 @@ val DELIVERY_BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake (Double)",
         mealType = "Breakfast",
-        macros = Macros(calories = 600, protein = 64, fat = 16, netCarbs = "44"),
+        macros = Macros(calories = 450, protein = 62, fat = 11, netCarbs = "25"),
         ingredients = listOf(
-            "Makes 2 shakes — blend as 2 separate batches",
-            "Per batch — repeat twice:",
-            "2 scoops (39g) Premier Protein Vanilla Milkshake powder",
-            "1/2 banana (~60g), frozen",
-            "1 tbsp cocoa powder",
-            "7g pecans (about 1 tbsp chopped)",
-            "Swerve sweetener, to taste (1–2 tsp)",
-            "8 to 12 oz cold water"
+            "4 scoops (78g) Premier Protein Vanilla Milkshake powder — 2 per batch",
+            "1/2 banana (~60g), frozen — batch 1 only",
+            "1 tbsp cocoa powder — batch 1 only",
+            "7g pecans (about 1 tbsp chopped) — batch 1 only",
+            "Swerve sweetener, to taste (1–2 tsp) — batch 1 only",
+            "16 to 24 oz cold water total"
         ),
         steps = listOf(
             MealStep(
-                "1. Blend One Batch",
-                "Water in the Ninja jar, then banana, powder, cocoa, pecans, and Swerve. Blend 20–30 sec until smooth."
+                "Batch 1 — Full Shake",
+                "2 scoops (39g) Premier Protein powder, 1/2 frozen banana, 1 tbsp cocoa powder, 7g pecans, Swerve to taste, and 8–12 oz cold water.\n\nBlend 20–30 sec until smooth."
             ),
             MealStep(
-                "2. Pour",
-                "Pour and drink (or set aside)."
+                "Batch 2 — Plain Protein",
+                "2 scoops (39g) Premier Protein powder and 8–12 oz cold water.\n\nBlend or shake until smooth."
             ),
             MealStep(
-                "3. Repeat",
-                "Repeat for the second batch."
-            ),
-            MealStep(
-                "4. Space Them Out",
-                "Space them out if you like — one in the morning, one mid-route — for steadier protein through the day."
+                "Space Them Out",
+                "Full shake in the morning, plain one mid-route — for steadier protein and to keep the calorie/carb bump down."
             )
         )
     )
@@ -2267,10 +2261,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet) "2,640" else "2,095", Modifier.weight(1f))
-                    MacroBox("Protein", "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet) "137g" else "107g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet) "162.5g" else "93.5g", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet) "2,490" else "2,095", Modifier.weight(1f))
+                    MacroBox("Protein", if (deliveryDiet) "153g" else "155g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet) "132g" else "107g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", if (deliveryDiet) "143.5g" else "93.5g", Modifier.weight(1f))
                 }
             }
         }
