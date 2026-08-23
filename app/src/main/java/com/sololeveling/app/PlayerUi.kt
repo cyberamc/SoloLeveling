@@ -209,7 +209,7 @@ fun TasksScreen() {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "View Routine",
+                    text = "Routine",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFFFD700),
@@ -238,17 +238,26 @@ fun TasksScreen() {
                         .clickable { showLuna = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            // Reference icons get their own row so none scroll off the edge.
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                WaterJugIconCanvas(modifier = Modifier.clickable { showHydration = true })
-                StepsIconCanvas(modifier = Modifier.clickable { showSteps = true })
-                MoonIconCanvas(modifier = Modifier.clickable { showPreSleep = true })
-                TimerIconCanvas(modifier = Modifier.clickable { showTimerDialog = true })
+                WaterJugIconCanvas(
+                    modifier = Modifier
+                        .clickable { showHydration = true }
+                        .padding(horizontal = 4.dp)
+                )
+                StepsIconCanvas(
+                    modifier = Modifier
+                        .clickable { showSteps = true }
+                        .padding(horizontal = 4.dp)
+                )
+                MoonIconCanvas(
+                    modifier = Modifier
+                        .clickable { showPreSleep = true }
+                        .padding(horizontal = 4.dp)
+                )
+                TimerIconCanvas(
+                    modifier = Modifier
+                        .clickable { showTimerDialog = true }
+                        .padding(horizontal = 4.dp)
+                )
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(
