@@ -111,7 +111,10 @@ data class DeliveryWeek(
         } catch (e: Exception) { weekStart }
     }
 
-    // Dated labels for the two worked days: week_start (Sunday) + 2 = Tue, + 3 = Wed.
+    // Dated labels for the two worked days, measured from week_start (a Sunday).
+    // Delivery moved from Tue/Wed to Fri/Sat beginning the week of 2026-08-16, so weeks
+    // before that keep their real Tue/Wed labels rather than being rewritten. The
+    // underlying tue_*/wed_* columns are just "day 1 / day 2" either way.
     private fun dayLabel(offsetDays: Int, dayName: String): String {
         return try {
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
@@ -123,9 +126,18 @@ data class DeliveryWeek(
             "$dayName ${SimpleDateFormat("MMM d", Locale.US).format(cal.time)}"
         } catch (e: Exception) { dayName }
     }
-    fun tueDate(): String = dayLabel(2, "Tue")
-    fun wedDate(): String = dayLabel(3, "Wed")
+
+    private fun isFriSatWeek(): Boolean = weekStart >= DELIVERY_FRISAT_FROM
+
+    fun tueDate(): String =
+        if (isFriSatWeek()) dayLabel(5, "Fri") else dayLabel(2, "Tue")
+    fun wedDate(): String =
+        if (isFriSatWeek()) dayLabel(6, "Sat") else dayLabel(3, "Wed")
 }
+
+// First week_start (Sunday) on which delivery days are Friday/Saturday instead of
+// Tuesday/Wednesday. Weeks before this keep Tue/Wed labels.
+const val DELIVERY_FRISAT_FROM = "2026-08-16"
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
@@ -491,9 +503,9 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
     }
 }
 
-// Quota targets: $125 per delivery day; $250 for the week. Tuesday is measured
-// against the daily $125. Wednesday is measured against whatever remains of the
-// $250 weekly goal after Tuesday's pay, so a strong Tuesday shrinks Wednesday's
+// Quota targets: $125 per delivery day; $250 for the week. Day 1 is measured
+// against the daily $125. Day 2 is measured against whatever remains of the
+// $250 weekly goal after day 1's pay, so a strong day 1 shrinks day 2's
 // target. The weekly line reports the week's total against $250.
 const val DAILY_QUOTA = 125.0
 const val WEEKLY_QUOTA = 250.0
@@ -502,7 +514,7 @@ const val WEEKLY_QUOTA = 250.0
 fun DayQuotaLine(delivered: Int, billable: Int, pay: Double, rate: Double, target: Double = DAILY_QUOTA) {
     // Hidden until the day has activity, so an un-worked day doesn't read as "short".
     if (delivered <= 0) return
-    // If the remaining target is already covered (e.g. a strong Tuesday cleared the
+    // If the remaining target is already covered (e.g. a strong day 1 cleared the
     // weekly goal), treat the day as met with no shortfall.
     val effectiveTarget = maxOf(0.0, target)
     val met = pay >= effectiveTarget
@@ -541,8 +553,8 @@ fun WeeklyQuotaLine(week: DeliveryWeek) {
         )
     } else {
         val short = WEEKLY_QUOTA - week.totalPay
-        // Packages needed to close the gap, at Wednesday's rate (the remaining workday);
-        // fall back to the standard rate if Wednesday isn't set yet.
+        // Packages needed to close the gap, at day 2's rate (the remaining workday);
+        // fall back to the standard rate if day 2 isn't set yet.
         val closingRate = if (week.wedRate > 0) week.wedRate else 1.60
         val morePackages = maxOf(0, Math.ceil(short / closingRate).toInt())
         Text(
