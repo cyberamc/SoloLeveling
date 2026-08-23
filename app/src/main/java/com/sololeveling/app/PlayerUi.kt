@@ -1980,6 +1980,18 @@ val DELIVERY_BREAKFAST_MEALS = listOf(
     )
 )
 
+val DELIVERY_SNACK_MEALS = listOf(
+    Meal(
+        name = "Beef Stick",
+        mealType = "Snack",
+        macros = Macros(calories = 90, protein = 9, fat = 6, netCarbs = "1"),
+        ingredients = listOf(
+            "1 grass-fed beef stick (28g / 1 oz)"
+        ),
+        steps = emptyList()
+    )
+)
+
 val DELIVERY_LUNCH_MEALS = listOf(
     Meal(
         name = "Whataburger Breakfast Burger Combo",
@@ -2261,10 +2273,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet) "2,490" else "2,095", Modifier.weight(1f))
-                    MacroBox("Protein", if (deliveryDiet) "153g" else "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet) "132g" else "107g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet) "143.5g" else "93.5g", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet) "2,135" else "2,095", Modifier.weight(1f))
+                    MacroBox("Protein", if (deliveryDiet) "149g" else "155g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet) "96g" else "107g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", if (deliveryDiet) "141g" else "93.5g", Modifier.weight(1f))
                 }
             }
         }
@@ -2331,7 +2343,7 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-            items(SNACK_MEALS, key = { it.name }) { meal ->
+            items(if (deliveryDiet) DELIVERY_SNACK_MEALS else SNACK_MEALS, key = { it.name }) { meal ->
                 Button(
                     onClick = { onMealSelected(meal) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -2365,23 +2377,26 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     )
                 }
             }
-            item {
-                Text(
-                    text = "Dessert",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF999999),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-            items(DESSERT_MEALS, key = { it.name }) { meal ->
-                Button(
-                    onClick = { onMealSelected(meal) },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+            // No dessert on delivery days.
+            if (!deliveryDiet) {
+                item {
+                    Text(
+                        text = "Dessert",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF999999),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+                items(DESSERT_MEALS, key = { it.name }) { meal ->
+                    Button(
+                        onClick = { onMealSelected(meal) },
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    }
                 }
             }
         }
