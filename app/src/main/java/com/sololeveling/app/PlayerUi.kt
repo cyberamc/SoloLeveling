@@ -238,26 +238,17 @@ fun TasksScreen() {
                         .clickable { showLuna = true }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 )
-                WaterJugIconCanvas(
-                    modifier = Modifier
-                        .clickable { showHydration = true }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-                StepsIconCanvas(
-                    modifier = Modifier
-                        .clickable { showSteps = true }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-                MoonIconCanvas(
-                    modifier = Modifier
-                        .clickable { showPreSleep = true }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-                TimerIconCanvas(
-                    modifier = Modifier
-                        .clickable { showTimerDialog = true }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
+            // Reference icons get their own row so none scroll off the edge.
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                WaterJugIconCanvas(modifier = Modifier.clickable { showHydration = true })
+                StepsIconCanvas(modifier = Modifier.clickable { showSteps = true })
+                MoonIconCanvas(modifier = Modifier.clickable { showPreSleep = true })
+                TimerIconCanvas(modifier = Modifier.clickable { showTimerDialog = true })
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -1013,26 +1004,24 @@ val PRE_SLEEP_STEPS = listOf(
     )
 )
 
-// Crescent moon, drawn as a stroked arc so it needs no layer/blend machinery.
+// Crescent moon: a filled disc with an offset disc punched out in the header's
+// background colour, which reads as a moon rather than a stroked "C".
 @Composable
 fun MoonIconCanvas(modifier: Modifier = Modifier) {
     val lilac = Color(0xFFA5B4FC)
+    val headerBg = Color(0xFF1a1a1a)
     androidx.compose.foundation.Canvas(modifier = modifier.size(20.dp)) {
         val w = size.width
         val h = size.height
-        val inset = w * 0.16f
-        // A thick arc sweeping most of the circle reads as a crescent.
-        drawArc(
+        drawCircle(
             color = lilac,
-            startAngle = 40f,
-            sweepAngle = 280f,
-            useCenter = false,
-            topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
-            size = androidx.compose.ui.geometry.Size(w - inset * 2, h - inset * 2),
-            style = androidx.compose.ui.graphics.drawscope.Stroke(
-                width = w * 0.22f,
-                cap = androidx.compose.ui.graphics.StrokeCap.Round
-            )
+            radius = w * 0.44f,
+            center = androidx.compose.ui.geometry.Offset(w * 0.46f, h * 0.50f)
+        )
+        drawCircle(
+            color = headerBg,
+            radius = w * 0.40f,
+            center = androidx.compose.ui.geometry.Offset(w * 0.72f, h * 0.36f)
         )
     }
 }
