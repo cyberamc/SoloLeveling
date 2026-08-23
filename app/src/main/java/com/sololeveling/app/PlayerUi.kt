@@ -90,6 +90,7 @@ fun TasksScreen() {
     var showRoutine by remember { mutableStateOf(false) }
     var showNotepad by remember { mutableStateOf(false) }
     var showSteps by remember { mutableStateOf(false) }
+    var showPreSleep by remember { mutableStateOf(false) }
     var showLuna by remember { mutableStateOf(false) }
     var showHydration by remember { mutableStateOf(false) }
     var showUrgeCard by remember { mutableStateOf(false) }
@@ -107,6 +108,10 @@ fun TasksScreen() {
     }
     if (showSteps) {
         StepsScreen(onBack = { showSteps = false })
+        return
+    }
+    if (showPreSleep) {
+        PreSleepScreen(onBack = { showPreSleep = false })
         return
     }
     if (showHydration) {
@@ -241,6 +246,11 @@ fun TasksScreen() {
                 StepsIconCanvas(
                     modifier = Modifier
                         .clickable { showSteps = true }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+                MoonIconCanvas(
+                    modifier = Modifier
+                        .clickable { showPreSleep = true }
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 )
                 TimerIconCanvas(
@@ -981,6 +991,127 @@ val STEP_SCHEDULE = listOf(
         )
     )
 )
+
+data class SleepStep(val title: String, val detail: String)
+
+val PRE_SLEEP_STEPS = listOf(
+    SleepStep(
+        "TV off, ~30 min before bed",
+        "Hard stop on screens."
+    ),
+    SleepStep(
+        "Legs-up-the-wall (Viparita Karani), 5–10 min",
+        "Lie on your back with your butt close to the wall and legs extended straight up against it. Arms relaxed at your sides, breathe slow. It shifts blood flow, calms the nervous system, and eases tension from a day of standing/delivering. Keep the room dim while you do it."
+    ),
+    SleepStep(
+        "Read a book, ~20–30 min",
+        "Paper or warm-lit e-reader, low-stakes material, dim warm light."
+    ),
+    SleepStep(
+        "Lights out at a consistent time",
+        "Same time every night — that consistency is what turns the sequence into a real sleep trigger."
+    )
+)
+
+// Crescent moon, drawn as a stroked arc so it needs no layer/blend machinery.
+@Composable
+fun MoonIconCanvas(modifier: Modifier = Modifier) {
+    val lilac = Color(0xFFA5B4FC)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(20.dp)) {
+        val w = size.width
+        val h = size.height
+        val inset = w * 0.16f
+        // A thick arc sweeping most of the circle reads as a crescent.
+        drawArc(
+            color = lilac,
+            startAngle = 40f,
+            sweepAngle = 280f,
+            useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+            size = androidx.compose.ui.geometry.Size(w - inset * 2, h - inset * 2),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = w * 0.22f,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round
+            )
+        )
+    }
+}
+
+@Composable
+fun PreSleepScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0A0A0A))
+            .systemBarsPadding()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+            Text(
+                text = "←",
+                color = Color(0xFFFFD700),
+                fontSize = 24.sp,
+                modifier = Modifier.clickable { onBack() }
+            )
+            Spacer(Modifier.width(16.dp))
+            Text("Pre-Sleep", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        Text(
+            text = "~30–40 min before lights out",
+            fontSize = 13.sp,
+            color = Color(0xFF888888),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            itemsIndexed(PRE_SLEEP_STEPS) { index, step ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = "${index + 1}",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFA5B4FC),
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                    Column {
+                        Text(
+                            text = step.title,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color(0xFFDDDDDD),
+                            lineHeight = 21.sp
+                        )
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            text = step.detail,
+                            fontSize = 13.sp,
+                            color = Color(0xFF999999),
+                            lineHeight = 19.sp
+                        )
+                    }
+                }
+            }
+            item {
+                Text(
+                    text = "No true days off — WFM shift plus the delivery route — so consistency matters more than any single step. Same sequence every night.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF888888),
+                    lineHeight = 19.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .background(Color(0xFF141414), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                )
+            }
+        }
+    }
+}
 
 @Composable
 fun StepsIconCanvas(modifier: Modifier = Modifier) {
