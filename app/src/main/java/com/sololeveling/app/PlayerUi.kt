@@ -2760,6 +2760,29 @@ private fun SupplementGroupCard(group: SupplementGroup) {
 
 // ─── Gym Tab ──────────────────────────────────────────────────────────────────
 
+data class BlockRotation(
+    val block: Int,
+    val weekInBlock: Int,
+    val dayInBlock: Int,
+    val daysLeftInBlock: Int,
+    val blockEnd: String
+)
+
+suspend fun fetchBlockRotation(): BlockRotation? {
+    return try {
+        val body = fetchFromApi("/api/gym/rotation")
+        val o = Gson().fromJson(body, Map::class.java)
+        val block = (o["block"] as? Number)?.toInt() ?: return null
+        BlockRotation(
+            block = block,
+            weekInBlock = (o["weekInBlock"] as? Number)?.toInt() ?: 1,
+            dayInBlock = (o["dayInBlock"] as? Number)?.toInt() ?: 1,
+            daysLeftInBlock = (o["daysLeftInBlock"] as? Number)?.toInt() ?: 0,
+            blockEnd = (o["blockEnd"] as? String) ?: ""
+        )
+    } catch (e: Exception) { null }
+}
+
 data class GymExercise(
     val exerciseTemplateId: String,
     val title: String,
@@ -2772,7 +2795,8 @@ data class GymExercise(
     val lastPrDate: String,
     val recentGainLbs: Int,
     val strengthLevel: String?,
-    val strengthPercentile: Int?
+    val strengthPercentile: Int?,
+    val suggestions: List<PlateauSuggestion> = emptyList()
 )
 
 data class ExerciseSession(
@@ -2830,7 +2854,8 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                             lastPrDate = (ex["last_pr_date"] as? String) ?: "",
                             recentGainLbs = (ex["recent_gain_lbs"] as? Number)?.toInt() ?: 0,
                             strengthLevel = ex["strength_level"] as? String,
-                            strengthPercentile = (ex["strength_percentile"] as? Number)?.toInt()
+                            strengthPercentile = (ex["strength_percentile"] as? Number)?.toInt(),
+                            suggestions = parseSuggestions(ex["suggestions"])
                         ) else null
                     } ?: emptyList()
                     GymRoutine(
@@ -2848,6 +2873,11 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
     }
 
     val totalPlateaued = routines.sumOf { r -> r.exercises.count { it.isPlateaued } }
+
+    var rotation by remember { mutableStateOf<BlockRotation?>(null) }
+    LaunchedEffect(Unit) {
+        rotation = try { fetchBlockRotation() } catch (e: Exception) { null }
+    }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
         Column(
@@ -2867,6 +2897,55 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                 color = Color(0xFF7B8CDE),
                 modifier = Modifier.clickable { onViewStandards() }
             )
+            rotation?.let { rot ->
+                Spacer(modifier = Modifier.height(12.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF111728), RoundedCornerShape(8.dp))
+                        .padding(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "BLOCK ${rot.block} · WEEK ${rot.weekInBlock} OF 4",
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFFD700), letterSpacing = 1.sp
+                        )
+                        Text(
+                            if (rot.daysLeftInBlock > 0) "${rot.daysLeftInBlock} days left" else "last day",
+                            fontSize = 11.sp, color = Color(0xFF6b7689)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    // Four week segments; filled up to the current week.
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        (1..4).forEach { w ->
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(
+                                        if (w <= rot.weekInBlock) Color(0xFFFFD700)
+                                        else Color(0xFF2a2a3a)
+                                    )
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "Day ${rot.dayInBlock} of 28 · block ends ${rot.blockEnd}",
+                        fontSize = 10.sp, color = Color(0xFF6b7689)
+                    )
+                }
+            }
         }
 
         if (loading) {
@@ -2882,9 +2961,7 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                 modifier = Modifier.fillMaxSize().padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                item(key = "plateau-alerts") {
-                    PlateauAlerts()
-                }
+
                 items(routines, key = { it.routineId }) { routine ->
                     GymRoutineSection(routine = routine, onExerciseSelected = onExerciseSelected)
                 }
@@ -3144,6 +3221,21 @@ fun GymRoutineSection(routine: GymRoutine, onExerciseSelected: (GymExercise) -> 
     }
 }
 
+fun parseSuggestions(raw: Any?): List<PlateauSuggestion> {
+    val list = raw as? List<*> ?: return emptyList()
+    return list.mapNotNull {
+        if (it is Map<*, *>) PlateauSuggestion(
+            id = (it["id"] as? Number)?.toInt() ?: return@mapNotNull null,
+            exercise = null,
+            muscleGroup = null,
+            signal = (it["signal"] as? String) ?: "",
+            severity = (it["severity"] as? String) ?: "medium",
+            detail = (it["detail"] as? String) ?: "",
+            fix = (it["fix"] as? String) ?: ""
+        ) else null
+    }
+}
+
 @Composable
 fun GymExerciseRow(exercise: GymExercise, onClick: () -> Unit) {
     val borderColor = when {
@@ -3190,6 +3282,20 @@ fun GymExerciseRow(exercise: GymExercise, onClick: () -> Unit) {
                 )
             } else {
                 Text("No data yet", fontSize = 11.sp, color = Color(0xFF6b7689), modifier = Modifier.padding(top = 3.dp))
+            }
+            exercise.suggestions.forEach { s ->
+                val sev = if (s.severity == "high") Color(0xFFf87171) else Color(0xFFFFD700)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .background(Color(0x14FFFFFF), RoundedCornerShape(6.dp))
+                        .padding(horizontal = 9.dp, vertical = 7.dp)
+                ) {
+                    Text(s.detail, fontSize = 11.sp, color = sev, lineHeight = 15.sp)
+                    Text(s.fix, fontSize = 11.sp, color = Color(0xFF9FBF9F), lineHeight = 15.sp,
+                        modifier = Modifier.padding(top = 3.dp))
+                }
             }
         }
     }
@@ -3262,7 +3368,8 @@ fun GymStandardsScreen(onBack: () -> Unit) {
                     lastPrDate = (it["last_pr_date"] as? String) ?: "",
                     recentGainLbs = (it["recent_gain_lbs"] as? Number)?.toInt() ?: 0,
                     strengthLevel = it["strength_level"] as? String,
-                    strengthPercentile = (it["strength_percentile"] as? Number)?.toInt()
+                    strengthPercentile = (it["strength_percentile"] as? Number)?.toInt(),
+                    suggestions = parseSuggestions(it["suggestions"])
                 ) else null
             }.filter { standards.containsKey(it.title) && it.estimated1RMLbs > 0 }
             isLoading = false
