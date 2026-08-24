@@ -1611,8 +1611,8 @@ fun TimerDialog(onDismiss: () -> Unit) {
     // Two presets (editable). label -> default minutes.
     // label, default minutes, notification text when it finishes
     val presets = listOf(
-        Triple("Meditation", 2, "Meditation complete"),
         Triple("Vaping & Video Games", 30, "Time's up — done vaping & gaming"),
+        Triple("Meditation", 2, "Meditation complete"),
         Triple("Legs Up The Wall", 5, "Legs up the wall done — next: read"),
         Triple("Read A Book", 20, "Reading done — lights out soon")
     )
