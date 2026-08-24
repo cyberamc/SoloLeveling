@@ -2816,21 +2816,110 @@ data class GymRoutine(
 fun GymScreen() {
     var selectedExercise by remember { mutableStateOf<GymExercise?>(null) }
     var showStandards by remember { mutableStateOf(false) }
+    var showGlossary by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = selectedExercise != null || showStandards) {
+    BackHandler(enabled = selectedExercise != null || showStandards || showGlossary) {
         if (selectedExercise != null) selectedExercise = null
+        else if (showGlossary) showGlossary = false
         else showStandards = false
     }
 
     when {
         selectedExercise != null -> GymDetailScreen(exercise = selectedExercise!!, onBack = { selectedExercise = null })
         showStandards -> GymStandardsScreen(onBack = { showStandards = false })
-        else -> GymListScreen(onExerciseSelected = { selectedExercise = it }, onViewStandards = { showStandards = true })
+        showGlossary -> GymGlossaryScreen(onBack = { showGlossary = false })
+        else -> GymListScreen(
+            onExerciseSelected = { selectedExercise = it },
+            onViewStandards = { showStandards = true },
+            onViewGlossary = { showGlossary = true }
+        )
+    }
+}
+
+data class GlossaryEntry(val term: String, val body: String)
+
+val GYM_GLOSSARY = listOf(
+    GlossaryEntry(
+        "1RM — one-rep max",
+        "The heaviest weight you could lift for a single rep. You don't test it; it's estimated from your working sets with the Epley formula: weight × (1 + reps ÷ 30).\n\nSo 175 lbs × 6 reps ≈ 210 lbs estimated 1RM."
+    ),
+    GlossaryEntry(
+        "Why estimate it at all?",
+        "Your sets vary week to week — 175×6 one session, 180×5 the next, 170×8 after that. Raw weight alone can't tell you if that's progress. Converting each session to one comparable number lets a trend line show whether you're actually getting stronger.\n\nIt's an estimate, and it gets looser at high reps: a 15-rep set predicts your true max far less precisely than a 5-rep set. That's why isolation work looks noisier than heavy machine presses."
+    ),
+    GlossaryEntry(
+        "Flat vs declining",
+        "FLAT means the estimate isn't moving — a true plateau. Usually fixed by chasing one more rep at the same load before adding weight.\n\nDECLINING means it's going backward. That normally isn't lost strength; it's accumulated fatigue masking the strength you have. Grinding harder digs the hole deeper."
+    ),
+    GlossaryEntry(
+        "Deload and rebuild",
+        "The standard fix for a declining lift:\n\n1. Drop the working weight about 10%.\n2. Run 2–3 sessions at that lighter load, hitting all your reps cleanly with a rep or two left in the tank. It should feel easy — that's the point, not a failure.\n3. Add weight back, roughly 5 lbs per session, until you're at your old load.\n4. You usually pass the old sticking point instead of stalling at it again.\n\nThe lighter sessions let fatigue dissipate while fitness stays, so you come back able to lift more."
+    ),
+    GlossaryEntry(
+        "Swap a variation instead",
+        "The other option the alerts offer. A different movement gives the stalled pattern a break while still training the same muscle — useful when a specific machine or angle is the thing that's stuck."
+    ),
+    GlossaryEntry(
+        "Missing the rep target",
+        "Different problem from a plateau. If your top set is a rep or two short, hold the load and chase the extra rep. If it's 3+ reps short, the weight is simply wrong for that block's rep range — drop 20–30% and work back up once you're clearing the target."
+    )
+)
+
+@Composable
+fun GymGlossaryScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0a0a0a))
+            .systemBarsPadding()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+            Text(
+                text = "←",
+                color = Color(0xFFFFD700),
+                fontSize = 24.sp,
+                modifier = Modifier.clickable { onBack() }
+            )
+            Spacer(Modifier.width(16.dp))
+            Text("Gym Terms", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        Text(
+            text = "What the plateau alerts mean",
+            fontSize = 13.sp,
+            color = Color(0xFF888888),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(GYM_GLOSSARY, key = { it.term }) { entry ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF12122a), RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = entry.term,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700)
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = entry.body,
+                        fontSize = 13.sp,
+                        color = Color(0xFFCFCFCF),
+                        lineHeight = 20.sp
+                    )
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: () -> Unit) {
+fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: () -> Unit, onViewGlossary: () -> Unit) {
     var routines by remember { mutableStateOf<List<GymRoutine>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -2896,6 +2985,13 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                 fontSize = 12.sp,
                 color = Color(0xFF7B8CDE),
                 modifier = Modifier.clickable { onViewStandards() }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "❓ What is 1RM? What is a rebuild?",
+                fontSize = 12.sp,
+                color = Color(0xFF7B8CDE),
+                modifier = Modifier.clickable { onViewGlossary() }
             )
             rotation?.let { rot ->
                 Spacer(modifier = Modifier.height(12.dp))
