@@ -258,21 +258,27 @@ fun TasksScreen() {
                         .clickable { showTimerDialog = true }
                         .padding(horizontal = 4.dp)
                 )
+                ShieldIconCanvas(
+                    modifier = Modifier
+                        .clickable { showConfidenceDialog = true }
+                        .padding(horizontal = 4.dp)
+                )
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // weight(1f) lets the quote wrap into whatever space is left instead of
-                // squeezing the streak and shield off the end of the row.
+                // weight(1f) so the quote takes the leftover space; the streak keeps its
+                // own width and never wraps.
                 Text(
                     text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
-                    lineHeight = 17.sp,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -293,10 +299,6 @@ fun TasksScreen() {
                         softWrap = false
                     )
                 }
-                Spacer(modifier = Modifier.width(10.dp))
-                ShieldIconCanvas(
-                    modifier = Modifier.clickable { showConfidenceDialog = true }
-                )
             }
             Spacer(modifier = Modifier.height(8.dp))
             ConfidenceMeter(refreshKey = confidenceRefresh)
