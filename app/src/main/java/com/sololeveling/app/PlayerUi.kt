@@ -264,12 +264,16 @@ fun TasksScreen() {
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // weight(1f) lets the quote wrap into whatever space is left instead of
+                // squeezing the streak and shield off the end of the row.
                 Text(
                     text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    lineHeight = 17.sp,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Row(
@@ -280,7 +284,14 @@ fun TasksScreen() {
                 ) {
                     Text(text = "🔥", fontSize = 13.sp)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = "$nofapStreak Days", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD700))
+                    Text(
+                        text = "$nofapStreak Days",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        maxLines = 1,
+                        softWrap = false
+                    )
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 ShieldIconCanvas(
