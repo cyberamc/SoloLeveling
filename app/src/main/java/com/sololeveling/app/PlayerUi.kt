@@ -265,7 +265,7 @@ fun TasksScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "\"The Pain Of Discipline Or The Pain Of Regret.\"",
+                    text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
@@ -961,6 +961,40 @@ fun WaterJugIconCanvas(modifier: Modifier = Modifier) {
 }
 
 // Static reference shown on long-press of the streak counter.
+// Reasons to pull up when the urge fires — reframes, not scolding.
+data class UrgeReason(val headline: String, val body: String)
+
+val URGE_REASONS = listOf(
+    UrgeReason(
+        "The urge is temporary — you're not.",
+        "It peaks and passes within minutes if you don't feed it. Riding it out proves you're in control, not the impulse."
+    ),
+    UrgeReason(
+        "It drains the drive you're building things with.",
+        "You're stacking real projects — the homelab, the SYSTEM app, CCNA. That focus and momentum is the same energy. Redirecting it is fuel, not deprivation."
+    ),
+    UrgeReason(
+        "Nothing changes for the better afterward.",
+        "The problem you were avoiding is still there, plus the low, foggy, slightly-ashamed feeling that follows. You never once finish and think \"glad I did that.\""
+    ),
+    UrgeReason(
+        "It reinforces the exact loop you're trying to break.",
+        "Every time you give in, you teach your brain that discomfort = escape. Every time you don't, you weaken that wiring and get stronger."
+    ),
+    UrgeReason(
+        "You're training discipline, and it transfers.",
+        "The person who can say no here is the same person who shows up for workouts, studies when tired, and follows through on the route. This is rep one."
+    ),
+    UrgeReason(
+        "Future-you is watching.",
+        "The version of you a month clean doesn't want you to reset the counter over five minutes of impulse. Don't rob him of the streak he earned."
+    ),
+    UrgeReason(
+        "Act, don't wait.",
+        "You already know the moves — get up, cold water, walk, push-ups, leave the room. The urge can't survive you standing up and changing your state."
+    )
+)
+
 val URGE_STEPS = listOf(
     "Feet on the pad. 2 mph. Now. Don't negotiate, just start walking.",
     "The urge is a cue, not a command. It's your body flagging idle + alone. Answer it with motion.",
@@ -1332,6 +1366,39 @@ fun UrgeCardScreen(onBack: () -> Unit) {
                         .background(Color(0xFF141414), shape = RoundedCornerShape(10.dp))
                         .padding(14.dp)
                 )
+            }
+            item {
+                Text(
+                    text = "REASONS TO PULL UP",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFD700),
+                    letterSpacing = 2.sp,
+                    modifier = Modifier.padding(top = 18.dp, bottom = 2.dp)
+                )
+            }
+            items(URGE_REASONS, key = { it.headline }) { reason ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = reason.headline,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFDDDDDD),
+                        lineHeight = 20.sp
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = reason.body,
+                        fontSize = 13.sp,
+                        color = Color(0xFF999999),
+                        lineHeight = 19.sp
+                    )
+                }
             }
         }
     }
@@ -2796,7 +2863,8 @@ data class GymExercise(
     val recentGainLbs: Int,
     val strengthLevel: String?,
     val strengthPercentile: Int?,
-    val suggestions: List<PlateauSuggestion> = emptyList()
+    val suggestions: List<PlateauSuggestion> = emptyList(),
+    val isBodyweight: Boolean = false
 )
 
 data class ExerciseSession(
@@ -2944,7 +3012,8 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                             recentGainLbs = (ex["recent_gain_lbs"] as? Number)?.toInt() ?: 0,
                             strengthLevel = ex["strength_level"] as? String,
                             strengthPercentile = (ex["strength_percentile"] as? Number)?.toInt(),
-                            suggestions = parseSuggestions(ex["suggestions"])
+                            suggestions = parseSuggestions(ex["suggestions"]),
+                            isBodyweight = (ex["is_bodyweight"] as? Boolean) ?: false
                         ) else null
                     } ?: emptyList()
                     GymRoutine(
@@ -3256,9 +3325,11 @@ fun GymExerciseCard(exercise: GymExercise, onClick: () -> Unit) {
             }
 
             val subtitle = if (exercise.isPlateaued)
-                "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · stuck ${exercise.sessionsAtCurrentWeight} sessions"
+                if (exercise.isBodyweight) "${exercise.bestReps} reps · stuck ${exercise.sessionsAtCurrentWeight} sessions"
+                else "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · stuck ${exercise.sessionsAtCurrentWeight} sessions"
             else
-                "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · ${exercise.sessionCount} sessions"
+                if (exercise.isBodyweight) "${exercise.bestReps} reps · ${exercise.sessionCount} sessions"
+                else "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · ${exercise.sessionCount} sessions"
             Text(text = subtitle, fontSize = 12.sp, color = Color(0xFF6b7689), modifier = Modifier.padding(top = 4.dp, bottom = 8.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -3373,7 +3444,8 @@ fun GymExerciseRow(exercise: GymExercise, onClick: () -> Unit) {
             }
             if (exercise.sessionCount > 0) {
                 Text(
-                    "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · Est. 1RM: ${exercise.estimated1RMLbs} lbs",
+                    if (exercise.isBodyweight) "${exercise.bestReps} reps · bodyweight"
+                    else "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · Est. 1RM: ${exercise.estimated1RMLbs} lbs",
                     fontSize = 11.sp, color = Color(0xFF6b7689), modifier = Modifier.padding(top = 3.dp)
                 )
             } else {
@@ -3465,7 +3537,8 @@ fun GymStandardsScreen(onBack: () -> Unit) {
                     recentGainLbs = (it["recent_gain_lbs"] as? Number)?.toInt() ?: 0,
                     strengthLevel = it["strength_level"] as? String,
                     strengthPercentile = (it["strength_percentile"] as? Number)?.toInt(),
-                    suggestions = parseSuggestions(it["suggestions"])
+                    suggestions = parseSuggestions(it["suggestions"]),
+                    isBodyweight = (it["is_bodyweight"] as? Boolean) ?: false
                 ) else null
             }.filter { standards.containsKey(it.title) && it.estimated1RMLbs > 0 }
             isLoading = false
@@ -3613,8 +3686,16 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
         ) {
             item {
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GymStatBox("Best set", "${exercise.bestWeightLbs} × ${exercise.bestReps}", Modifier.weight(1f))
-                    GymStatBox("Est. 1RM", "${exercise.estimated1RMLbs} lbs", Modifier.weight(1f), Color(0xFFFFD700))
+                    GymStatBox(
+                        "Best set",
+                        if (exercise.isBodyweight) "${exercise.bestReps} reps" else "${exercise.bestWeightLbs} × ${exercise.bestReps}",
+                        Modifier.weight(1f)
+                    )
+                    GymStatBox(
+                        if (exercise.isBodyweight) "Bodyweight" else "Est. 1RM",
+                        if (exercise.isBodyweight) "—" else "${exercise.estimated1RMLbs} lbs",
+                        Modifier.weight(1f), Color(0xFFFFD700)
+                    )
                     GymStatBox("Sessions", "${exercise.sessionCount}", Modifier.weight(1f))
                 }
             }
@@ -3622,14 +3703,14 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF111728), RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
-                        Text("Max weight over time", fontSize = 11.sp, color = Color(0xFF6b7689), letterSpacing = 1.sp)
+                        Text(if (exercise.isBodyweight) "Reps over time" else "Max weight over time", fontSize = 11.sp, color = Color(0xFF6b7689), letterSpacing = 1.sp)
                         Spacer(modifier = Modifier.height(8.dp))
                         if (loading) {
                             Box(modifier = Modifier.fillMaxWidth().height(70.dp), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(color = Color(0xFFFFD700), modifier = Modifier.size(20.dp))
                             }
                         } else if (sessions.size >= 2) {
-                            GymProgressChart(sessions)
+                            GymProgressChart(sessions, byReps = exercise.isBodyweight)
                         } else {
                             Box(modifier = Modifier.fillMaxWidth().height(70.dp), contentAlignment = Alignment.Center) {
                                 Text("Not enough sessions yet", fontSize = 12.sp, color = Color(0xFF6b7689))
@@ -3706,18 +3787,20 @@ private fun GymStatBox(label: String, value: String, modifier: Modifier = Modifi
 }
 
 @Composable
-fun GymProgressChart(sessions: List<ExerciseSession>) {
+fun GymProgressChart(sessions: List<ExerciseSession>, byReps: Boolean = false) {
     val ordered = sessions.reversed()
+    // Bodyweight lifts have no load to plot, so their progression line is reps.
+    fun value(s: ExerciseSession): Float = if (byReps) s.reps.toFloat() else s.weightLbs.toFloat()
     Canvas(modifier = Modifier.fillMaxWidth().height(70.dp)) {
         if (ordered.size < 2) return@Canvas
-        val maxW = ordered.maxOf { it.weightLbs }.toFloat()
-        val minW = ordered.minOf { it.weightLbs }.toFloat()
+        val maxW = ordered.maxOf { value(it) }
+        val minW = ordered.minOf { value(it) }
         val range = if (maxW == minW) 1f else maxW - minW
         val padY = size.height * 0.12f
         val chartH = size.height - padY * 2
         val points = ordered.mapIndexed { i, s ->
             val x = (i.toFloat() / (ordered.size - 1)) * size.width
-            val y = padY + chartH - ((s.weightLbs - minW) / range) * chartH
+            val y = padY + chartH - ((value(s) - minW) / range) * chartH
             Offset(x, y)
         }
         for (i in 0 until points.size - 1) {
