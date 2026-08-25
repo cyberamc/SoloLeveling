@@ -205,63 +205,64 @@ fun TasksScreen() {
             Text(text = "Tasks", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.height(8.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
                 Text(
                     text = "Routine",
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFFFD700),
                     modifier = Modifier
                         .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showRoutine = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .padding(horizontal = 9.dp, vertical = 6.dp)
                 )
                 Text(
                     text = "Notepad",
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFFFD700),
                     modifier = Modifier
                         .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showNotepad = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .padding(horizontal = 9.dp, vertical = 6.dp)
                 )
                 Text(
                     text = "Luna",
-                    fontSize = 13.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFFFFD700),
                     modifier = Modifier
                         .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showLuna = true }
-                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                        .padding(horizontal = 9.dp, vertical = 6.dp)
                 )
                 WaterJugIconCanvas(
                     modifier = Modifier
                         .clickable { showHydration = true }
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 1.dp)
                 )
                 StepsIconCanvas(
                     modifier = Modifier
                         .clickable { showSteps = true }
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 1.dp)
                 )
                 MoonIconCanvas(
                     modifier = Modifier
                         .clickable { showPreSleep = true }
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 1.dp)
                 )
                 TimerIconCanvas(
                     modifier = Modifier
                         .clickable { showTimerDialog = true }
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 1.dp)
                 )
                 ShieldIconCanvas(
                     modifier = Modifier
                         .clickable { showConfidenceDialog = true }
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = 1.dp)
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -273,7 +274,7 @@ fun TasksScreen() {
                 // own width and never wraps.
                 Text(
                     text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
-                    fontSize = 12.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
@@ -927,7 +928,7 @@ val HYDRATION_SCHEDULE = listOf(
 @Composable
 fun WaterJugIconCanvas(modifier: Modifier = Modifier) {
     val blue = Color(0xFF5AC8FA)
-    androidx.compose.foundation.Canvas(modifier = modifier.size(22.dp)) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
         val w = size.width
         val h = size.height
         val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f)
@@ -1066,7 +1067,7 @@ val PRE_SLEEP_STEPS = listOf(
 fun MoonIconCanvas(modifier: Modifier = Modifier) {
     val lilac = Color(0xFFA5B4FC)
     val headerBg = Color(0xFF1a1a1a)
-    androidx.compose.foundation.Canvas(modifier = modifier.size(20.dp)) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
         val w = size.width
         val h = size.height
         drawCircle(
@@ -1161,7 +1162,7 @@ fun PreSleepScreen(onBack: () -> Unit) {
 @Composable
 fun StepsIconCanvas(modifier: Modifier = Modifier) {
     val green = Color(0xFF6ACB6A)
-    androidx.compose.foundation.Canvas(modifier = modifier.size(22.dp)) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
         val w = size.width
         val h = size.height
         // Two footprints, offset diagonally
@@ -1523,7 +1524,7 @@ fun logConfidenceWin(type: String) {
 @Composable
 fun ShieldIconCanvas(modifier: Modifier = Modifier) {
     val teal = Color(0xFF4FD1C5)
-    androidx.compose.foundation.Canvas(modifier = modifier.size(20.dp)) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
         val w = size.width
         val h = size.height
         val path = androidx.compose.ui.graphics.Path().apply {
@@ -1658,7 +1659,7 @@ fun ConfidenceDialog(onDismiss: () -> Unit, onLogged: () -> Unit) {
 fun TimerIconCanvas(modifier: Modifier = Modifier) {
     val gold = Color(0xFFFFD700)
     androidx.compose.foundation.Canvas(
-        modifier = modifier.size(22.dp)
+        modifier = modifier.size(18.dp)
     ) {
         val w = size.width
         val h = size.height
