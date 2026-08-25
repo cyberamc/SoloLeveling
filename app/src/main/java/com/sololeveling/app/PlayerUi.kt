@@ -274,7 +274,7 @@ fun TasksScreen() {
                 // own width and never wraps.
                 Text(
                     text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color.White,
                     fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
