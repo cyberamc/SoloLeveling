@@ -2878,7 +2878,9 @@ data class GymExercise(
     val strengthLevel: String?,
     val strengthPercentile: Int?,
     val suggestions: List<PlateauSuggestion> = emptyList(),
-    val isBodyweight: Boolean = false
+    val isBodyweight: Boolean = false,
+    val stuckAtWeightLbs: Int = 0,
+    val stuckAtReps: Int = 0
 )
 
 data class ExerciseSession(
@@ -3144,7 +3146,9 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                             strengthLevel = ex["strength_level"] as? String,
                             strengthPercentile = (ex["strength_percentile"] as? Number)?.toInt(),
                             suggestions = parseSuggestions(ex["suggestions"]),
-                            isBodyweight = (ex["is_bodyweight"] as? Boolean) ?: false
+                            isBodyweight = (ex["is_bodyweight"] as? Boolean) ?: false,
+                            stuckAtWeightLbs = (ex["stuck_at_weight_lbs"] as? Number)?.toInt() ?: 0,
+                            stuckAtReps = (ex["stuck_at_reps"] as? Number)?.toInt() ?: 0
                         ) else null
                     } ?: emptyList()
                     GymRoutine(
@@ -3469,8 +3473,8 @@ fun GymExerciseCard(exercise: GymExercise, onClick: () -> Unit) {
             }
 
             val subtitle = if (exercise.isPlateaued)
-                if (exercise.isBodyweight) "${exercise.bestReps} reps · stuck ${exercise.sessionsAtCurrentWeight} sessions"
-                else "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · stuck ${exercise.sessionsAtCurrentWeight} sessions"
+                if (exercise.isBodyweight) "${exercise.bestReps} reps · ${exercise.sessionsAtCurrentWeight} since PR"
+                else "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · ${exercise.sessionsAtCurrentWeight} since PR"
             else
                 if (exercise.isBodyweight) "${exercise.bestReps} reps · ${exercise.sessionCount} sessions"
                 else "${exercise.bestWeightLbs} lbs × ${exercise.bestReps} · ${exercise.sessionCount} sessions"
@@ -3682,7 +3686,9 @@ fun GymStandardsScreen(onBack: () -> Unit) {
                     strengthLevel = it["strength_level"] as? String,
                     strengthPercentile = (it["strength_percentile"] as? Number)?.toInt(),
                     suggestions = parseSuggestions(it["suggestions"]),
-                    isBodyweight = (it["is_bodyweight"] as? Boolean) ?: false
+                    isBodyweight = (it["is_bodyweight"] as? Boolean) ?: false,
+                    stuckAtWeightLbs = (it["stuck_at_weight_lbs"] as? Number)?.toInt() ?: 0,
+                    stuckAtReps = (it["stuck_at_reps"] as? Number)?.toInt() ?: 0
                 ) else null
             }.filter { standards.containsKey(it.title) && it.estimated1RMLbs > 0 }
             isLoading = false
@@ -3813,7 +3819,10 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
                 )
                 if (exercise.isPlateaued) {
                     Text(
-                        "Stuck ${exercise.sessionsAtCurrentWeight} sessions at ${exercise.bestWeightLbs} lbs",
+                        if (exercise.isBodyweight)
+                            "${exercise.sessionsAtCurrentWeight} sessions since PR (${exercise.stuckAtReps} reps)"
+                        else
+                            "${exercise.sessionsAtCurrentWeight} sessions since PR (${exercise.stuckAtWeightLbs} × ${exercise.stuckAtReps})",
                         fontSize = 12.sp, color = Color(0xFFf87171), modifier = Modifier.padding(top = 2.dp)
                     )
                 }
