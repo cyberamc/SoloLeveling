@@ -2899,10 +2899,12 @@ fun GymScreen() {
     var selectedExercise by remember { mutableStateOf<GymExercise?>(null) }
     var showStandards by remember { mutableStateOf(false) }
     var showGlossary by remember { mutableStateOf(false) }
+    var showPlan by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = selectedExercise != null || showStandards || showGlossary) {
+    BackHandler(enabled = selectedExercise != null || showStandards || showGlossary || showPlan) {
         if (selectedExercise != null) selectedExercise = null
         else if (showGlossary) showGlossary = false
+        else if (showPlan) showPlan = false
         else showStandards = false
     }
 
@@ -2910,10 +2912,12 @@ fun GymScreen() {
         selectedExercise != null -> GymDetailScreen(exercise = selectedExercise!!, onBack = { selectedExercise = null })
         showStandards -> GymStandardsScreen(onBack = { showStandards = false })
         showGlossary -> GymGlossaryScreen(onBack = { showGlossary = false })
+        showPlan -> DeloadPlanScreen(onBack = { showPlan = false })
         else -> GymListScreen(
             onExerciseSelected = { selectedExercise = it },
             onViewStandards = { showStandards = true },
-            onViewGlossary = { showGlossary = true }
+            onViewGlossary = { showGlossary = true },
+            onViewPlan = { showPlan = true }
         )
     }
 }
@@ -2946,6 +2950,119 @@ val GYM_GLOSSARY = listOf(
         "Different problem from a plateau. If your top set is a rep or two short, hold the load and chase the extra rep. If it's 3+ reps short, the weight is simply wrong for that block's rep range — drop 20–30% and work back up once you're clearing the target."
     )
 )
+
+data class PlanSection(val heading: String, val bullets: List<String>)
+
+val DELOAD_PLAN = listOf(
+    PlanSection(
+        "Why this week felt weak",
+        listOf(
+            "Logs show real progression across nearly all lifts over the past month — not a plateau.",
+            "The weak day lined up with disrupted sleep (allergies + Toby/Luna).",
+            "Diet is fine — junk was cut, protein and calories kept. The dip was recovery, not food or program."
+        )
+    ),
+    PlanSection(
+        "This week — 2 remaining gym days",
+        listOf(
+            "Train them, but don't chase PRs. Leave 2–3 reps in the tank.",
+            "Solid, comfortable weights. No grinding. Productive but easy.",
+            "Goal: finish the week without digging the fatigue hole deeper before the deload."
+        )
+    ),
+    PlanSection(
+        "Next week — DELOAD",
+        listOf(
+            "Load: ~50% of normal working weights.",
+            "Keep the same exercises and same rep targets.",
+            "Every set should feel easy — leave the gym feeling like you barely worked.",
+            "Don't add sets to compensate. Normal or slightly reduced volume.",
+            "Payoff: fatigue clears, and normal loads feel lighter when you return."
+        )
+    ),
+    PlanSection(
+        "When to deload again",
+        listOf(
+            "Roughly every 6–8 weeks of hard training, or",
+            "When several lifts stall at once + a suddenly-weak session shows up. That combo is a recovery signal, not weakness."
+        )
+    ),
+    PlanSection(
+        "Improving Push days",
+        listOf(
+            "Push sits the day after rest, so it's a fresh day — the bounce isn't from prior-session fatigue.",
+            "Anchor progression to the first two lifts only: Shoulder Press + Chest Press. Beat the log by one rep each week.",
+            "Pressdowns, lateral raises, push-ups are pump/accessory. Don't chase numbers there.",
+            "Protect sleep before Push — delts and triceps are small and feel poor sleep first.",
+            "The pre-bed routine helps most here: TV off 30 min early, legs up the wall, read."
+        )
+    ),
+    PlanSection(
+        "Bottom line",
+        listOf(
+            "The program is working — finish it. Don't switch to calisthenics off one tired session.",
+            "Deload next week at 50%, keep dialing in sleep, and the plateau feeling should resolve on its own."
+        )
+    )
+)
+
+@Composable
+fun DeloadPlanScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0a0a0a))
+            .systemBarsPadding()
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+            Text(
+                text = "←",
+                color = Color(0xFFFFD700),
+                fontSize = 24.sp,
+                modifier = Modifier.clickable { onBack() }
+            )
+            Spacer(Modifier.width(16.dp))
+            Text("Deload & Push", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+        Text(
+            text = "Moving forward",
+            fontSize = 13.sp,
+            color = Color(0xFF888888),
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(DELOAD_PLAN, key = { it.heading }) { section ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF12122a), RoundedCornerShape(10.dp))
+                        .padding(14.dp)
+                ) {
+                    Text(
+                        text = section.heading,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700)
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    section.bullets.forEach { b ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                            Text(
+                                text = "•",
+                                fontSize = 13.sp,
+                                color = Color(0xFF6A6A6A),
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(text = b, fontSize = 13.sp, color = Color(0xFFCFCFCF), lineHeight = 19.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun GymGlossaryScreen(onBack: () -> Unit) {
@@ -3001,7 +3118,7 @@ fun GymGlossaryScreen(onBack: () -> Unit) {
 }
 
 @Composable
-fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: () -> Unit, onViewGlossary: () -> Unit) {
+fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: () -> Unit, onViewGlossary: () -> Unit, onViewPlan: () -> Unit) {
     var routines by remember { mutableStateOf<List<GymRoutine>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -3141,6 +3258,19 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
 
+                item(key = "deload-plan") {
+                    Text(
+                        text = "📋  Deload & Push Plan",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFF12122A), RoundedCornerShape(8.dp))
+                            .clickable { onViewPlan() }
+                            .padding(horizontal = 14.dp, vertical = 14.dp)
+                    )
+                }
                 items(routines, key = { it.routineId }) { routine ->
                     GymRoutineSection(routine = routine, onExerciseSelected = onExerciseSelected)
                 }
