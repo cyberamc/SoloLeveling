@@ -2880,7 +2880,11 @@ data class GymExercise(
     val suggestions: List<PlateauSuggestion> = emptyList(),
     val isBodyweight: Boolean = false,
     val stuckAtWeightLbs: Int = 0,
-    val stuckAtReps: Int = 0
+    val stuckAtReps: Int = 0,
+    val prHeaviestLbs: Int = 0,
+    val prBest1RMLbs: Int = 0,
+    val prBestSetWeightLbs: Int = 0,
+    val prBestSetReps: Int = 0
 )
 
 data class ExerciseSession(
@@ -3148,7 +3152,11 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                             suggestions = parseSuggestions(ex["suggestions"]),
                             isBodyweight = (ex["is_bodyweight"] as? Boolean) ?: false,
                             stuckAtWeightLbs = (ex["stuck_at_weight_lbs"] as? Number)?.toInt() ?: 0,
-                            stuckAtReps = (ex["stuck_at_reps"] as? Number)?.toInt() ?: 0
+                            stuckAtReps = (ex["stuck_at_reps"] as? Number)?.toInt() ?: 0,
+                            prHeaviestLbs = prInt(ex["prs"], "heaviest_weight_lbs"),
+                            prBest1RMLbs = prInt(ex["prs"], "best_1rm_lbs"),
+                            prBestSetWeightLbs = prInt(ex["prs"], "best_set_weight_lbs"),
+                            prBestSetReps = prInt(ex["prs"], "best_set_reps")
                         ) else null
                     } ?: emptyList()
                     GymRoutine(
@@ -3536,6 +3544,11 @@ fun GymRoutineSection(routine: GymRoutine, onExerciseSelected: (GymExercise) -> 
     }
 }
 
+fun prInt(raw: Any?, key: String): Int {
+    val m = raw as? Map<*, *> ?: return 0
+    return (m[key] as? Number)?.toInt() ?: 0
+}
+
 fun parseSuggestions(raw: Any?): List<PlateauSuggestion> {
     val list = raw as? List<*> ?: return emptyList()
     return list.mapNotNull {
@@ -3688,7 +3701,11 @@ fun GymStandardsScreen(onBack: () -> Unit) {
                     suggestions = parseSuggestions(it["suggestions"]),
                     isBodyweight = (it["is_bodyweight"] as? Boolean) ?: false,
                     stuckAtWeightLbs = (it["stuck_at_weight_lbs"] as? Number)?.toInt() ?: 0,
-                    stuckAtReps = (it["stuck_at_reps"] as? Number)?.toInt() ?: 0
+                    stuckAtReps = (it["stuck_at_reps"] as? Number)?.toInt() ?: 0,
+                    prHeaviestLbs = prInt(it["prs"], "heaviest_weight_lbs"),
+                    prBest1RMLbs = prInt(it["prs"], "best_1rm_lbs"),
+                    prBestSetWeightLbs = prInt(it["prs"], "best_set_weight_lbs"),
+                    prBestSetReps = prInt(it["prs"], "best_set_reps")
                 ) else null
             }.filter { standards.containsKey(it.title) && it.estimated1RMLbs > 0 }
             isLoading = false
@@ -3789,8 +3806,11 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
 
     LaunchedEffect(exercise.exerciseTemplateId) {
         try {
-            val response = fetchFromApi("/api/gym/history/${exercise.exerciseTemplateId}")
-            val data = Gson().fromJson(response, List::class.java)
+            // Pass the title so the backend can feed these sets into the PR tracker.
+            val encoded = java.net.URLEncoder.encode(exercise.title, "UTF-8")
+            val response = fetchFromApi("/api/gym/history/${exercise.exerciseTemplateId}?title=$encoded")
+            val obj = Gson().fromJson(response, Map::class.java)
+            val data = (obj["sessions"] as? List<*>) ?: emptyList<Any>()
             sessions = data.mapNotNull {
                 if (it is Map<*, *>) ExerciseSession(
                     date = (it["date"] as? String) ?: "",
@@ -3838,18 +3858,31 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             item {
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+                Text(
+                    "PERSONAL RECORDS",
+                    fontSize = 10.sp,
+                    color = Color(0xFF6b7689),
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     GymStatBox(
-                        "Best set",
-                        if (exercise.isBodyweight) "${exercise.bestReps} reps" else "${exercise.bestWeightLbs} × ${exercise.bestReps}",
+                        "Heaviest",
+                        if (exercise.isBodyweight) "—" else "${exercise.prHeaviestLbs} lbs",
                         Modifier.weight(1f)
                     )
                     GymStatBox(
-                        if (exercise.isBodyweight) "Bodyweight" else "Est. 1RM",
-                        if (exercise.isBodyweight) "—" else "${exercise.estimated1RMLbs} lbs",
+                        if (exercise.isBodyweight) "Best reps" else "Best 1RM",
+                        if (exercise.isBodyweight) "${exercise.bestReps}" else "${exercise.prBest1RMLbs} lbs",
                         Modifier.weight(1f), Color(0xFFFFD700)
                     )
-                    GymStatBox("Sessions", "${exercise.sessionCount}", Modifier.weight(1f))
+                    GymStatBox(
+                        "Best set vol",
+                        if (exercise.isBodyweight) "—" else "${exercise.prBestSetWeightLbs} × ${exercise.prBestSetReps}",
+                        Modifier.weight(1f)
+                    )
+                }
                 }
             }
 
@@ -3895,7 +3928,7 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF111728), RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Column {
-                        Text("Recent sessions", fontSize = 11.sp, color = Color(0xFF6b7689), letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 8.dp))
+                        Text("Recent sessions · full history", fontSize = 11.sp, color = Color(0xFF6b7689), letterSpacing = 1.sp, modifier = Modifier.padding(bottom = 8.dp))
                         if (!loading && sessions.isEmpty()) {
                             Text("No session data", fontSize = 12.sp, color = Color(0xFF6b7689))
                         }
