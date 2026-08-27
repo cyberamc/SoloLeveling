@@ -2884,7 +2884,8 @@ data class GymExercise(
     val prHeaviestLbs: Int = 0,
     val prBest1RMLbs: Int = 0,
     val prBestSetWeightLbs: Int = 0,
-    val prBestSetReps: Int = 0
+    val prBestSetReps: Int = 0,
+    val prBestReps: Int = 0
 )
 
 data class ExerciseSession(
@@ -3156,7 +3157,8 @@ fun GymListScreen(onExerciseSelected: (GymExercise) -> Unit, onViewStandards: ()
                             prHeaviestLbs = prInt(ex["prs"], "heaviest_weight_lbs"),
                             prBest1RMLbs = prInt(ex["prs"], "best_1rm_lbs"),
                             prBestSetWeightLbs = prInt(ex["prs"], "best_set_weight_lbs"),
-                            prBestSetReps = prInt(ex["prs"], "best_set_reps")
+                            prBestSetReps = prInt(ex["prs"], "best_set_reps"),
+                            prBestReps = prInt(ex["prs"], "best_reps")
                         ) else null
                     } ?: emptyList()
                     GymRoutine(
@@ -3705,7 +3707,8 @@ fun GymStandardsScreen(onBack: () -> Unit) {
                     prHeaviestLbs = prInt(it["prs"], "heaviest_weight_lbs"),
                     prBest1RMLbs = prInt(it["prs"], "best_1rm_lbs"),
                     prBestSetWeightLbs = prInt(it["prs"], "best_set_weight_lbs"),
-                    prBestSetReps = prInt(it["prs"], "best_set_reps")
+                    prBestSetReps = prInt(it["prs"], "best_set_reps"),
+                    prBestReps = prInt(it["prs"], "best_reps")
                 ) else null
             }.filter { standards.containsKey(it.title) && it.estimated1RMLbs > 0 }
             isLoading = false
@@ -3874,7 +3877,7 @@ fun GymDetailScreen(exercise: GymExercise, onBack: () -> Unit) {
                     )
                     GymStatBox(
                         if (exercise.isBodyweight) "Best reps" else "Best 1RM",
-                        if (exercise.isBodyweight) "${exercise.bestReps}" else "${exercise.prBest1RMLbs} lbs",
+                        if (exercise.isBodyweight) "${exercise.prBestReps}" else "${exercise.prBest1RMLbs} lbs",
                         Modifier.weight(1f), Color(0xFFFFD700)
                     )
                     GymStatBox(
