@@ -996,6 +996,10 @@ val URGE_REASONS = listOf(
         "Every time you give in, you teach your brain that discomfort = escape. Every time you don't, you weaken that wiring and get stronger."
     ),
     UrgeReason(
+        "It never stops at one.",
+        "Inviting it in once always turns into inviting it again — and it ends with $60 gone and nothing actually changed. You already know it's wrong, and you already know it costs you every time."
+    ),
+    UrgeReason(
         "You're training discipline, and it transfers.",
         "The person who can say no here is the same person who shows up for workouts, studies when tired, and follows through on the route. This is rep one."
     ),
