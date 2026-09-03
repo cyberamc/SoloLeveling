@@ -33,13 +33,14 @@ data class FoodItem(
     val room: String? = null
 )
 
-val LEVEL_LABELS = listOf("Out", "Low", "Medium", "Full")
-val LEVEL_COLORS = listOf(
-    Color(0xFFCF6679),
-    Color(0xFFE8944A),
-    Color(0xFFD4B84A),
-    Color(0xFF4CAF50),
+// Three statuses: 0 = Out, 1 = Low, 2 = Good. Legacy levels 2/3 both read as Good.
+val INV_STATUS_LABELS = listOf("Out", "Low", "Good")
+val INV_STATUS_COLORS = listOf(
+    Color(0xFFCF6679),  // Out  - red
+    Color(0xFFE8944A),  // Low  - amber
+    Color(0xFF4CAF50),  // Good - green
 )
+fun invStatus(level: Int): Int = if (level >= 2) 2 else level
 
 val ROOM_ORDER = listOf("Kitchen", "Garage", "Bedroom", "Bathroom")
 
@@ -168,17 +169,17 @@ fun InventoryScreen(
                             .padding(12.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        listOf(0, 1, 2, 3).forEach { lvl ->
-                            val count = items.count { it.level == lvl }
+                        listOf(2, 1, 0).forEach { st ->
+                            val count = items.count { invStatus(it.level) == st }
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = count.toString(),
-                                    color = LEVEL_COLORS[lvl],
+                                    color = INV_STATUS_COLORS[st],
                                     fontSize = 18.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = LEVEL_LABELS[lvl],
+                                    text = INV_STATUS_LABELS[st],
                                     color = Color(0xFF888899),
                                     fontSize = 11.sp
                                 )
@@ -188,7 +189,7 @@ fun InventoryScreen(
 
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        text = "Tap to cycle level",
+                        text = "Tap a status to set it",
                         color = Color(0xFF555577),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -219,16 +220,16 @@ fun InventoryScreen(
                                     modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
                                 )
                             }
-                            val sorted = group.sortedWith(compareBy({ it.level }, { it.name }))
+                            val sorted = group.sortedBy { it.name }
                             items(sorted, key = { "${endpoint}_${it.id}" }) { item ->
                                 InventoryItemRow(
                                     item = item,
-                                    onCycleLevel = { newLevel ->
-                                        items = items.map { if (it.id == item.id) it.copy(level = newLevel) else it }
+                                    onSetStatus = { newStatus ->
+                                        items = items.map { if (it.id == item.id) it.copy(level = newStatus) else it }
                                         scope.launch {
                                             try {
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
+                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newStatus)
                                                 }
                                             } catch (e: Exception) {
                                                 items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
@@ -249,15 +250,15 @@ fun InventoryScreen(
                                     modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
                                 )
                             }
-                            items(noRoom, key = { "${endpoint}_${it.id}" }) { item ->
+                            items(noRoom.sortedBy { it.name }, key = { "${endpoint}_${it.id}" }) { item ->
                                 InventoryItemRow(
                                     item = item,
-                                    onCycleLevel = { newLevel ->
-                                        items = items.map { if (it.id == item.id) it.copy(level = newLevel) else it }
+                                    onSetStatus = { newStatus ->
+                                        items = items.map { if (it.id == item.id) it.copy(level = newStatus) else it }
                                         scope.launch {
                                             try {
                                                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
+                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newStatus)
                                                 }
                                             } catch (e: Exception) {
                                                 items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
@@ -270,42 +271,29 @@ fun InventoryScreen(
                         item { Spacer(Modifier.height(24.dp)) }
                     }
                 } else {
-                    // Group by level (food inventory)
-                    val grouped = listOf(0, 1, 2, 3).mapNotNull { lvl ->
-                        val group = items.filter { it.level == lvl }
-                        if (group.isNotEmpty()) lvl to group else null
-                    }
+                    // Flat list, sorted by name only. Status is set inline and the item
+                    // stays put — no grouping by status, so nothing jumps when you change it.
+                    val sorted = items.sortedBy { it.name }
                     LazyColumn(
                         modifier = Modifier.padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        grouped.forEach { (lvl, group) ->
-                            item(key = "header_$lvl") {
-                                Text(
-                                    text = LEVEL_LABELS[lvl].uppercase(),
-                                    color = LEVEL_COLORS[lvl].copy(alpha = 0.8f),
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-                                )
-                            }
-                            items(group, key = { "${endpoint}_${it.id}" }) { item ->
-                                InventoryItemRow(
-                                    item = item,
-                                    onCycleLevel = { newLevel ->
-                                        items = items.map { if (it.id == item.id) it.copy(level = newLevel) else it }
-                                        scope.launch {
-                                            try {
-                                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newLevel)
-                                                }
-                                            } catch (e: Exception) {
-                                                items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
+                        items(sorted, key = { "${endpoint}_${it.id}" }) { item ->
+                            InventoryItemRow(
+                                item = item,
+                                onSetStatus = { newStatus ->
+                                    items = items.map { if (it.id == item.id) it.copy(level = newStatus) else it }
+                                    scope.launch {
+                                        try {
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                patchInventoryLevel(baseUrl, endpoint, item.id, newStatus)
                                             }
+                                        } catch (e: Exception) {
+                                            items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
                                         }
                                     }
-                                )
-                            }
+                                }
+                            )
                         }
                         item { Spacer(Modifier.height(24.dp)) }
                     }
@@ -316,15 +304,14 @@ fun InventoryScreen(
 }
 
 @Composable
-fun InventoryItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
-    val nextLevel = (item.level + 3) % 4
+fun InventoryItemRow(item: FoodItem, onSetStatus: (Int) -> Unit) {
+    val status = invStatus(item.level)
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(Color(0xFF12122A))
-            .clickable { onCycleLevel(nextLevel) }
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -333,13 +320,13 @@ fun InventoryItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
                 .width(4.dp)
                 .height(36.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(LEVEL_COLORS[item.level])
+                .background(INV_STATUS_COLORS[status])
         )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = item.name,
-                color = if (item.level == 0) Color(0xFF777788) else Color(0xFFDDDDEE),
+                color = if (status == 0) Color(0xFF777788) else Color(0xFFDDDDEE),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 maxLines = 2,
@@ -353,20 +340,27 @@ fun InventoryItemRow(item: FoodItem, onCycleLevel: (Int) -> Unit) {
                 )
             }
         }
-        Spacer(Modifier.width(10.dp))
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(12.dp))
-                .background(LEVEL_COLORS[item.level].copy(alpha = 0.18f))
-                .padding(horizontal = 10.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = LEVEL_LABELS[item.level],
-                color = LEVEL_COLORS[item.level],
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Spacer(Modifier.width(8.dp))
+        // Good / Low / Out — the active one is filled, the rest outlined.
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            listOf(2, 1, 0).forEach { st ->
+                val active = status == st
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (active) INV_STATUS_COLORS[st] else Color(0xFF1E1E36))
+                        .clickable { if (!active) onSetStatus(st) }
+                        .padding(horizontal = 9.dp, vertical = 5.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = INV_STATUS_LABELS[st],
+                        color = if (active) Color(0xFF0A0A1A) else INV_STATUS_COLORS[st].copy(alpha = 0.75f),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
     }
 }
