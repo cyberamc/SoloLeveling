@@ -295,6 +295,155 @@ fun formatPayDate(iso: String): String {
     } catch (e: Exception) { iso }
 }
 
+data class DeliveryDay(
+    val label: String, val delivered: Int, val duplicates: Int,
+    val undeliverable: Int, val billable: Int, val route324: Boolean, val route121: Boolean
+)
+data class DeliveryWeekHist(
+    val weekStart: String, val checkNumber: Int?, val payDate: String,
+    val paid: Boolean, val billableAmount: Double, val day1: DeliveryDay, val day2: DeliveryDay
+)
+data class DeliveryMonthHist(
+    val month: String, val totalDelivered: Int, val totalBillable: Double, val weeks: List<DeliveryWeekHist>
+)
+
+fun fetchDeliveryHistory(baseUrl: String): List<DeliveryMonthHist> {
+    val url = URL("$baseUrl/api/delivery-history")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "GET"
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        if (conn.responseCode != 200) return emptyList()
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        val arr = JSONObject(body).optJSONArray("months") ?: JSONArray()
+        fun day(o: JSONObject) = DeliveryDay(
+            label = o.getString("label"), delivered = o.getInt("delivered"),
+            duplicates = o.getInt("duplicates"), undeliverable = o.getInt("undeliverable"),
+            billable = o.getInt("billable"), route324 = o.optInt("route324", 0) == 1,
+            route121 = o.optInt("route121", 0) == 1
+        )
+        val months = mutableListOf<DeliveryMonthHist>()
+        for (i in 0 until arr.length()) {
+            val m = arr.getJSONObject(i)
+            val wArr = m.optJSONArray("weeks") ?: JSONArray()
+            val weeks = mutableListOf<DeliveryWeekHist>()
+            for (j in 0 until wArr.length()) {
+                val w = wArr.getJSONObject(j)
+                weeks.add(DeliveryWeekHist(
+                    weekStart = w.getString("week_start"),
+                    checkNumber = if (w.isNull("check_number")) null else w.getInt("check_number"),
+                    payDate = w.getString("pay_date"),
+                    paid = w.optInt("paid", 0) == 1,
+                    billableAmount = w.getDouble("billable_amount"),
+                    day1 = day(w.getJSONObject("day1")),
+                    day2 = day(w.getJSONObject("day2"))
+                ))
+            }
+            months.add(DeliveryMonthHist(
+                month = m.getString("month"),
+                totalDelivered = m.getInt("totalDelivered"),
+                totalBillable = m.getDouble("totalBillable"),
+                weeks = weeks
+            ))
+        }
+        return months
+    } finally {
+        conn.disconnect()
+    }
+}
+
+@Composable
+fun DeliveryHistoryScreen(baseUrl: String, onBack: () -> Unit) {
+    var months by remember { mutableStateOf<List<DeliveryMonthHist>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try { fetchDeliveryHistory(baseUrl) } catch (e: Exception) { emptyList<DeliveryMonthHist>() }
+        }
+        months = result
+        loading = false
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A)).padding(16.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 20.dp, bottom = 16.dp)) {
+            Text("‹ Back", color = Color(0xFF7B8CDE), fontSize = 16.sp,
+                modifier = Modifier.clickable { onBack() })
+            Spacer(Modifier.width(16.dp))
+            Text("Delivery History", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        }
+
+        if (loading) {
+            Text("Loading…", color = Color(0xFF888899), fontSize = 14.sp)
+        } else if (months.isEmpty()) {
+            Text("No delivery weeks recorded yet.", color = Color(0xFF888899), fontSize = 14.sp)
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                months.forEach { m ->
+                    item(key = "hdr_${m.month}") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            Text(m.month, color = Color(0xFF7B9CD8), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text("${m.totalDelivered} delivered · $${"%.2f".format(m.totalBillable)}",
+                                color = Color(0xFF8FD6A8), fontSize = 12.sp)
+                        }
+                    }
+                    items(m.weeks, key = { it.weekStart }) { w ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color(0xFF12122A))
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Check ${w.checkNumber ?: "—"}",
+                                    color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(if (w.paid) Color(0x2645D19A) else Color(0x26F87171))
+                                        .padding(horizontal = 10.dp, vertical = 3.dp)
+                                ) {
+                                    Text(if (w.paid) "Paid" else "Unpaid",
+                                        color = if (w.paid) Color(0xFF8FD6A8) else Color(0xFFF87171),
+                                        fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            Text("Pay ${w.payDate} · $${"%.2f".format(w.billableAmount)} billable",
+                                color = Color(0xFF888899), fontSize = 12.sp,
+                                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                listOf(w.day1, w.day2).forEach { d ->
+                                    Column(modifier = Modifier.weight(1f)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(Color(0xFF0E0E20))
+                                        .padding(8.dp)) {
+                                        val route = if (d.route324) " · 324" else if (d.route121) " · 121" else ""
+                                        Text(d.label + route, color = Color(0xFFB9C4E0), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                                        Text("${d.delivered} delivered", color = Color(0xFF9AA4B8), fontSize = 11.sp)
+                                        Text("${d.duplicates} dup · ${d.undeliverable} undeliv", color = Color(0xFFC98A8A), fontSize = 11.sp)
+                                        Text("${d.billable} billable", color = Color(0xFF8FD6A8), fontSize = 11.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                item { Spacer(Modifier.height(24.dp)) }
+            }
+        }
+    }
+}
+
 @Composable
 fun SpeedxChecksScreen(baseUrl: String, onBack: () -> Unit) {
     var month by remember { mutableStateOf<String?>(null) }
@@ -813,6 +962,7 @@ fun FinanceScreen(baseUrl: String) {
         "delivery" -> DeliveryTrackerScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "bookkeeping" -> BookkeepingScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "speedxchecks" -> SpeedxChecksScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        "deliveryhistory" -> DeliveryHistoryScreen(baseUrl = baseUrl, onBack = { currentView = null })
         else -> {
             Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A)).padding(16.dp)) {
                 Text("FINANCE", color = Color(0xFF7B8CDE), fontSize = 20.sp,
@@ -903,6 +1053,18 @@ fun FinanceScreen(baseUrl: String) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("🪙  SpeedX Paychecks", color = Color.White, fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = { currentView = "deliveryhistory" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("📊  Delivery History", color = Color.White, fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold)
                 }
             }
