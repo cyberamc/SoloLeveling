@@ -317,6 +317,8 @@ fun TasksScreen() {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "daily-routine-reference") {
                     DailyRoutineReference()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    CcnaScheduleReference()
                 }
                 item(key = "today-header") {
                     SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
@@ -1822,6 +1824,63 @@ fun DailyRoutineReference() {
                 ) {
                     Text(text = "•", fontSize = 13.sp, color = Color(0xFF6A6A6A), modifier = Modifier.padding(end = 8.dp))
                     Text(text = task, fontSize = 13.sp, color = Color(0xFFBFBFBF))
+                }
+            }
+        }
+    }
+}
+
+data class CcnaSchedule(val items: List<String>)
+
+suspend fun fetchCcnaSchedule(): CcnaSchedule? {
+    return try {
+        val body = fetchFromApi("/api/ccna-schedule")
+        val o = Gson().fromJson(body, Map::class.java)
+        val raw = o["items"] as? List<*> ?: emptyList<Any>()
+        CcnaSchedule(items = raw.mapNotNull { it as? String })
+    } catch (e: Exception) { null }
+}
+
+// Collapsible per-day CCNA study timeline. Hidden on days with no schedule (Fri/Sat).
+@Composable
+fun CcnaScheduleReference() {
+    var expanded by remember { mutableStateOf(false) }
+    var items by remember { mutableStateOf<List<String>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchCcnaSchedule() }
+        if (fetched != null) items = fetched.items
+    }
+
+    if (items.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF15151f), shape = RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded },
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "CCNA SCHEDULE",
+                fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                color = Color(0xFF7B9CD8), letterSpacing = 2.sp
+            )
+            Text(text = if (expanded) "▲" else "▼", fontSize = 13.sp, color = Color(0xFF7B9CD8))
+        }
+        if (expanded) {
+            Spacer(Modifier.height(8.dp))
+            items.forEach { step ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "•", fontSize = 13.sp, color = Color(0xFF6A6A6A), modifier = Modifier.padding(end = 8.dp))
+                    Text(text = step, fontSize = 13.sp, color = Color(0xFFBFCADF))
                 }
             }
         }
