@@ -952,6 +952,94 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
     }
 }
 
+// Inline delivery tracker for TODAY only, shown on the Finance home on delivery days.
+// Uses +/- steppers for duplicates and undeliverable; delivered stays a typed field
+// (it's a large count you enter, not increment one at a time). Reuses the same
+// fetch/patch endpoints as the full tracker.
+@Composable
+fun TodayDeliveryTracker(baseUrl: String) {
+    var week by remember { mutableStateOf<DeliveryWeek?>(null) }
+    var isDay2 by remember { mutableStateOf(false) }  // Sat = day 2, else day 1
+    var loading by remember { mutableStateOf(true) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        // Saturday is day 2 (wed_* columns); Friday is day 1 (tue_* columns).
+        isDay2 = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
+        val wks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try { fetchDeliveryWeeks(baseUrl, currentWorkedMonth()) } catch (e: Exception) { emptyList() }
+        }
+        // Newest week = current one (highest week_start).
+        week = wks.maxByOrNull { it.weekStart }
+        loading = false
+    }
+
+    val w = week ?: return
+    fun persist(updated: DeliveryWeek) {
+        week = updated
+        scope.launch {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try { patchDeliveryWeek(baseUrl, updated) } catch (e: Exception) {}
+            }
+        }
+    }
+
+    val delivered = if (isDay2) w.wedDelivered else w.tueDelivered
+    val duplicates = if (isDay2) w.wedDuplicates else w.tueDuplicates
+    val undeliverable = if (isDay2) w.wedUndeliverable else w.tueUndeliverable
+    val billable = maxOf(0, delivered - duplicates - undeliverable)
+    val dayLabel = if (isDay2) w.wedDate() else w.tueDate()
+
+    fun setDelivered(v: Int) = persist(if (isDay2) w.copy(wedDelivered = maxOf(0, v)) else w.copy(tueDelivered = maxOf(0, v)))
+    fun setDup(v: Int) = persist(if (isDay2) w.copy(wedDuplicates = maxOf(0, v)) else w.copy(tueDuplicates = maxOf(0, v)))
+    fun setUnd(v: Int) = persist(if (isDay2) w.copy(wedUndeliverable = maxOf(0, v)) else w.copy(tueUndeliverable = maxOf(0, v)))
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .background(Color(0xFF12122A), RoundedCornerShape(10.dp))
+            .padding(14.dp)
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Today Â· $dayLabel", color = Color(0xFF7B9CD8), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("$billable billable", color = Color(0xFF8FD6A8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(12.dp))
+
+        // Delivered: typed field with a stepper for quick nudges too.
+        StepperRow("Delivered", delivered, { setDelivered(delivered - 1) }, { setDelivered(delivered + 1) })
+        Spacer(Modifier.height(8.dp))
+        StepperRow("Duplicates", duplicates, { setDup(duplicates - 1) }, { setDup(duplicates + 1) })
+        Spacer(Modifier.height(8.dp))
+        StepperRow("Undeliverable", undeliverable, { setUnd(undeliverable - 1) }, { setUnd(undeliverable + 1) })
+    }
+}
+
+@Composable
+fun StepperRow(label: String, value: Int, onMinus: () -> Unit, onPlus: () -> Unit) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = Color(0xFFCFCFE0), fontSize = 14.sp)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            StepBtn("â", onMinus)
+            Text("$value", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.widthIn(min = 40.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            StepBtn("+", onPlus)
+        }
+    }
+}
+
+@Composable
+fun StepBtn(sym: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.size(38.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color(0xFF2a3a5c))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(sym, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
 @Composable
 fun FinanceScreen(baseUrl: String) {
     var currentView by remember { mutableStateOf<String?>(null) }
@@ -1019,6 +1107,8 @@ fun FinanceScreen(baseUrl: String) {
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    Spacer(Modifier.height(12.dp))
+                    TodayDeliveryTracker(baseUrl = baseUrl)
                     Spacer(Modifier.height(12.dp))
                 }
 
