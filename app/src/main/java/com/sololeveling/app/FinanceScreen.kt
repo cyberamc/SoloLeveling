@@ -1067,23 +1067,7 @@ fun FinanceScreen(baseUrl: String) {
                 // Delivery-day reminder. Fri (6) / Sat (7) in Calendar's 1-based days.
                 val todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
                 if (todayDow == Calendar.FRIDAY || todayDow == Calendar.SATURDAY) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("🍔", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Fast food to go — never dine in",
-                            color = Color(0xFFF59E0B),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
+Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
@@ -1108,7 +1092,7 @@ fun FinanceScreen(baseUrl: String) {
                     ) {
                         Text("⚠", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
                         Text(
-                            "Route 117 — avoid 415 Grand Ave",
+                            "Route 117 — avoid 415 Grand Ave & C section / the end",
                             color = Color(0xFFF87171),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -1126,22 +1110,6 @@ fun FinanceScreen(baseUrl: String) {
                         Text(
                             "Never do more than 130 packages",
                             color = Color(0xFFF59E0B),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("\u26A0", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Route 117 — avoid C section / the end",
-                            color = Color(0xFFF87171),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
