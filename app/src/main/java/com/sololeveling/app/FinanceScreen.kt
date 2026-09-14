@@ -798,16 +798,17 @@ fun DeliveryInputRow(delivered: String, duplicates: String, undeliverable: Strin
                      rate: Double,
                      onDeliveredChange: (String) -> Unit, onDuplicatesChange: (String) -> Unit,
                      onUndeliverableChange: (String) -> Unit, onSave: () -> Unit) {
+    val del = delivered.toIntOrNull() ?: 0
+    val dup = duplicates.toIntOrNull() ?: 0
+    val und = undeliverable.toIntOrNull() ?: 0
     Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF0e0e1e)).padding(12.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            DeliveryField("Delivered", delivered, onDeliveredChange, Modifier.weight(1f))
-            DeliveryField("Duplicates", duplicates, onDuplicatesChange, Modifier.weight(1f))
-            DeliveryField("Undel.", undeliverable, onUndeliverableChange, Modifier.weight(1f))
-        }
+        // Delivered stays a typed field (large count); duplicates/undeliverable use +/- steppers.
+        DeliveryField("Delivered", delivered, onDeliveredChange, Modifier.fillMaxWidth())
         Spacer(Modifier.height(10.dp))
-        val del = delivered.toIntOrNull() ?: 0
-        val dup = duplicates.toIntOrNull() ?: 0
-        val und = undeliverable.toIntOrNull() ?: 0
+        StepperRow("Duplicates", dup, { onDuplicatesChange(maxOf(0, dup - 1).toString()) }, { onDuplicatesChange((dup + 1).toString()) })
+        Spacer(Modifier.height(8.dp))
+        StepperRow("Undeliverable", und, { onUndeliverableChange(maxOf(0, und - 1).toString()) }, { onUndeliverableChange((und + 1).toString()) })
+        Spacer(Modifier.height(10.dp))
         val billable = maxOf(0, del - dup - und)
         val pay = billable * rate
         Text(text = "$del - $dup - $und = $billable packages → $${String.format("%.2f", pay)}",
@@ -985,6 +986,9 @@ fun TodayDeliveryTracker(baseUrl: String) {
     }
 
     val delivered = if (isDay2) w.wedDelivered else w.tueDelivered
+    // Local text buffer so backspacing to empty doesn't snap to 0 mid-edit; persists
+    // only when it parses to a number.
+    var deliveredText by remember(delivered) { mutableStateOf(delivered.toString()) }
     val duplicates = if (isDay2) w.wedDuplicates else w.tueDuplicates
     val undeliverable = if (isDay2) w.wedUndeliverable else w.tueUndeliverable
     val billable = maxOf(0, delivered - duplicates - undeliverable)
@@ -1000,14 +1004,17 @@ fun TodayDeliveryTracker(baseUrl: String) {
             .padding(14.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text("Today Â· $dayLabel", color = Color(0xFF7B9CD8), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Text("Today · $dayLabel", color = Color(0xFF7B9CD8), fontSize = 14.sp, fontWeight = FontWeight.Bold)
             Text("$billable billable", color = Color(0xFF8FD6A8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(12.dp))
 
-        // Delivered: typed field with a stepper for quick nudges too.
-        StepperRow("Delivered", delivered, { setDelivered(delivered - 1) }, { setDelivered(delivered + 1) })
-        Spacer(Modifier.height(8.dp))
+        // Delivered is a typed field (large count); dup/undel use steppers.
+        DeliveryField("Delivered", deliveredText, { s ->
+            deliveredText = s
+            s.toIntOrNull()?.let { setDelivered(it) }
+        }, Modifier.fillMaxWidth())
+        Spacer(Modifier.height(10.dp))
         StepperRow("Duplicates", duplicates, { setDup(duplicates - 1) }, { setDup(duplicates + 1) })
         Spacer(Modifier.height(8.dp))
         StepperRow("Undeliverable", undeliverable, { setUnd(undeliverable - 1) }, { setUnd(undeliverable + 1) })
