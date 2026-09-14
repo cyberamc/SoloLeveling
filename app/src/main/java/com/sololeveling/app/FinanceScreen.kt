@@ -1026,7 +1026,7 @@ fun StepperRow(label: String, value: Int, onMinus: () -> Unit, onPlus: () -> Uni
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = Color(0xFFCFCFE0), fontSize = 14.sp)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            StepBtn("â", onMinus)
+            StepBtn("\u2212", onMinus)
             Text("$value", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.widthIn(min = 40.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
             StepBtn("+", onPlus)
