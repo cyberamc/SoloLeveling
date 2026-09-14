@@ -1114,6 +1114,54 @@ fun FinanceScreen(baseUrl: String) {
                             fontWeight = FontWeight.Bold
                         )
                     }
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("\uD83D\uDCE6", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Text(
+                            "Never do more than 130 packages",
+                            color = Color(0xFFF59E0B),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("\u26A0", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Text(
+                            "Route 117 — avoid C section / the end",
+                            color = Color(0xFFF87171),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("\u26A0", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Text(
+                            "Never do Galveston — too many apartments",
+                            color = Color(0xFFF87171),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                     Spacer(Modifier.height(12.dp))
                     TodayDeliveryTracker(baseUrl = baseUrl)
                     Spacer(Modifier.height(12.dp))
