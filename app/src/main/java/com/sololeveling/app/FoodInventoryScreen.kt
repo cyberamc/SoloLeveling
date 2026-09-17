@@ -271,14 +271,14 @@ fun InventoryScreen(
                         item { Spacer(Modifier.height(24.dp)) }
                     }
                 } else {
-                    // Flat list, sorted by name only. Status is set inline and the item
-                    // stays put — no grouping by status, so nothing jumps when you change it.
-                    val sorted = items.sortedBy { it.name }
+                    // Flat list — order comes from the API (sort_order column).
+                    // Status is set inline and the item stays put — no grouping by status,
+                    // so nothing jumps when you change it.
                     LazyColumn(
                         modifier = Modifier.padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(sorted, key = { "${endpoint}_${it.id}" }) { item ->
+                        items(items, key = { "${endpoint}_${it.id}" }) { item ->
                             InventoryItemRow(
                                 item = item,
                                 onSetStatus = { newStatus ->
