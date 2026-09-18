@@ -381,7 +381,7 @@ fun DeliveryHistoryScreen(baseUrl: String, onBack: () -> Unit) {
             Text("No delivery weeks recorded yet.", color = Color(0xFF888899), fontSize = 14.sp)
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                months.sortedByDescending { it.month }.forEach { m ->
+                months.sortedWith(compareByDescending<DeliveryMonthHist> { it.totalDelivered }.thenByDescending { it.month }).forEach { m ->
                     val sortedWeeks = m.weeks.sortedBy { it.checkNumber ?: 0 }
                     val monthLabel = runCatching {
                         val parts = m.month.split("-")
