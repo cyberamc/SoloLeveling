@@ -381,19 +381,25 @@ fun DeliveryHistoryScreen(baseUrl: String, onBack: () -> Unit) {
             Text("No delivery weeks recorded yet.", color = Color(0xFF888899), fontSize = 14.sp)
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                months.forEach { m ->
+                months.sortedByDescending { it.month }.forEach { m ->
+                    val sortedWeeks = m.weeks.sortedBy { it.checkNumber ?: 0 }
+                    val monthLabel = runCatching {
+                        val parts = m.month.split("-")
+                        val mon = listOf("Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec")[parts[1].toInt() - 1]
+                        "$mon ${parts[0]}"
+                    }.getOrDefault(m.month)
                     item(key = "hdr_${m.month}") {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.Bottom
                         ) {
-                            Text(m.month, color = Color(0xFF7B9CD8), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text(monthLabel, color = Color(0xFF7B9CD8), fontSize = 15.sp, fontWeight = FontWeight.Bold)
                             Text("${m.totalDelivered} delivered · $${"%.2f".format(m.totalBillable)}",
                                 color = Color(0xFF8FD6A8), fontSize = 12.sp)
                         }
                     }
-                    items(m.weeks, key = { it.weekStart }) { w ->
+                    items(sortedWeeks, key = { it.weekStart }) { w ->
                         Column(
                             modifier = Modifier.fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
