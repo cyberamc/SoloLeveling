@@ -66,25 +66,25 @@ data class DeliveryWeek(
     val id: Int,
     val weekStart: String,
     val checkNumber: Int,
-    val tueDelivered: Int,
-    val tueDuplicates: Int,
-    val tueUndeliverable: Int,
-    val wedDelivered: Int,
-    val wedDuplicates: Int,
-    val wedUndeliverable: Int,
-    val tueRoute324: Boolean = false,
-    val wedRoute324: Boolean = false,
-    val tueRoute121: Boolean = false,
-    val wedRoute121: Boolean = false
+    val satDelivered: Int,
+    val satDuplicates: Int,
+    val satUndeliverable: Int,
+    val friDelivered: Int,
+    val friDuplicates: Int,
+    val friUndeliverable: Int,
+    val satRoute324: Boolean = false,
+    val friRoute324: Boolean = false,
+    val satRoute121: Boolean = false,
+    val friRoute121: Boolean = false
 ) {
-    val tueBillable: Int get() = maxOf(0, tueDelivered - tueDuplicates - tueUndeliverable)
-    val wedBillable: Int get() = maxOf(0, wedDelivered - wedDuplicates - wedUndeliverable)
-    val tueRate: Double get() = if (tueRoute324) 1.90 else if (tueRoute121) 1.80 else 1.60
-    val wedRate: Double get() = if (wedRoute324) 1.90 else if (wedRoute121) 1.80 else 1.60
-    val totalBillable: Int get() = tueBillable + wedBillable
-    val tuePay: Double get() = tueBillable * tueRate
-    val wedPay: Double get() = wedBillable * wedRate
-    val totalPay: Double get() = tuePay + wedPay
+    val satBillable: Int get() = maxOf(0, satDelivered - satDuplicates - satUndeliverable)
+    val friBillable: Int get() = maxOf(0, friDelivered - friDuplicates - friUndeliverable)
+    val satRate: Double get() = if (satRoute324) 1.90 else if (satRoute121) 1.80 else 1.60
+    val friRate: Double get() = if (friRoute324) 1.90 else if (friRoute121) 1.80 else 1.60
+    val totalBillable: Int get() = satBillable + friBillable
+    val satPay: Double get() = satBillable * satRate
+    val friPay: Double get() = friBillable * friRate
+    val totalPay: Double get() = satPay + friPay
 
     fun payDate(): String {
         return try {
@@ -128,10 +128,10 @@ data class DeliveryWeek(
 
     private fun isFriSatWeek(): Boolean = weekStart >= DELIVERY_FRISAT_FROM
 
-    fun tueDate(): String =
-        if (isFriSatWeek()) dayLabel(5, "Fri") else dayLabel(2, "Tue")
-    fun wedDate(): String =
-        if (isFriSatWeek()) dayLabel(6, "Sat") else dayLabel(3, "Wed")
+    fun satDate(): String =
+        if (isFriSatWeek()) dayLabel(6, "Sat") else dayLabel(2, "Sat")
+    fun friDate(): String =
+        if (isFriSatWeek()) dayLabel(5, "Fri") else dayLabel(3, "Fri")
 }
 
 // First week_start (Sunday) on which delivery days are Friday/Saturday instead of
@@ -155,16 +155,16 @@ fun fetchDeliveryWeeks(baseUrl: String, workedMonth: String? = null): List<Deliv
                 id = obj.getInt("id"),
                 weekStart = obj.getString("week_start"),
                 checkNumber = obj.optInt("check_number", 0),
-                tueDelivered = obj.getInt("tue_delivered"),
-                tueDuplicates = obj.getInt("tue_duplicates"),
-                tueUndeliverable = obj.getInt("tue_undeliverable"),
-                wedDelivered = obj.getInt("wed_delivered"),
-                wedDuplicates = obj.getInt("wed_duplicates"),
-                wedUndeliverable = obj.getInt("wed_undeliverable"),
-                tueRoute324 = obj.optInt("tue_route324", 0) == 1,
-                wedRoute324 = obj.optInt("wed_route324", 0) == 1,
-                tueRoute121 = obj.optInt("tue_route121", 0) == 1,
-                wedRoute121 = obj.optInt("wed_route121", 0) == 1
+                satDelivered = obj.getInt("sat_delivered"),
+                satDuplicates = obj.getInt("sat_duplicates"),
+                satUndeliverable = obj.getInt("sat_undeliverable"),
+                friDelivered = obj.getInt("fri_delivered"),
+                friDuplicates = obj.getInt("fri_duplicates"),
+                friUndeliverable = obj.getInt("fri_undeliverable"),
+                satRoute324 = obj.optInt("sat_route324", 0) == 1,
+                friRoute324 = obj.optInt("fri_route324", 0) == 1,
+                satRoute121 = obj.optInt("sat_route121", 0) == 1,
+                friRoute121 = obj.optInt("fri_route121", 0) == 1
             )
         }
     } finally {
@@ -182,16 +182,16 @@ fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
     conn.readTimeout = 5000
     return try {
         val body = JSONObject().apply {
-            put("tue_delivered", week.tueDelivered)
-            put("tue_duplicates", week.tueDuplicates)
-            put("tue_undeliverable", week.tueUndeliverable)
-            put("wed_delivered", week.wedDelivered)
-            put("wed_duplicates", week.wedDuplicates)
-            put("wed_undeliverable", week.wedUndeliverable)
-            put("tue_route324", if (week.tueRoute324) 1 else 0)
-            put("wed_route324", if (week.wedRoute324) 1 else 0)
-            put("tue_route121", if (week.tueRoute121) 1 else 0)
-            put("wed_route121", if (week.wedRoute121) 1 else 0)
+            put("sat_delivered", week.satDelivered)
+            put("sat_duplicates", week.satDuplicates)
+            put("sat_undeliverable", week.satUndeliverable)
+            put("fri_delivered", week.friDelivered)
+            put("fri_duplicates", week.friDuplicates)
+            put("fri_undeliverable", week.friUndeliverable)
+            put("sat_route324", if (week.satRoute324) 1 else 0)
+            put("fri_route324", if (week.friRoute324) 1 else 0)
+            put("sat_route121", if (week.satRoute121) 1 else 0)
+            put("fri_route121", if (week.friRoute121) 1 else 0)
         }.toString()
         conn.outputStream.use { it.write(body.toByteArray()) }
         val text = conn.inputStream.bufferedReader().readText()
@@ -200,16 +200,16 @@ fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
             id = obj.getInt("id"),
             weekStart = obj.getString("week_start"),
             checkNumber = obj.optInt("check_number", 0),
-            tueDelivered = obj.getInt("tue_delivered"),
-            tueDuplicates = obj.getInt("tue_duplicates"),
-            tueUndeliverable = obj.getInt("tue_undeliverable"),
-            wedDelivered = obj.getInt("wed_delivered"),
-            wedDuplicates = obj.getInt("wed_duplicates"),
-            wedUndeliverable = obj.getInt("wed_undeliverable"),
-            tueRoute324 = obj.optInt("tue_route324", 0) == 1,
-            wedRoute324 = obj.optInt("wed_route324", 0) == 1,
-            tueRoute121 = obj.optInt("tue_route121", 0) == 1,
-            wedRoute121 = obj.optInt("wed_route121", 0) == 1
+            satDelivered = obj.getInt("sat_delivered"),
+            satDuplicates = obj.getInt("sat_duplicates"),
+            satUndeliverable = obj.getInt("sat_undeliverable"),
+            friDelivered = obj.getInt("fri_delivered"),
+            friDuplicates = obj.getInt("fri_duplicates"),
+            friUndeliverable = obj.getInt("fri_undeliverable"),
+            satRoute324 = obj.optInt("sat_route324", 0) == 1,
+            friRoute324 = obj.optInt("fri_route324", 0) == 1,
+            satRoute121 = obj.optInt("sat_route121", 0) == 1,
+            friRoute121 = obj.optInt("fri_route121", 0) == 1
         )
     } finally {
         conn.disconnect()
@@ -532,22 +532,22 @@ fun SpeedxChecksScreen(baseUrl: String, onBack: () -> Unit) {
 }
 
 @Composable
-fun DeliveryWeekCard(week: DeliveryWeek, prevWeek: DeliveryWeek?, isActiveWeek: Boolean, onSave: (DeliveryWeek) -> Unit) {
+fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (DeliveryWeek) -> Unit) {
     var expandedDay by remember { mutableStateOf<String?>(null) }
     // Active week is always editable. Other weeks start locked; unlocking is a
     // deliberate per-card action that re-locks immediately after a save.
     var unlocked by remember(week) { mutableStateOf(false) }
     val editable = isActiveWeek || unlocked
 
-    var tueDelivered by remember(week) { mutableStateOf(week.tueDelivered.toString()) }
-    var tueDuplicates by remember(week) { mutableStateOf(week.tueDuplicates.toString()) }
-    var tueUndeliverable by remember(week) { mutableStateOf(week.tueUndeliverable.toString()) }
-    var wedDelivered by remember(week) { mutableStateOf(week.wedDelivered.toString()) }
-    var wedDuplicates by remember(week) { mutableStateOf(week.wedDuplicates.toString()) }
-    var wedUndeliverable by remember(week) { mutableStateOf(week.wedUndeliverable.toString()) }
+    var satDelivered by remember(week) { mutableStateOf(week.satDelivered.toString()) }
+    var satDuplicates by remember(week) { mutableStateOf(week.satDuplicates.toString()) }
+    var satUndeliverable by remember(week) { mutableStateOf(week.satUndeliverable.toString()) }
+    var friDelivered by remember(week) { mutableStateOf(week.friDelivered.toString()) }
+    var friDuplicates by remember(week) { mutableStateOf(week.friDuplicates.toString()) }
+    var friUndeliverable by remember(week) { mutableStateOf(week.friUndeliverable.toString()) }
     // Rate state per day: 0 = Standard ($1.60), 1 = Route 324 ($1.90), 2 = Route 121 ($1.80)
-    var tueRateMode by remember(week) { mutableStateOf(if (week.tueRoute324) 1 else if (week.tueRoute121) 2 else 0) }
-    var wedRateMode by remember(week) { mutableStateOf(if (week.wedRoute324) 1 else if (week.wedRoute121) 2 else 0) }
+    var satRateMode by remember(week) { mutableStateOf(if (week.satRoute324) 1 else if (week.satRoute121) 2 else 0) }
+    var friRateMode by remember(week) { mutableStateOf(if (week.friRoute324) 1 else if (week.friRoute121) 2 else 0) }
 
     val cardModifier = if (isActiveWeek) {
         Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
@@ -574,31 +574,31 @@ fun DeliveryWeekCard(week: DeliveryWeek, prevWeek: DeliveryWeek?, isActiveWeek: 
             }
             Spacer(Modifier.height(12.dp))
 
-            DayRow(label = week.tueDate(), billable = week.tueBillable, pay = week.tuePay,
-                isExpanded = expandedDay == "tue", onClick = { expandedDay = if (expandedDay == "tue") null else "tue" })
-            DayQuotaLine(delivered = week.tueDelivered, billable = week.tueBillable, pay = week.tuePay, rate = week.tueRate)
+            DayRow(label = week.satDate(), billable = week.satBillable, pay = week.satPay,
+                isExpanded = expandedDay == "sat", onClick = { expandedDay = if (expandedDay == "sat") null else "sat" })
+            DayQuotaLine(delivered = week.satDelivered, billable = week.satBillable, pay = week.satPay, rate = week.satRate)
 
-            if (expandedDay == "tue") {
+            if (expandedDay == "sat") {
                 Spacer(Modifier.height(10.dp))
                 if (editable) {
-                    RouteRateSelector(mode = tueRateMode, onCycle = { tueRateMode = (tueRateMode + 1) % 3 })
+                    RouteRateSelector(mode = satRateMode, onCycle = { satRateMode = (satRateMode + 1) % 3 })
                     Spacer(Modifier.height(10.dp))
-                    DeliveryInputRow(delivered = tueDelivered, duplicates = tueDuplicates, undeliverable = tueUndeliverable,
-                        rate = rateForMode(tueRateMode),
-                        onDeliveredChange = { tueDelivered = it }, onDuplicatesChange = { tueDuplicates = it },
-                        onUndeliverableChange = { tueUndeliverable = it },
+                    DeliveryInputRow(delivered = satDelivered, duplicates = satDuplicates, undeliverable = satUndeliverable,
+                        rate = rateForMode(satRateMode),
+                        onDeliveredChange = { satDelivered = it }, onDuplicatesChange = { satDuplicates = it },
+                        onUndeliverableChange = { satUndeliverable = it },
                         onSave = {
                             expandedDay = null
                             if (!isActiveWeek) unlocked = false
-                            onSave(week.copy(tueDelivered = tueDelivered.toIntOrNull() ?: 0,
-                                tueDuplicates = tueDuplicates.toIntOrNull() ?: 0,
-                                tueUndeliverable = tueUndeliverable.toIntOrNull() ?: 0,
-                                tueRoute324 = tueRateMode == 1,
-                                tueRoute121 = tueRateMode == 2))
+                            onSave(week.copy(satDelivered = satDelivered.toIntOrNull() ?: 0,
+                                satDuplicates = satDuplicates.toIntOrNull() ?: 0,
+                                satUndeliverable = satUndeliverable.toIntOrNull() ?: 0,
+                                satRoute324 = satRateMode == 1,
+                                satRoute121 = satRateMode == 2))
                         })
                 } else {
-                    LockedDaySummary(delivered = week.tueDelivered, duplicates = week.tueDuplicates,
-                        undeliverable = week.tueUndeliverable, rateMode = tueRateMode)
+                    LockedDaySummary(delivered = week.satDelivered, duplicates = week.satDuplicates,
+                        undeliverable = week.satUndeliverable, rateMode = satRateMode)
                     Spacer(Modifier.height(10.dp))
                     UnlockButton(onUnlock = { unlocked = true })
                 }
@@ -607,32 +607,32 @@ fun DeliveryWeekCard(week: DeliveryWeek, prevWeek: DeliveryWeek?, isActiveWeek: 
 
             Spacer(Modifier.height(8.dp))
 
-            DayRow(label = week.wedDate(), billable = week.wedBillable, pay = week.wedPay,
-                isExpanded = expandedDay == "wed", onClick = { expandedDay = if (expandedDay == "wed") null else "wed" })
-            DayQuotaLine(delivered = week.wedDelivered, billable = week.wedBillable, pay = week.wedPay, rate = week.wedRate,
-                target = WEEKLY_QUOTA - week.tuePay)
+            DayRow(label = week.friDate(), billable = week.friBillable, pay = week.friPay,
+                isExpanded = expandedDay == "fri", onClick = { expandedDay = if (expandedDay == "fri") null else "fri" })
+            DayQuotaLine(delivered = week.friDelivered, billable = week.friBillable, pay = week.friPay, rate = week.friRate,
+                target = WEEKLY_QUOTA - week.satPay)
 
-            if (expandedDay == "wed") {
+            if (expandedDay == "fri") {
                 Spacer(Modifier.height(10.dp))
                 if (editable) {
-                    RouteRateSelector(mode = wedRateMode, onCycle = { wedRateMode = (wedRateMode + 1) % 3 })
+                    RouteRateSelector(mode = friRateMode, onCycle = { friRateMode = (friRateMode + 1) % 3 })
                     Spacer(Modifier.height(10.dp))
-                    DeliveryInputRow(delivered = wedDelivered, duplicates = wedDuplicates, undeliverable = wedUndeliverable,
-                        rate = rateForMode(wedRateMode),
-                        onDeliveredChange = { wedDelivered = it }, onDuplicatesChange = { wedDuplicates = it },
-                        onUndeliverableChange = { wedUndeliverable = it },
+                    DeliveryInputRow(delivered = friDelivered, duplicates = friDuplicates, undeliverable = friUndeliverable,
+                        rate = rateForMode(friRateMode),
+                        onDeliveredChange = { friDelivered = it }, onDuplicatesChange = { friDuplicates = it },
+                        onUndeliverableChange = { friUndeliverable = it },
                         onSave = {
                             expandedDay = null
                             if (!isActiveWeek) unlocked = false
-                            onSave(week.copy(wedDelivered = wedDelivered.toIntOrNull() ?: 0,
-                                wedDuplicates = wedDuplicates.toIntOrNull() ?: 0,
-                                wedUndeliverable = wedUndeliverable.toIntOrNull() ?: 0,
-                                wedRoute324 = wedRateMode == 1,
-                                wedRoute121 = wedRateMode == 2))
+                            onSave(week.copy(friDelivered = friDelivered.toIntOrNull() ?: 0,
+                                friDuplicates = friDuplicates.toIntOrNull() ?: 0,
+                                friUndeliverable = friUndeliverable.toIntOrNull() ?: 0,
+                                friRoute324 = friRateMode == 1,
+                                friRoute121 = friRateMode == 2))
                         })
                 } else {
-                    LockedDaySummary(delivered = week.wedDelivered, duplicates = week.wedDuplicates,
-                        undeliverable = week.wedUndeliverable, rateMode = wedRateMode)
+                    LockedDaySummary(delivered = week.friDelivered, duplicates = week.friDuplicates,
+                        undeliverable = week.friUndeliverable, rateMode = friRateMode)
                     Spacer(Modifier.height(10.dp))
                     UnlockButton(onUnlock = { unlocked = true })
                 }
@@ -645,9 +645,9 @@ fun DeliveryWeekCard(week: DeliveryWeek, prevWeek: DeliveryWeek?, isActiveWeek: 
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
-                // Pay period total: Sat (prev week's day 2) + Fri (this week's day 1)
-                val periodPay = (prevWeek?.wedPay ?: 0.0) + week.tuePay
-                val periodBillable = (prevWeek?.wedBillable ?: 0) + week.tueBillable
+                // Pay period total: Sat (day 1) + Fri (day 2) of this pay period
+                val periodPay = week.satPay + week.friPay
+                val periodBillable = week.satBillable + week.friBillable
                 Column {
                     Text("Pay Period Total", fontSize = 12.sp, color = Color(0xFF888899))
                     Text("$periodBillable packages", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
@@ -700,7 +700,7 @@ fun DayQuotaLine(delivered: Int, billable: Int, pay: Double, rate: Double, targe
 fun WeeklyQuotaLine(week: DeliveryWeek) {
     // Report the week's total pay against the $250 weekly goal. Hidden until at
     // least one day has been worked.
-    if (week.tueDelivered <= 0 && week.wedDelivered <= 0) return
+    if (week.satDelivered <= 0 && week.friDelivered <= 0) return
     val met = week.totalPay >= WEEKLY_QUOTA
     Spacer(Modifier.height(3.dp))
     if (met) {
@@ -713,7 +713,7 @@ fun WeeklyQuotaLine(week: DeliveryWeek) {
         val short = WEEKLY_QUOTA - week.totalPay
         // Packages needed to close the gap, at day 2's rate (the remaining workday);
         // fall back to the standard rate if day 2 isn't set yet.
-        val closingRate = if (week.wedRate > 0) week.wedRate else 1.60
+        val closingRate = if (week.friRate > 0) week.friRate else 1.60
         val morePackages = maxOf(0, Math.ceil(short / closingRate).toInt())
         Text(
             text = "⚠ $${String.format("%.2f", short)} short · $morePackages more packages",
@@ -936,12 +936,9 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
                             }
                         }
                     }
-                    items(weeks.indices.toList(), key = { weeks[it].id }) { idx ->
-                        val week = weeks[idx]
-                        val prevWeek = if (idx > 0) weeks[idx - 1] else null
+                    items(weeks, key = { it.id }) { week ->
                         DeliveryWeekCard(
                             week = week,
-                            prevWeek = prevWeek,
                             isActiveWeek = isCurrentDeliveryWeek(week.weekStart),
                             onSave = { updated ->
                                 weeks = weeks.map { if (it.id == updated.id) updated else it }
@@ -997,18 +994,18 @@ fun TodayDeliveryTracker(baseUrl: String) {
         }
     }
 
-    val delivered = if (isDay2) w.wedDelivered else w.tueDelivered
+    val delivered = if (isDay2) w.friDelivered else w.satDelivered
     // Local text buffer so backspacing to empty doesn't snap to 0 mid-edit; persists
     // only when it parses to a number.
     var deliveredText by remember(delivered) { mutableStateOf(delivered.toString()) }
-    val duplicates = if (isDay2) w.wedDuplicates else w.tueDuplicates
-    val undeliverable = if (isDay2) w.wedUndeliverable else w.tueUndeliverable
+    val duplicates = if (isDay2) w.friDuplicates else w.satDuplicates
+    val undeliverable = if (isDay2) w.friUndeliverable else w.satUndeliverable
     val billable = maxOf(0, delivered - duplicates - undeliverable)
-    val dayLabel = if (isDay2) w.wedDate() else w.tueDate()
+    val dayLabel = if (isDay2) w.friDate() else w.satDate()
 
-    fun setDelivered(v: Int) = persist(if (isDay2) w.copy(wedDelivered = maxOf(0, v)) else w.copy(tueDelivered = maxOf(0, v)))
-    fun setDup(v: Int) = persist(if (isDay2) w.copy(wedDuplicates = maxOf(0, v)) else w.copy(tueDuplicates = maxOf(0, v)))
-    fun setUnd(v: Int) = persist(if (isDay2) w.copy(wedUndeliverable = maxOf(0, v)) else w.copy(tueUndeliverable = maxOf(0, v)))
+    fun setDelivered(v: Int) = persist(if (isDay2) w.copy(friDelivered = maxOf(0, v)) else w.copy(satDelivered = maxOf(0, v)))
+    fun setDup(v: Int) = persist(if (isDay2) w.copy(friDuplicates = maxOf(0, v)) else w.copy(satDuplicates = maxOf(0, v)))
+    fun setUnd(v: Int) = persist(if (isDay2) w.copy(friUndeliverable = maxOf(0, v)) else w.copy(satUndeliverable = maxOf(0, v)))
 
     Column(
         modifier = Modifier.fillMaxWidth()
