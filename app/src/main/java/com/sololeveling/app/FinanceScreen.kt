@@ -104,9 +104,9 @@ data class DeliveryWeek(
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val start = sdf.parse(weekStart) ?: return weekStart
             val fmt = SimpleDateFormat("MMM d", Locale.US)
-            val periodStart = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -1) }.time  // Sat
-            val periodEnd = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, 5) }.time    // Fri
-            "${fmt.format(periodStart)} - ${fmt.format(periodEnd)}"
+            val periodStart = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -7) }.time
+            val periodEnd = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -1) }.time
+            "${fmt.format(periodStart)} – ${fmt.format(periodEnd)}"
         } catch (e: Exception) { weekStart }
     }
 
@@ -532,7 +532,7 @@ fun SpeedxChecksScreen(baseUrl: String, onBack: () -> Unit) {
 }
 
 @Composable
-fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (DeliveryWeek) -> Unit) {
+fun DeliveryWeekCard(week: DeliveryWeek, prevWeek: DeliveryWeek?, isActiveWeek: Boolean, onSave: (DeliveryWeek) -> Unit) {
     var expandedDay by remember { mutableStateOf<String?>(null) }
     // Active week is always editable. Other weeks start locked; unlocking is a
     // deliberate per-card action that re-locks immediately after a save.
@@ -645,12 +645,15 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically) {
+                // Pay period total: Sat (prev week's day 2) + Fri (this week's day 1)
+                val periodPay = (prevWeek?.wedPay ?: 0.0) + week.tuePay
+                val periodBillable = (prevWeek?.wedBillable ?: 0) + week.tueBillable
                 Column {
-                    Text("Weekly Total", fontSize = 12.sp, color = Color(0xFF888899))
-                    Text("${week.totalBillable} packages", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    Text("Pay Period Total", fontSize = 12.sp, color = Color(0xFF888899))
+                    Text("$periodBillable packages", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    Text("$${String.format("%.2f", week.totalPay)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
+                    Text("$${String.format("%.2f", periodPay)}", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4CAF50))
                     Text("💰 Pay Date: ${week.payDate()}", fontSize = 11.sp, color = Color(0xFF888899))
                 }
             }
@@ -933,9 +936,12 @@ fun DeliveryTrackerScreen(baseUrl: String, onBack: () -> Unit) {
                             }
                         }
                     }
-                    items(weeks, key = { it.id }) { week ->
+                    items(weeks.indices.toList(), key = { weeks[it].id }) { idx ->
+                        val week = weeks[idx]
+                        val prevWeek = if (idx > 0) weeks[idx - 1] else null
                         DeliveryWeekCard(
                             week = week,
+                            prevWeek = prevWeek,
                             isActiveWeek = isCurrentDeliveryWeek(week.weekStart),
                             onSave = { updated ->
                                 weeks = weeks.map { if (it.id == updated.id) updated else it }
