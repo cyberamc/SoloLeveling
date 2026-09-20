@@ -129,7 +129,7 @@ data class DeliveryWeek(
     private fun isFriSatWeek(): Boolean = weekStart >= DELIVERY_FRISAT_FROM
 
     fun satDate(): String =
-        if (isFriSatWeek()) dayLabel(6, "Sat") else dayLabel(2, "Sat")
+        if (isFriSatWeek()) dayLabel(-1, "Sat") else dayLabel(2, "Sat")
     fun friDate(): String =
         if (isFriSatWeek()) dayLabel(5, "Fri") else dayLabel(3, "Fri")
 }
