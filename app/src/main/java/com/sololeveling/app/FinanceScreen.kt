@@ -7,10 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -101,15 +99,14 @@ data class DeliveryWeek(
     }
 
     fun weekLabel(): String {
+        // Pay period: Sat (week_start - 7) through Fri (week_start - 1)
         return try {
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val start = sdf.parse(weekStart) ?: return weekStart
-            val end = Calendar.getInstance().apply {
-                time = start
-                add(Calendar.DAY_OF_MONTH, 6)
-            }.time
             val fmt = SimpleDateFormat("MMM d", Locale.US)
-            "${fmt.format(start)} - ${fmt.format(end)}"
+            val periodStart = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -7) }.time
+            val periodEnd = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -1) }.time
+            "${fmt.format(periodStart)} – ${fmt.format(periodEnd)}"
         } catch (e: Exception) { weekStart }
     }
 
@@ -567,6 +564,7 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
                     if (week.checkNumber > 0) {
                         Text(text = "SpeedX Check ${week.checkNumber}", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF4CAF50))
                     }
+                    Text(text = week.weekLabel(), fontSize = 11.sp, color = Color(0xFF888899))
                     when {
                         isActiveWeek -> Text(text = "● ACTIVE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF97C459))
                         unlocked -> Text(text = "🔓 Unlocked", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFD4B84A))
@@ -811,7 +809,7 @@ fun DeliveryInputRow(delivered: String, duplicates: String, undeliverable: Strin
     val und = undeliverable.toIntOrNull() ?: 0
     Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF0e0e1e)).padding(12.dp)) {
         // Delivered stays a typed field (large count); duplicates/undeliverable use +/- steppers.
-        DeliveryField("Packages", delivered, onDeliveredChange, Modifier.fillMaxWidth())
+        DeliveryField("Delivered", delivered, onDeliveredChange, Modifier.fillMaxWidth())
         Spacer(Modifier.height(10.dp))
         StepperRow("Duplicates", dup, { onDuplicatesChange(maxOf(0, dup - 1).toString()) }, { onDuplicatesChange((dup + 1).toString()) })
         Spacer(Modifier.height(8.dp))
@@ -974,16 +972,12 @@ fun TodayDeliveryTracker(baseUrl: String) {
 
     LaunchedEffect(Unit) {
         // Saturday is day 2 (wed_* columns); Friday is day 1 (tue_* columns).
-        val dow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
-        isDay2 = dow == Calendar.SATURDAY  // Sunday treated as Friday (day 1) for testing
+        isDay2 = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
         val wks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try { fetchDeliveryWeeks(baseUrl) } catch (e: Exception) { emptyList() }
+            try { fetchDeliveryWeeks(baseUrl, currentWorkedMonth()) } catch (e: Exception) { emptyList() }
         }
-        // Find the week whose week_start is the Sunday that contains today.
-        val cal2 = Calendar.getInstance()
-        while (cal2.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) cal2.add(Calendar.DAY_OF_MONTH, -1)
-        val thisSunday = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(cal2.time)
-        week = wks.firstOrNull { it.weekStart == thisSunday } ?: wks.maxByOrNull { it.weekStart }
+        // Newest week = current one (highest week_start).
+        week = wks.maxByOrNull { it.weekStart }
         loading = false
     }
 
@@ -1017,15 +1011,12 @@ fun TodayDeliveryTracker(baseUrl: String) {
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Today · $dayLabel", color = Color(0xFF7B9CD8), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (w.checkNumber > 0) Text("Check ${w.checkNumber}", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                Text("$billable billable", color = Color(0xFF8FD6A8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            }
+            Text("$billable billable", color = Color(0xFF8FD6A8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
         }
         Spacer(Modifier.height(12.dp))
 
         // Delivered is a typed field (large count); dup/undel use steppers.
-        DeliveryField("Packages", deliveredText, { s ->
+        DeliveryField("Delivered", deliveredText, { s ->
             deliveredText = s
             s.toIntOrNull()?.let { setDelivered(it) }
         }, Modifier.fillMaxWidth())
@@ -1074,7 +1065,7 @@ fun FinanceScreen(baseUrl: String) {
         "speedxchecks" -> SpeedxChecksScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "deliveryhistory" -> DeliveryHistoryScreen(baseUrl = baseUrl, onBack = { currentView = null })
         else -> {
-            Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A)).padding(16.dp).verticalScroll(rememberScrollState())) {
+            Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0A0A1A)).padding(16.dp)) {
                 Text("FINANCE", color = Color(0xFF7B8CDE), fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 20.dp, bottom = 24.dp))
@@ -1083,22 +1074,6 @@ fun FinanceScreen(baseUrl: String) {
                 val todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
                 if (todayDow == Calendar.FRIDAY || todayDow == Calendar.SATURDAY) {
 Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("\uD83D\uDCE6", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Never do more than 130 packages",
-                            color = Color(0xFFF59E0B),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
@@ -1125,6 +1100,22 @@ Row(
                         Text(
                             "Route 117 — avoid 415 Grand Ave & C section / the end",
                             color = Color(0xFFF87171),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("\uD83D\uDCE6", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Text(
+                            "Never do more than 130 packages",
+                            color = Color(0xFFF59E0B),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
