@@ -104,9 +104,9 @@ data class DeliveryWeek(
             val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
             val start = sdf.parse(weekStart) ?: return weekStart
             val fmt = SimpleDateFormat("MMM d", Locale.US)
-            val periodStart = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -7) }.time
-            val periodEnd = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -1) }.time
-            "${fmt.format(periodStart)} – ${fmt.format(periodEnd)}"
+            val periodStart = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, -1) }.time  // Sat
+            val periodEnd = Calendar.getInstance().apply { time = start; add(Calendar.DAY_OF_MONTH, 5) }.time    // Fri
+            "${fmt.format(periodStart)} - ${fmt.format(periodEnd)}"
         } catch (e: Exception) { weekStart }
     }
 
