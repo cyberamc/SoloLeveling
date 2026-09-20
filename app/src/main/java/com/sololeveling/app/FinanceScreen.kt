@@ -809,7 +809,7 @@ fun DeliveryInputRow(delivered: String, duplicates: String, undeliverable: Strin
     val und = undeliverable.toIntOrNull() ?: 0
     Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color(0xFF0e0e1e)).padding(12.dp)) {
         // Delivered stays a typed field (large count); duplicates/undeliverable use +/- steppers.
-        DeliveryField("Delivered", delivered, onDeliveredChange, Modifier.fillMaxWidth())
+        DeliveryField("Packages", delivered, onDeliveredChange, Modifier.fillMaxWidth())
         Spacer(Modifier.height(10.dp))
         StepperRow("Duplicates", dup, { onDuplicatesChange(maxOf(0, dup - 1).toString()) }, { onDuplicatesChange((dup + 1).toString()) })
         Spacer(Modifier.height(8.dp))
@@ -972,7 +972,8 @@ fun TodayDeliveryTracker(baseUrl: String) {
 
     LaunchedEffect(Unit) {
         // Saturday is day 2 (wed_* columns); Friday is day 1 (tue_* columns).
-        isDay2 = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
+        val dow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
+        isDay2 = dow == Calendar.SATURDAY  // Sunday treated as Friday (day 1) for testing
         val wks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             try { fetchDeliveryWeeks(baseUrl) } catch (e: Exception) { emptyList() }
         }
@@ -1014,12 +1015,15 @@ fun TodayDeliveryTracker(baseUrl: String) {
     ) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Today · $dayLabel", color = Color(0xFF7B9CD8), fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            Text("$billable billable", color = Color(0xFF8FD6A8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (w.checkNumber > 0) Text("Check ${w.checkNumber}", color = Color(0xFF4CAF50), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                Text("$billable billable", color = Color(0xFF8FD6A8), fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
         }
         Spacer(Modifier.height(12.dp))
 
         // Delivered is a typed field (large count); dup/undel use steppers.
-        DeliveryField("Delivered", deliveredText, { s ->
+        DeliveryField("Packages", deliveredText, { s ->
             deliveredText = s
             s.toIntOrNull()?.let { setDelivered(it) }
         }, Modifier.fillMaxWidth())
@@ -1079,6 +1083,22 @@ fun FinanceScreen(baseUrl: String) {
 Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("\uD83D\uDCE6", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Text(
+                            "Never do more than 130 packages",
+                            color = Color(0xFFF59E0B),
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -1103,22 +1123,6 @@ Row(
                         Text(
                             "Route 117 — avoid 415 Grand Ave & C section / the end",
                             color = Color(0xFFF87171),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("\uD83D\uDCE6", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Never do more than 130 packages",
-                            color = Color(0xFFF59E0B),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
                         )
