@@ -974,10 +974,13 @@ fun TodayDeliveryTracker(baseUrl: String) {
         // Saturday is day 2 (wed_* columns); Friday is day 1 (tue_* columns).
         isDay2 = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
         val wks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try { fetchDeliveryWeeks(baseUrl, currentWorkedMonth()) } catch (e: Exception) { emptyList() }
+            try { fetchDeliveryWeeks(baseUrl) } catch (e: Exception) { emptyList() }
         }
-        // Newest week = current one (highest week_start).
-        week = wks.maxByOrNull { it.weekStart }
+        // Find the week whose week_start is the Sunday that contains today.
+        val cal2 = Calendar.getInstance()
+        while (cal2.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) cal2.add(Calendar.DAY_OF_MONTH, -1)
+        val thisSunday = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(cal2.time)
+        week = wks.firstOrNull { it.weekStart == thisSunday } ?: wks.maxByOrNull { it.weekStart }
         loading = false
     }
 
