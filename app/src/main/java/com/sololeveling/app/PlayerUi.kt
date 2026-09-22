@@ -3025,32 +3025,6 @@ data class PlanSection(val heading: String, val bullets: List<String>)
 
 val DELOAD_PLAN = listOf(
     PlanSection(
-        "Why this week felt weak",
-        listOf(
-            "Logs show real progression across nearly all lifts over the past month — not a plateau.",
-            "The weak day lined up with disrupted sleep (allergies + Toby/Luna).",
-            "Diet is fine — junk was cut, protein and calories kept. The dip was recovery, not food or program."
-        )
-    ),
-    PlanSection(
-        "This week — 2 remaining gym days",
-        listOf(
-            "Train them, but don't chase PRs. Leave 2–3 reps in the tank.",
-            "Solid, comfortable weights. No grinding. Productive but easy.",
-            "Goal: finish the week without digging the fatigue hole deeper before the deload."
-        )
-    ),
-    PlanSection(
-        "Next week — DELOAD",
-        listOf(
-            "Load: ~50% of normal working weights.",
-            "Keep the same exercises and same rep targets.",
-            "Every set should feel easy — leave the gym feeling like you barely worked.",
-            "Don't add sets to compensate. Normal or slightly reduced volume.",
-            "Payoff: fatigue clears, and normal loads feel lighter when you return."
-        )
-    ),
-    PlanSection(
         "When to deload again",
         listOf(
             "Roughly every 6–8 weeks of hard training, or",
