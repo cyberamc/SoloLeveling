@@ -3040,13 +3040,6 @@ val DELOAD_PLAN = listOf(
             "Protect sleep before Push — delts and triceps are small and feel poor sleep first.",
             "The pre-bed routine helps most here: TV off 30 min early, legs up the wall, read."
         )
-    ),
-    PlanSection(
-        "Bottom line",
-        listOf(
-            "The program is working — finish it. Don't switch to calisthenics off one tired session.",
-            "Deload next week at 50%, keep dialing in sleep, and the plateau feeling should resolve on its own."
-        )
     )
 )
 
