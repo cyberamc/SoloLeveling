@@ -2279,7 +2279,7 @@ fun MainTabScreen() {
     var selectedTab by remember { mutableStateOf(TabType.QUESTS) }
     val context = LocalContext.current
     var showMorningBrief by remember { mutableStateOf(
-        NavigationState.pendingNavigation.value == "morning_brief" || !hasDismissedToday(context)
+        NavigationState.pendingNavigation.value == "morning_brief"
     ) }
 
     LaunchedEffect(Unit) {
