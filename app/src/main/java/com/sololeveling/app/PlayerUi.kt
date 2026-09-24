@@ -97,6 +97,7 @@ fun TasksScreen() {
     var showConfidenceDialog by remember { mutableStateOf(false) }
     var confidenceRefresh by remember { mutableIntStateOf(0) }
     var showTimerDialog by remember { mutableStateOf(false) }
+    var showAlarmDialog by remember { mutableStateOf(false) }
 
     if (showRoutine) {
         RoutineScreen(onBack = { showRoutine = false })
@@ -136,6 +137,10 @@ fun TasksScreen() {
 
     if (showTimerDialog) {
         TimerDialog(onDismiss = { showTimerDialog = false })
+    }
+
+    if (showAlarmDialog) {
+        AlarmTimeDialog(onDismiss = { showAlarmDialog = false })
     }
 
     // Load player data once on first launch only
@@ -262,6 +267,11 @@ fun TasksScreen() {
                 ShieldIconCanvas(
                     modifier = Modifier
                         .clickable { showConfidenceDialog = true }
+                        .padding(horizontal = 1.dp)
+                )
+                AlarmIconCanvas(
+                    modifier = Modifier
+                        .clickable { showAlarmDialog = true }
                         .padding(horizontal = 1.dp)
                 )
             }
@@ -2104,8 +2114,188 @@ suspend fun loadAllQuests(onQuestsLoaded: (List<Quest>, List<Quest>, Int, Int, B
 }
 
 @Composable
+fun AlarmIconCanvas(modifier: Modifier = Modifier) {
+    val gold = Color(0xFFFFD700)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
+        val w = size.width; val h = size.height
+        val cx = w / 2f; val cy = h * 0.52f
+        val r = w * 0.34f
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f)
+        // Bell body arc
+        drawArc(color = gold, startAngle = 180f, sweepAngle = 180f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(cx - r, cy - r),
+            size = androidx.compose.ui.geometry.Size(r * 2, r * 2), style = stroke)
+        // Bell sides
+        drawLine(color = gold, start = androidx.compose.ui.geometry.Offset(cx - r, cy),
+            end = androidx.compose.ui.geometry.Offset(cx - r, cy + r * 0.5f), strokeWidth = w * 0.09f)
+        drawLine(color = gold, start = androidx.compose.ui.geometry.Offset(cx + r, cy),
+            end = androidx.compose.ui.geometry.Offset(cx + r, cy + r * 0.5f), strokeWidth = w * 0.09f)
+        // Bell base
+        drawLine(color = gold, start = androidx.compose.ui.geometry.Offset(cx - r * 1.2f, cy + r * 0.5f),
+            end = androidx.compose.ui.geometry.Offset(cx + r * 1.2f, cy + r * 0.5f), strokeWidth = w * 0.09f)
+        // Clapper
+        drawCircle(color = gold, radius = w * 0.07f,
+            center = androidx.compose.ui.geometry.Offset(cx, cy + r * 0.75f))
+        // Top stem
+        drawLine(color = gold, start = androidx.compose.ui.geometry.Offset(cx, cy - r),
+            end = androidx.compose.ui.geometry.Offset(cx, h * 0.06f), strokeWidth = w * 0.09f)
+    }
+}
+
+@Composable
+fun AlarmTimeDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val prefs = context.getSharedPreferences("morning_brief", android.content.Context.MODE_PRIVATE)
+    var hour by remember { mutableIntStateOf(prefs.getInt("alarm_hour", 5)) }
+    var minute by remember { mutableIntStateOf(prefs.getInt("alarm_minute", 0)) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1a1a2e),
+        title = { Text("Morning Brief Alarm", color = Color.White, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("Set the time for your daily morning brief", color = Color(0xFF94a3b8), fontSize = 13.sp)
+                Spacer(Modifier.height(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    // Hour
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        TextButton(onClick = { hour = (hour + 1) % 24 }) { Text("▲", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        Text("%02d".format(hour), color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+                        TextButton(onClick = { hour = (hour + 23) % 24 }) { Text("▼", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                    }
+                    Text(":", color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
+                    // Minute
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        TextButton(onClick = { minute = (minute + 5) % 60 }) { Text("▲", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        Text("%02d".format(minute), color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold)
+                        TextButton(onClick = { minute = (minute + 55) % 60 }) { Text("▼", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("Current: %02d:%02d daily".format(hour, minute), color = Color(0xFF94a3b8), fontSize = 12.sp)
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    prefs.edit().putInt("alarm_hour", hour).putInt("alarm_minute", minute).apply()
+                    MorningBrief.schedule(context, hour, minute)
+                    onDismiss()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6))
+            ) { Text("Save", color = Color.White, fontWeight = FontWeight.Bold) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel", color = Color(0xFF94a3b8)) }
+        }
+    )
+}
+
+@Composable
+fun MorningBriefOverlay(onDismiss: () -> Unit) {
+    var tasks by remember { mutableStateOf<List<Quest>>(emptyList()) }
+    var streak by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val playerResponse = fetchFromApi("/api/player")
+                val playerData = com.google.gson.Gson().fromJson(playerResponse, Map::class.java)
+                streak = (playerData["nofapStreak"] as? Number)?.toInt() ?: 0
+            } catch (e: Exception) {}
+            try {
+                loadAllQuests(
+                    onQuestsLoaded = { daily, _, _, _, _ -> tasks = daily },
+                    onError = {}
+                )
+            } catch (e: Exception) {}
+        }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(48.dp))
+            Text("🔥 $streak day streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(36.dp))
+            Text("\"", fontSize = 72.sp, color = Color(0xFF3b82f6), fontWeight = FontWeight.Black,
+                lineHeight = 24.sp, modifier = Modifier.offset(y = (-16).dp))
+            Text(
+                text = "Break the pattern today\nor the loop will repeat tomorrow.",
+                fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
+                textAlign = TextAlign.Center, lineHeight = 32.sp
+            )
+            Spacer(Modifier.height(44.dp))
+            if (tasks.isNotEmpty()) {
+                Text("TODAY'S TASKS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                Spacer(Modifier.height(14.dp))
+                tasks.filter { !it.optional }.forEach { task ->
+                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Box(modifier = Modifier.size(8.dp).background(Color(0xFF3b82f6),
+                            shape = androidx.compose.foundation.shape.CircleShape))
+                        Text(task.title, fontSize = 15.sp, color = Color(0xFFe2e8f0))
+                    }
+                }
+            }
+            Spacer(Modifier.height(52.dp))
+            Button(
+                onClick = onDismiss,
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6)),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
+            ) {
+                Text("Let's go →", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+            Spacer(Modifier.height(36.dp))
+        }
+    }
+}
+
+fun getMorningBriefPrefs(context: android.content.Context) =
+    context.getSharedPreferences("morning_brief", android.content.Context.MODE_PRIVATE)
+
+fun hasDismissedToday(context: android.content.Context): Boolean {
+    val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+    return getMorningBriefPrefs(context).getString("dismissed_date", "") == today
+}
+
+fun markDismissedToday(context: android.content.Context) {
+    val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+    getMorningBriefPrefs(context).edit().putString("dismissed_date", today).apply()
+}
+
+@Composable
 fun MainTabScreen() {
     var selectedTab by remember { mutableStateOf(TabType.QUESTS) }
+    val context = LocalContext.current
+    var showMorningBrief by remember { mutableStateOf(
+        NavigationState.pendingNavigation.value == "morning_brief" || !hasDismissedToday(context)
+    ) }
+
+    LaunchedEffect(Unit) {
+        if (NavigationState.pendingNavigation.value == "morning_brief") {
+            NavigationState.pendingNavigation.value = null
+            showMorningBrief = true
+        }
+    }
+
+    if (showMorningBrief) {
+        MorningBriefOverlay(onDismiss = {
+            markDismissedToday(context)
+            showMorningBrief = false
+        })
+        return
+    }
 
     Column(
         modifier = Modifier

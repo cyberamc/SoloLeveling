@@ -243,3 +243,105 @@ class UserReminderReceiver : BroadcastReceiver() {
         }.start()
     }
 }
+
+/** Daily 5 AM morning brief — custom sound, full-screen intent. */
+object MorningBrief {
+    const val CHANNEL_ID = "morning_brief"
+    const val ACTION_FIRE = "com.sololeveling.app.MORNING_BRIEF_FIRE"
+    private const val REQ_CODE = 9001
+    private const val NOTIF_ID = 9001
+
+    fun createChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val soundUri = android.net.Uri.parse(
+                "android.resource://${context.packageName}/raw/morning_alarm"
+            )
+            val attrs = android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+            val channel = NotificationChannel(
+                CHANNEL_ID, "Morning Brief", NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Daily morning brief alarm"
+                setSound(soundUri, attrs)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+            }
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+                .createNotificationChannel(channel)
+        }
+    }
+
+    fun schedule(context: Context, hour: Int = 5, minute: Int = 0) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, MorningBriefReceiver::class.java).apply {
+            action = ACTION_FIRE
+        }
+        val pi = PendingIntent.getBroadcast(
+            context, REQ_CODE, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.timeInMillis,
+                    AlarmManager.INTERVAL_DAY, pi)
+            } else {
+                alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.timeInMillis,
+                    AlarmManager.INTERVAL_DAY, pi)
+            }
+        } catch (e: SecurityException) {
+            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.timeInMillis,
+                AlarmManager.INTERVAL_DAY, pi)
+        }
+    }
+
+    fun showNotification(context: Context) {
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("navigate_to", "morning_brief")
+        }
+        val contentPi = PendingIntent.getActivity(
+            context, NOTIF_ID, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val fullScreenPi = PendingIntent.getActivity(
+            context, NOTIF_ID + 1, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val soundUri = android.net.Uri.parse(
+            "android.resource://${context.packageName}/raw/morning_alarm"
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("🌅 Break the pattern today")
+            .setContentText("or the loop will repeat tomorrow.")
+            .setStyle(NotificationCompat.BigTextStyle()
+                .bigText("or the loop will repeat tomorrow.\n\nTap to see your tasks for today."))
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setSound(soundUri)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
+            .setAutoCancel(true)
+            .setContentIntent(contentPi)
+            .setFullScreenIntent(fullScreenPi, true)
+            .build()
+
+        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(NOTIF_ID, notification)
+    }
+}
+
+class MorningBriefReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != MorningBrief.ACTION_FIRE) return
+        MorningBrief.showNotification(context)
+    }
+}

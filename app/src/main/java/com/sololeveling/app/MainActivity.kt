@@ -26,6 +26,13 @@ class MainActivity : ComponentActivity() {
         UserReminder.enqueuePolling(this)
         Thread { UserReminder.armAllNow(this@MainActivity) }.start()
 
+        // Morning brief: create channel and schedule daily alarm
+        MorningBrief.createChannel(this)
+        val mbPrefs = getSharedPreferences("morning_brief", android.content.Context.MODE_PRIVATE)
+        val mbHour = mbPrefs.getInt("alarm_hour", 5)
+        val mbMinute = mbPrefs.getInt("alarm_minute", 0)
+        MorningBrief.schedule(this, mbHour, mbMinute)
+
         setContent {
             MainTabScreen()
         }
