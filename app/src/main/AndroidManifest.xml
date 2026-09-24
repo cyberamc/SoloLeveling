@@ -44,6 +44,12 @@
             </intent-filter>
         </receiver>
 
+        <receiver android:name=".MorningBriefReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="com.sololeveling.app.MORNING_BRIEF_FIRE"/>
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".TimerService"
             android:exported="false"
