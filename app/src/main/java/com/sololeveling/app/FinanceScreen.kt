@@ -29,6 +29,29 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
+import java.security.cert.X509Certificate
+
+private val financeTrustAllCerts = arrayOf<X509TrustManager>(object : X509TrustManager {
+    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+})
+
+private val financeSslContext = SSLContext.getInstance("SSL").also {
+    it.init(null, financeTrustAllCerts, java.security.SecureRandom())
+}
+
+private fun openFinanceConn(url: URL): HttpURLConnection {
+    val conn = url.openConnection() as HttpURLConnection
+    if (conn is HttpsURLConnection) {
+        conn.sslSocketFactory = financeSslContext.socketFactory
+        conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
+    }
+    return conn
+}
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -144,7 +167,7 @@ const val DELIVERY_FRISAT_FROM = "2026-08-16"
 
 fun fetchDeliveryWeeks(baseUrl: String, workedMonth: String? = null): List<DeliveryWeek> {
     val url = URL("$baseUrl/api/delivery-weeks" + (if (workedMonth != null) "?worked_month=$workedMonth" else ""))
-    val conn = url.openConnection() as HttpURLConnection
+    val conn = openFinanceConn(url)
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
@@ -176,7 +199,7 @@ fun fetchDeliveryWeeks(baseUrl: String, workedMonth: String? = null): List<Deliv
 
 fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
     val url = URL("$baseUrl/api/delivery-weeks/${week.id}")
-    val conn = url.openConnection() as HttpURLConnection
+    val conn = openFinanceConn(url)
     conn.requestMethod = "PATCH"
     conn.setRequestProperty("Content-Type", "application/json")
     conn.doOutput = true
@@ -220,7 +243,7 @@ fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
 
 fun deleteDeliveryWeek(baseUrl: String, id: Int) {
     val url = URL("$baseUrl/api/delivery-weeks/$id")
-    val conn = url.openConnection() as HttpURLConnection
+    val conn = openFinanceConn(url)
     conn.requestMethod = "DELETE"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
@@ -242,7 +265,7 @@ data class SpeedxCheck(
 
 fun fetchSpeedxChecks(baseUrl: String): Pair<String?, List<SpeedxCheck>> {
     val url = URL("$baseUrl/api/speedx-checks")
-    val conn = url.openConnection() as HttpURLConnection
+    val conn = openFinanceConn(url)
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
@@ -273,7 +296,7 @@ fun fetchSpeedxChecks(baseUrl: String): Pair<String?, List<SpeedxCheck>> {
 
 fun patchSpeedxCheckPaid(baseUrl: String, id: Int, paid: Boolean) {
     val url = URL("$baseUrl/api/speedx-checks/$id")
-    val conn = url.openConnection() as HttpURLConnection
+    val conn = openFinanceConn(url)
     conn.requestMethod = "PATCH"
     conn.setRequestProperty("Content-Type", "application/json")
     conn.doOutput = true
@@ -310,7 +333,7 @@ data class DeliveryMonthHist(
 
 fun fetchDeliveryHistory(baseUrl: String): List<DeliveryMonthHist> {
     val url = URL("$baseUrl/api/delivery-history")
-    val conn = url.openConnection() as HttpURLConnection
+    val conn = openFinanceConn(url)
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
