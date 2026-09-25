@@ -2225,9 +2225,6 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
             Spacer(Modifier.height(48.dp))
             Text("🔥 $streak day streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(36.dp))
-            Box(modifier = Modifier.width(40.dp).height(3.dp).background(Color(0xFF3b82f6),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)))
-            Spacer(Modifier.height(20.dp))
             Text(
                 text = "Break the pattern today\nor the loop will repeat tomorrow.",
                 fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
