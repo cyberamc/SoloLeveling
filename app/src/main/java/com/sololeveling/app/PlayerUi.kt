@@ -2225,6 +2225,9 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
             Spacer(Modifier.height(48.dp))
             Text("🔥 $streak day streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(36.dp))
+            Box(modifier = Modifier.width(40.dp).height(3.dp).background(Color(0xFF3b82f6),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)))
+            Spacer(Modifier.height(20.dp))
             Text(
                 text = "Break the pattern today\nor the loop will repeat tomorrow.",
                 fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
@@ -2593,11 +2596,15 @@ val SNACK_MEALS = listOf(
         mealType = "Snack",
         macros = Macros(calories = 300, protein = 12, fat = 27, netCarbs = "2"),
         ingredients = listOf(
-            "30g Member's Mark Natural Pecan Halves",
-            "1 grass-fed beef stick (28g / 1 oz)",
-            "Note: Pecans — 210 cal · 3p · 21f · 1nc\n      Beef stick — 90 cal · 9p · 6f · 1nc"
+            "30g Member's Mark Natural Pecan Halves, toasted & salted — 210 cal · 3g protein · 21g fat · 1g net carb",
+            "1 grass-fed beef stick (28g / 1 oz) — 90 cal · 9g protein · 6g fat · 1g net carb"
         ),
-        steps = emptyList()
+        steps = listOf(
+            MealStep(
+                title = "Toast the Pecans",
+                detail = "Air fry the 30g pecans at 300°F for 4-6 min, shaking the basket once, until fragrant. Tip them out onto a plate right away and toss with a pinch of salt while warm."
+            )
+        )
     )
 )
 
