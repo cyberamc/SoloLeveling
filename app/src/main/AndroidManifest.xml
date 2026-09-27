@@ -58,6 +58,10 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Countdown timer for meditation and activity limits" />
         </service>
+        <service
+            android:name=".MorningAlarmService"
+            android:foregroundServiceType="mediaPlayback"
+            android:exported="false"/>
     </application>
 
 </manifest>

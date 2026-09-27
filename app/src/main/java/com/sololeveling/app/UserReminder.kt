@@ -342,6 +342,6 @@ object MorningBrief {
 class MorningBriefReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != MorningBrief.ACTION_FIRE) return
-        MorningBrief.showNotification(context)
+        MorningAlarmService.start(context)
     }
 }

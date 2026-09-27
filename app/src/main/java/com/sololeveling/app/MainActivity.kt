@@ -47,6 +47,10 @@ class MainActivity : ComponentActivity() {
         val navigateTo = intent?.getStringExtra("navigate_to")
         if (navigateTo != null) {
             NavigationState.pendingNavigation.value = navigateTo
+            // Stop the alarm service when morning brief is opened
+            if (navigateTo == "morning_brief") {
+                MorningAlarmService.dismiss(this)
+            }
         }
     }
 
