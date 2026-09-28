@@ -1715,13 +1715,14 @@ fun TimerDialog(onDismiss: () -> Unit) {
     // Two presets (editable). label -> default minutes.
     // label, default minutes, notification text when it finishes
     val presets = listOf(
-        Triple("Vaping & Video Games", 30, "Time's up — done vaping & gaming"),
-        Triple("Meditation", 2, "Meditation complete"),
-        Triple("Legs Up The Wall", 5, "Legs up the wall done — next: read"),
-        Triple("Read A Book", 20, "Reading done — lights out soon")
+        Triple("Vaping & Video Games", 30 * 60, "Time's up — done vaping & gaming"),
+        Triple("Meditation", 2 * 60, "Meditation complete"),
+        Triple("Legs Up The Wall", 5 * 60, "Legs up the wall done — next: read"),
+        Triple("Read A Book", 20 * 60, "Reading done — lights out soon"),
+        Triple("Wall Sit", 30, "Wall sit complete")
     )
     var selected by remember { mutableStateOf(0) }
-    var minutes by remember { mutableStateOf(presets[0].second.toString()) }
+    var seconds by remember { mutableStateOf(presets[0].second.toString()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1737,7 +1738,7 @@ fun TimerDialog(onDismiss: () -> Unit) {
                             .pointerInput(Unit) {
                                 detectTapGestures(onTap = {
                                     selected = i
-                                    minutes = def.toString()
+                                    seconds = def.toString()
                                 })
                             },
                         verticalAlignment = Alignment.CenterVertically
@@ -1752,10 +1753,10 @@ fun TimerDialog(onDismiss: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("Minutes", fontSize = 11.sp, color = Color(0xFF777777))
+                Text(if (selected == presets.size - 1) "Seconds" else "Minutes", fontSize = 11.sp, color = Color(0xFF777777))
                 OutlinedTextField(
-                    value = minutes,
-                    onValueChange = { v -> minutes = v.filter { it.isDigit() }.take(3) },
+                    value = seconds,
+                    onValueChange = { v -> seconds = v.filter { it.isDigit() }.take(4) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1774,10 +1775,11 @@ fun TimerDialog(onDismiss: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.pointerInput(Unit) {
                     detectTapGestures(onTap = {
-                        val mins = minutes.toIntOrNull() ?: 0
-                        if (mins > 0) {
+                        val secs = seconds.toIntOrNull() ?: 0
+                        if (secs > 0) {
                             val preset = presets[selected]
-                            TimerService.start(context, preset.first, mins * 60, preset.third)
+                            val totalSecs = if (selected == presets.size - 1) secs else secs * 60
+                            TimerService.start(context, preset.first, totalSecs, preset.third)
                             onDismiss()
                         }
                     })
