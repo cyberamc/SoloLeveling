@@ -80,11 +80,12 @@ class MorningAlarmService : Service() {
             PowerManager.PARTIAL_WAKE_LOCK, "SoloLeveling::MorningAlarm"
         ).also { it.acquire(10 * 60 * 1000L) } // 10 min max
 
-        // Build dismiss intent for notification
-        val dismissIntent = Intent(this, MorningAlarmService::class.java).apply {
-            action = ACTION_DISMISS
+        // Build dismiss intent — opens MainActivity with morning brief overlay and stops alarm
+        val dismissIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("navigate_to", "morning_brief")
         }
-        val dismissPi = PendingIntent.getService(
+        val dismissPi = PendingIntent.getActivity(
             this, 0, dismissIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -155,13 +156,6 @@ class MorningAlarmService : Service() {
         } catch (e: Exception) {}
         stopForeground(true)
         stopSelf()
-
-        // Open the morning brief overlay
-        val openIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("navigate_to", "morning_brief")
-        }
-        startActivity(openIntent)
     }
 
     override fun onDestroy() {
