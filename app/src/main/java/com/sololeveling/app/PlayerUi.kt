@@ -51,12 +51,6 @@ import okhttp3.OkHttpClient
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.records.StepsRecord
-import androidx.health.connect.client.request.ReadRecordsRequest
-import androidx.health.connect.client.time.TimeRangeFilter
-import java.time.LocalDateTime
-import java.time.ZoneId
 
 private fun createUnsafeHttpClient(): OkHttpClient {
     val trustAllCerts = arrayOf<X509TrustManager>(object : X509TrustManager {
@@ -92,9 +86,7 @@ fun TasksScreen() {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var thisWeekExpanded by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     var nofapStreak by remember { mutableIntStateOf(0) }
-    var stepCount by remember { mutableIntStateOf(0) }
     var showRoutine by remember { mutableStateOf(false) }
     var showNotepad by remember { mutableStateOf(false) }
     var showSteps by remember { mutableStateOf(false) }
@@ -103,6 +95,7 @@ fun TasksScreen() {
     var showHydration by remember { mutableStateOf(false) }
     var showUrgeCard by remember { mutableStateOf(false) }
     var showWeightScreen by remember { mutableStateOf(false) }
+    var showStepScreen by remember { mutableStateOf(false) }
     var showTimerDialog by remember { mutableStateOf(false) }
     var showAlarmDialog by remember { mutableStateOf(false) }
 
@@ -139,6 +132,10 @@ fun TasksScreen() {
         WeightScreen(onBack = { showWeightScreen = false })
         return
     }
+    if (showStepScreen) {
+        StepScreen(onBack = { showStepScreen = false })
+        return
+    }
 
     if (showTimerDialog) {
         TimerDialog(onDismiss = { showTimerDialog = false })
@@ -154,20 +151,6 @@ fun TasksScreen() {
             val playerResponse = fetchFromApi("/api/player")
             val playerData = Gson().fromJson(playerResponse, Map::class.java)
             nofapStreak = (playerData["nofapStreak"] as? Number)?.toInt() ?: 0
-            try {
-                val hc = HealthConnectClient.getOrCreate(context)
-                val now = LocalDateTime.now()
-                val startOfDay = now.toLocalDate().atStartOfDay()
-                val request = ReadRecordsRequest(
-                    recordType = StepsRecord::class,
-                    timeRangeFilter = TimeRangeFilter.between(
-                        startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
-                        now.atZone(ZoneId.systemDefault()).toInstant()
-                    )
-                )
-                val response = hc.readRecords(request)
-                stepCount = response.records.sumOf { it.count }.toInt()
-            } catch (e: Exception) { stepCount = 0 }
         } catch (e: Exception) {
             // streak stays 0
         }
@@ -288,6 +271,11 @@ fun TasksScreen() {
                         .clickable { showWeightScreen = true }
                         .padding(horizontal = 1.dp)
                 )
+                StepIconCanvas(
+                    modifier = Modifier
+                        .clickable { showStepScreen = true }
+                        .padding(horizontal = 1.dp)
+                )
                 AlarmIconCanvas(
                     modifier = Modifier
                         .clickable { showAlarmDialog = true }
@@ -332,18 +320,6 @@ fun TasksScreen() {
             }
             Spacer(modifier = Modifier.height(8.dp))
             ConfidenceMeter(refreshKey = 0)
-            Spacer(modifier = Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "\uD83E\uDDB6 ${ "%,d".format(stepCount)} / 10,000 steps",
-                    fontSize = 12.sp,
-                    color = if (stepCount >= 10000) Color(0xFF10b981) else Color(0xFF94a3b8),
-                    fontWeight = if (stepCount >= 10000) FontWeight.Bold else FontWeight.Normal
-                )
-            }
         }
 
         if (loading) {
@@ -2305,6 +2281,189 @@ fun markDismissedToday(context: android.content.Context) {
     val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
     getMorningBriefPrefs(context).edit().putString("dismissed_date", today).apply()
 }
+
+@Composable
+fun StepIconCanvas(modifier: Modifier = Modifier) {
+    val color = Color(0xFF10b981)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
+        val w = size.width; val h = size.height
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.08f, h*0.45f), size = androidx.compose.ui.geometry.Size(w*0.32f, h*0.42f))
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.08f, h*0.28f), size = androidx.compose.ui.geometry.Size(w*0.13f, h*0.2f))
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.22f, h*0.22f), size = androidx.compose.ui.geometry.Size(w*0.11f, h*0.18f))
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.33f, h*0.25f), size = androidx.compose.ui.geometry.Size(w*0.10f, h*0.16f))
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.58f, h*0.13f), size = androidx.compose.ui.geometry.Size(w*0.32f, h*0.42f))
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.58f, h*0.0f), size = androidx.compose.ui.geometry.Size(w*0.13f, h*0.2f))
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.71f, h*0.0f), size = androidx.compose.ui.geometry.Size(w*0.11f, h*0.18f))
+        drawOval(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.82f, h*0.03f), size = androidx.compose.ui.geometry.Size(w*0.10f, h*0.16f))
+    }
+}
+
+data class StepEntry(val id: Int, val date: String, val stepCount: Int)
+
+fun fetchStepLog(): List<StepEntry> {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us/api/step-log")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "GET"; conn.connectTimeout = 5000; conn.readTimeout = 5000
+        val text = conn.inputStream.bufferedReader().readText()
+        conn.disconnect()
+        val arr = org.json.JSONObject(text).optJSONArray("entries") ?: return emptyList()
+        (0 until arr.length()).map { val o = arr.getJSONObject(it); StepEntry(o.getInt("id"), o.getString("logged_date"), o.getInt("step_count")) }
+    } catch (e: Exception) { emptyList() }
+}
+
+fun postStepEntry(date: String, stepCount: Int): Boolean {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us/api/step-log")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "POST"; conn.connectTimeout = 5000; conn.readTimeout = 5000
+        conn.doOutput = true; conn.setRequestProperty("Content-Type", "application/json")
+        conn.outputStream.use { it.write("{\"logged_date\":\"$date\",\"step_count\":$stepCount}".toByteArray()) }
+        conn.inputStream.bufferedReader().readText(); conn.disconnect(); true
+    } catch (e: Exception) { false }
+}
+
+fun deleteStepEntry(id: Int): Boolean {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us/api/step-log/$id")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "DELETE"; conn.connectTimeout = 5000; conn.readTimeout = 5000
+        conn.inputStream.bufferedReader().readText(); conn.disconnect(); true
+    } catch (e: Exception) { false }
+}
+
+@Composable
+fun StepScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    val goalSteps = 10000
+    var entries by remember { mutableStateOf<List<StepEntry>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var showLogDialog by remember { mutableStateOf(false) }
+    var stepInput by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    fun reload() { scope.launch(Dispatchers.IO) { val r = fetchStepLog(); entries = r; loading = false } }
+    LaunchedEffect(Unit) { reload() }
+
+    if (showLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            containerColor = Color(0xFF1a1a2e),
+            title = { Text("Log Steps", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Enter today's step count", color = Color(0xFF94a3b8), fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(value = stepInput, onValueChange = { stepInput = it },
+                        label = { Text("Steps") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFF10b981), unfocusedBorderColor = Color(0xFF2a2a3a), focusedLabelColor = Color(0xFF10b981), unfocusedLabelColor = Color(0xFF94a3b8)))
+                    if (errorMsg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(errorMsg, color = Color(0xFFf87171), fontSize = 12.sp) }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val s = stepInput.trim().toIntOrNull()
+                    if (s == null || s < 0) { errorMsg = "Enter a valid step count"; return@Button }
+                    saving = true
+                    val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                    scope.launch(Dispatchers.IO) {
+                        val ok = postStepEntry(today, s)
+                        if (ok) { showLogDialog = false; stepInput = ""; errorMsg = ""; reload() } else { errorMsg = "Failed to save" }
+                        saving = false
+                    }
+                }, enabled = !saving, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10b981))) {
+                    Text(if (saving) "Saving..." else "Save", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton(onClick = { showLogDialog = false; stepInput = ""; errorMsg = "" }) { Text("Cancel", color = Color(0xFF94a3b8)) } }
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a))) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onBack) { Text("\u2190 Back", color = Color(0xFF10b981), fontSize = 14.sp) }
+            Spacer(Modifier.weight(1f))
+            Text("Step Log", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Button(onClick = { showLogDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10b981)), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 6.dp)) {
+                Text("+ Log", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        if (loading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { androidx.compose.material3.CircularProgressIndicator(color = Color(0xFF10b981)) }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                val todaySteps = entries.lastOrNull { it.date == today }?.stepCount ?: 0
+                val progress = (todaySteps.toFloat() / goalSteps).coerceIn(0f, 1f)
+                Text("TODAY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                Spacer(Modifier.height(8.dp))
+                Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).padding(16.dp)) {
+                    Column {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("${"%,d".format(todaySteps)} steps", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                            Text("/ ${"%,d".format(goalSteps)}", color = Color(0xFF94a3b8), fontSize = 14.sp)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth().height(8.dp), color = if (progress >= 1f) Color(0xFF10b981) else Color(0xFF3b82f6), trackColor = Color(0xFF1e293b))
+                        Spacer(Modifier.height(4.dp))
+                        Text(if (todaySteps >= goalSteps) "Goal reached!" else "${"%,d".format(goalSteps - todaySteps)} steps to go", color = if (todaySteps >= goalSteps) Color(0xFF10b981) else Color(0xFF94a3b8), fontSize = 12.sp)
+                    }
+                }
+                Spacer(Modifier.height(24.dp))
+                if (entries.size >= 2) {
+                    Text("HISTORY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                    Spacer(Modifier.height(12.dp))
+                    val maxS = entries.maxOf { it.stepCount }.coerceAtLeast(goalSteps)
+                    Box(modifier = Modifier.fillMaxWidth().height(180.dp).background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).padding(16.dp)) {
+                        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                            val goalY = size.height - (goalSteps.toFloat() / maxS * size.height)
+                            drawLine(color = Color(0xFF10b981).copy(alpha = 0.3f), start = androidx.compose.ui.geometry.Offset(0f, goalY), end = androidx.compose.ui.geometry.Offset(size.width, goalY), strokeWidth = 1.dp.toPx(), pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8f, 6f)))
+                            val pts = entries.mapIndexed { i, e ->
+                                val x = if (entries.size == 1) size.width / 2f else i.toFloat() / (entries.size - 1) * size.width
+                                val y = size.height - (e.stepCount.toFloat() / maxS * size.height * 0.9f + size.height * 0.05f)
+                                androidx.compose.ui.geometry.Offset(x, y)
+                            }
+                            for (i in 0 until pts.size - 1) { drawLine(color = Color(0xFF3b82f6), start = pts[i], end = pts[i+1], strokeWidth = 3.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round) }
+                            pts.forEachIndexed { i, pt -> drawCircle(color = if (entries[i].stepCount >= goalSteps) Color(0xFF10b981) else Color(0xFF60a5fa), radius = 4.dp.toPx(), center = pt) }
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(entries.first().date, color = Color(0xFF94a3b8), fontSize = 11.sp)
+                        Text("\u25A0 goal line", color = Color(0xFF10b981).copy(alpha = 0.6f), fontSize = 11.sp)
+                        Text(entries.last().date, color = Color(0xFF94a3b8), fontSize = 11.sp)
+                    }
+                    Spacer(Modifier.height(24.dp))
+                }
+                Text("LOG", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                Spacer(Modifier.height(10.dp))
+                if (entries.isEmpty()) {
+                    Text("No entries yet. Tap + Log to record your steps.", color = Color(0xFF94a3b8), fontSize = 14.sp)
+                } else {
+                    entries.reversed().forEach { entry ->
+                        val met = entry.stepCount >= goalSteps
+                        Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(entry.date, color = Color(0xFF94a3b8), fontSize = 13.sp, modifier = Modifier.weight(1f))
+                            Text("%,d".format(entry.stepCount), color = if (met) Color(0xFF10b981) else Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            if (met) { Spacer(Modifier.width(4.dp)); Text("\u2713", color = Color(0xFF10b981), fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+                            Spacer(Modifier.width(12.dp))
+                            TextButton(onClick = { scope.launch(Dispatchers.IO) { deleteStepEntry(entry.id); reload() } }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                                Text("\u2715", color = Color(0xFFa55555), fontSize = 16.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun WeightIconCanvas(modifier: Modifier = Modifier) {
