@@ -94,8 +94,7 @@ fun TasksScreen() {
     var showLuna by remember { mutableStateOf(false) }
     var showHydration by remember { mutableStateOf(false) }
     var showUrgeCard by remember { mutableStateOf(false) }
-    var showConfidenceDialog by remember { mutableStateOf(false) }
-    var confidenceRefresh by remember { mutableIntStateOf(0) }
+    var showWeightScreen by remember { mutableStateOf(false) }
     var showTimerDialog by remember { mutableStateOf(false) }
     var showAlarmDialog by remember { mutableStateOf(false) }
 
@@ -128,11 +127,9 @@ fun TasksScreen() {
         return
     }
 
-    if (showConfidenceDialog) {
-        ConfidenceDialog(
-            onDismiss = { showConfidenceDialog = false },
-            onLogged = { confidenceRefresh++ }
-        )
+    if (showWeightScreen) {
+        WeightScreen(onBack = { showWeightScreen = false })
+        return
     }
 
     if (showTimerDialog) {
@@ -264,9 +261,9 @@ fun TasksScreen() {
                         .clickable { showTimerDialog = true }
                         .padding(horizontal = 1.dp)
                 )
-                ShieldIconCanvas(
+                WeightIconCanvas(
                     modifier = Modifier
-                        .clickable { showConfidenceDialog = true }
+                        .clickable { showWeightScreen = true }
                         .padding(horizontal = 1.dp)
                 )
                 AlarmIconCanvas(
@@ -312,7 +309,7 @@ fun TasksScreen() {
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            ConfidenceMeter(refreshKey = confidenceRefresh)
+            ConfidenceMeter(refreshKey = 0)
         }
 
         if (loading) {
@@ -2274,6 +2271,270 @@ fun markDismissedToday(context: android.content.Context) {
     val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
     getMorningBriefPrefs(context).edit().putString("dismissed_date", today).apply()
 }
+
+@Composable
+fun WeightIconCanvas(modifier: Modifier = Modifier) {
+    val color = Color(0xFF60a5fa)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
+        val w = size.width; val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f)
+        drawLine(color = color,
+            start = androidx.compose.ui.geometry.Offset(w * 0.1f, h * 0.25f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.9f, h * 0.25f),
+            strokeWidth = w * 0.09f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(color = color,
+            start = androidx.compose.ui.geometry.Offset(w * 0.2f, h * 0.82f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.8f, h * 0.82f),
+            strokeWidth = w * 0.09f, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+        drawLine(color = color,
+            start = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.25f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.82f),
+            strokeWidth = w * 0.09f)
+        drawArc(color = color, startAngle = 0f, sweepAngle = 180f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.04f, h * 0.08f),
+            size = androidx.compose.ui.geometry.Size(w * 0.38f, h * 0.34f), style = stroke)
+        drawArc(color = color, startAngle = 0f, sweepAngle = 180f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.58f, h * 0.08f),
+            size = androidx.compose.ui.geometry.Size(w * 0.38f, h * 0.34f), style = stroke)
+        drawLine(color = color,
+            start = androidx.compose.ui.geometry.Offset(w * 0.23f, h * 0.25f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.23f, h * 0.08f), strokeWidth = w * 0.06f)
+        drawLine(color = color,
+            start = androidx.compose.ui.geometry.Offset(w * 0.23f, h * 0.25f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.42f, h * 0.08f), strokeWidth = w * 0.06f)
+        drawLine(color = color,
+            start = androidx.compose.ui.geometry.Offset(w * 0.77f, h * 0.25f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.77f, h * 0.08f), strokeWidth = w * 0.06f)
+        drawLine(color = color,
+            start = androidx.compose.ui.geometry.Offset(w * 0.77f, h * 0.25f),
+            end = androidx.compose.ui.geometry.Offset(w * 0.58f, h * 0.08f), strokeWidth = w * 0.06f)
+    }
+}
+
+data class WeightEntry(val id: Int, val date: String, val weightLbs: Float)
+
+fun fetchWeightLog(): List<WeightEntry> {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us/api/weight-log")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "GET"
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
+        val text = conn.inputStream.bufferedReader().readText()
+        conn.disconnect()
+        val arr = org.json.JSONObject(text).optJSONArray("entries") ?: return emptyList()
+        (0 until arr.length()).map {
+            val o = arr.getJSONObject(it)
+            WeightEntry(o.getInt("id"), o.getString("logged_date"), o.getDouble("weight_lbs").toFloat())
+        }
+    } catch (e: Exception) { emptyList() }
+}
+
+fun postWeightEntry(date: String, weightLbs: Float): Boolean {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us/api/weight-log")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
+        conn.doOutput = true
+        conn.setRequestProperty("Content-Type", "application/json")
+        val body = """{"logged_date":"$date","weight_lbs":$weightLbs}"""
+        conn.outputStream.use { it.write(body.toByteArray()) }
+        conn.inputStream.bufferedReader().readText()
+        conn.disconnect()
+        true
+    } catch (e: Exception) { false }
+}
+
+fun deleteWeightEntry(id: Int): Boolean {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us/api/weight-log/$id")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "DELETE"
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
+        conn.inputStream.bufferedReader().readText()
+        conn.disconnect()
+        true
+    } catch (e: Exception) { false }
+}
+
+@Composable
+fun WeightScreen(onBack: () -> Unit) {
+    var entries by remember { mutableStateOf<List<WeightEntry>>(emptyList()) }
+    var loading by remember { mutableStateOf(true) }
+    var showLogDialog by remember { mutableStateOf(false) }
+    var weightInput by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    fun reload() {
+        scope.launch(Dispatchers.IO) {
+            val result = fetchWeightLog()
+            entries = result
+            loading = false
+        }
+    }
+
+    LaunchedEffect(Unit) { reload() }
+
+    if (showLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            containerColor = Color(0xFF1a1a2e),
+            title = { Text("Log Weight", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Enter your weight in lbs", color = Color(0xFF94a3b8), fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = weightInput,
+                        onValueChange = { weightInput = it },
+                        label = { Text("Weight (lbs)") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
+                        ),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFF3b82f6),
+                            unfocusedBorderColor = Color(0xFF2a2a3a),
+                            focusedLabelColor = Color(0xFF3b82f6),
+                            unfocusedLabelColor = Color(0xFF94a3b8)
+                        )
+                    )
+                    if (errorMsg.isNotEmpty()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(errorMsg, color = Color(0xFFf87171), fontSize = 12.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val w = weightInput.trim().toFloatOrNull()
+                        if (w == null || w <= 0) { errorMsg = "Enter a valid weight"; return@Button }
+                        saving = true
+                        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+                        scope.launch(Dispatchers.IO) {
+                            val ok = postWeightEntry(today, w)
+                            if (ok) {
+                                showLogDialog = false
+                                weightInput = ""
+                                errorMsg = ""
+                                reload()
+                            } else { errorMsg = "Failed to save" }
+                            saving = false
+                        }
+                    },
+                    enabled = !saving,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6))
+                ) { Text(if (saving) "Saving…" else "Save", color = Color.White, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogDialog = false; weightInput = ""; errorMsg = "" }) {
+                    Text("Cancel", color = Color(0xFF94a3b8))
+                }
+            }
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextButton(onClick = onBack) { Text("← Back", color = Color(0xFF3b82f6), fontSize = 14.sp) }
+            Spacer(Modifier.weight(1f))
+            Text("Weight Log", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Button(
+                onClick = { showLogDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6)),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+            ) { Text("+ Log", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold) }
+        }
+
+        if (loading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                androidx.compose.material3.CircularProgressIndicator(color = Color(0xFF3b82f6))
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                if (entries.size >= 2) {
+                    Text("PROGRESS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                    Spacer(Modifier.height(12.dp))
+                    val minW = entries.minOf { it.weightLbs }
+                    val maxW = entries.maxOf { it.weightLbs }
+                    val range = (maxW - minW).coerceAtLeast(5f)
+                    val first = entries.first().weightLbs
+                    val last = entries.last().weightLbs
+                    val diff = kotlin.math.abs(last - first)
+                    val trend = if (last < first) "↓ ${String.format("%.1f", diff)} lbs lost"
+                                else if (last > first) "↑ ${String.format("%.1f", diff)} lbs gained"
+                                else "→ No change"
+                    val trendColor = if (last <= first) Color(0xFF10b981) else Color(0xFFf87171)
+
+                    Box(modifier = Modifier.fillMaxWidth().height(180.dp)
+                        .background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                        .padding(16.dp)) {
+                        androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                            val pts = entries.mapIndexed { i, e ->
+                                val x = if (entries.size == 1) size.width / 2f
+                                        else i.toFloat() / (entries.size - 1) * size.width
+                                val y = size.height - ((e.weightLbs - minW) / range * size.height * 0.8f + size.height * 0.1f)
+                                androidx.compose.ui.geometry.Offset(x, y)
+                            }
+                            for (i in 0 until pts.size - 1) {
+                                drawLine(color = Color(0xFF3b82f6), start = pts[i], end = pts[i + 1],
+                                    strokeWidth = 3.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                            }
+                            pts.forEach { drawCircle(color = Color(0xFF60a5fa), radius = 4.dp.toPx(), center = it) }
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(entries.first().date, color = Color(0xFF94a3b8), fontSize = 11.sp)
+                        Text(trend, color = trendColor, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                        Text(entries.last().date, color = Color(0xFF94a3b8), fontSize = 11.sp)
+                    }
+                    Spacer(Modifier.height(24.dp))
+                }
+
+                Text("LOG", fontSize = 11.sp, fontWeight = FontWeight.Bold,
+                    color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                Spacer(Modifier.height(10.dp))
+                if (entries.isEmpty()) {
+                    Text("No entries yet. Tap + Log to record your weight.",
+                        color = Color(0xFF94a3b8), fontSize = 14.sp)
+                } else {
+                    entries.reversed().forEach { entry ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(entry.date, color = Color(0xFF94a3b8), fontSize = 13.sp, modifier = Modifier.weight(1f))
+                            Text("${entry.weightLbs} lbs", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(12.dp))
+                            TextButton(
+                                onClick = { scope.launch(Dispatchers.IO) { deleteWeightEntry(entry.id); reload() } },
+                                contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)
+                            ) { Text("✕", color = Color(0xFFa55555), fontSize = 16.sp) }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @Composable
 fun MainTabScreen() {
