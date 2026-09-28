@@ -2167,9 +2167,9 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
                     Text(":", color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
                     // Minute
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        TextButton(onClick = { minute = (minute + 5) % 60 }) { Text("▲", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        TextButton(onClick = { minute = (minute + 1) % 60 }) { Text("▲", color = Color(0xFF3b82f6), fontSize = 18.sp) }
                         Text("%02d".format(minute), color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold)
-                        TextButton(onClick = { minute = (minute + 55) % 60 }) { Text("▼", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        TextButton(onClick = { minute = (minute + 59) % 60 }) { Text("▼", color = Color(0xFF3b82f6), fontSize = 18.sp) }
                     }
                 }
                 Spacer(Modifier.height(8.dp))
@@ -2596,15 +2596,11 @@ val SNACK_MEALS = listOf(
         mealType = "Snack",
         macros = Macros(calories = 300, protein = 12, fat = 27, netCarbs = "2"),
         ingredients = listOf(
-            "30g Member's Mark Natural Pecan Halves, toasted & salted — 210 cal · 3g protein · 21g fat · 1g net carb",
-            "1 grass-fed beef stick (28g / 1 oz) — 90 cal · 9g protein · 6g fat · 1g net carb"
+            "30g Member's Mark Natural Pecan Halves",
+            "1 grass-fed beef stick (28g / 1 oz)",
+            "Note: Pecans — 210 cal · 3p · 21f · 1nc\n      Beef stick — 90 cal · 9p · 6f · 1nc"
         ),
-        steps = listOf(
-            MealStep(
-                title = "Toast the Pecans",
-                detail = "Air fry the 30g pecans at 300°F for 4-6 min, shaking the basket once, until fragrant. Tip them out onto a plate right away and toss with a pinch of salt while warm."
-            )
-        )
+        steps = emptyList()
     )
 )
 
