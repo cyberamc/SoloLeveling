@@ -2310,7 +2310,7 @@ fun postWeightEntry(date: String, weightLbs: Float): Boolean {
         val conn = url.openConnection() as java.net.HttpURLConnection
         conn.requestMethod = "POST"; conn.connectTimeout = 5000; conn.readTimeout = 5000
         conn.doOutput = true; conn.setRequestProperty("Content-Type", "application/json")
-        conn.outputStream.use { it.write("{"logged_date":"$date","weight_lbs":$weightLbs}".toByteArray()) }
+        conn.outputStream.use { it.write("""{"logged_date":"$date","weight_lbs":$weightLbs}""".toByteArray()) }
         conn.inputStream.bufferedReader().readText(); conn.disconnect(); true
     } catch (e: Exception) { false }
 }
@@ -2362,8 +2362,14 @@ fun WeightScreen(onBack: () -> Unit) {
                     saving = true
                     val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
                     scope.launch(Dispatchers.IO) {
+                        val prevLast = entries.lastOrNull()?.weightLbs
                         val ok = postWeightEntry(today, w)
-                        if (ok) { showLogDialog = false; weightInput = ""; errorMsg = ""; reload() } else { errorMsg = "Failed to save" }
+                        if (ok) {
+                            if (prevLast != null && w < prevLast) {
+                                kotlinx.coroutines.withContext(Dispatchers.IO) { logConfidenceWin("hunger") }
+                            }
+                            showLogDialog = false; weightInput = ""; errorMsg = ""; reload()
+                        } else { errorMsg = "Failed to save" }
                         saving = false
                     }
                 }, enabled = !saving, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6))) {
