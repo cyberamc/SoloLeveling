@@ -291,15 +291,12 @@ object MorningBrief {
         }
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-                alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.timeInMillis,
-                    AlarmManager.INTERVAL_DAY, pi)
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
             } else {
-                alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.timeInMillis,
-                    AlarmManager.INTERVAL_DAY, pi)
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
             }
         } catch (e: SecurityException) {
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, cal.timeInMillis,
-                AlarmManager.INTERVAL_DAY, pi)
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
         }
     }
 
@@ -342,6 +339,12 @@ object MorningBrief {
 class MorningBriefReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != MorningBrief.ACTION_FIRE) return
+        // Start the alarm service (plays audio, shows full-screen)
         MorningAlarmService.start(context)
+        // Reschedule for tomorrow since we use setExact (not setRepeating)
+        val prefs = context.getSharedPreferences("morning_brief", Context.MODE_PRIVATE)
+        val hour = prefs.getInt("alarm_hour", 5)
+        val minute = prefs.getInt("alarm_minute", 0)
+        MorningBrief.schedule(context, hour, minute)
     }
 }
