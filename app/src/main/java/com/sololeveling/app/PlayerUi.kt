@@ -51,6 +51,12 @@ import okhttp3.OkHttpClient
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.request.ReadRecordsRequest
+import androidx.health.connect.client.time.TimeRangeFilter
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 private fun createUnsafeHttpClient(): OkHttpClient {
     val trustAllCerts = arrayOf<X509TrustManager>(object : X509TrustManager {
@@ -86,7 +92,9 @@ fun TasksScreen() {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var thisWeekExpanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     var nofapStreak by remember { mutableIntStateOf(0) }
+    var stepCount by remember { mutableIntStateOf(0) }
     var showRoutine by remember { mutableStateOf(false) }
     var showNotepad by remember { mutableStateOf(false) }
     var showSteps by remember { mutableStateOf(false) }
@@ -146,6 +154,20 @@ fun TasksScreen() {
             val playerResponse = fetchFromApi("/api/player")
             val playerData = Gson().fromJson(playerResponse, Map::class.java)
             nofapStreak = (playerData["nofapStreak"] as? Number)?.toInt() ?: 0
+            try {
+                val hc = HealthConnectClient.getOrCreate(context)
+                val now = LocalDateTime.now()
+                val startOfDay = now.toLocalDate().atStartOfDay()
+                val request = ReadRecordsRequest(
+                    recordType = StepsRecord::class,
+                    timeRangeFilter = TimeRangeFilter.between(
+                        startOfDay.atZone(ZoneId.systemDefault()).toInstant(),
+                        now.atZone(ZoneId.systemDefault()).toInstant()
+                    )
+                )
+                val response = hc.readRecords(request)
+                stepCount = response.records.sumOf { it.count }.toInt()
+            } catch (e: Exception) { stepCount = 0 }
         } catch (e: Exception) {
             // streak stays 0
         }
@@ -310,6 +332,18 @@ fun TasksScreen() {
             }
             Spacer(modifier = Modifier.height(8.dp))
             ConfidenceMeter(refreshKey = 0)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "\uD83E\uDDB6 ${ "%,d".format(stepCount)} / 10,000 steps",
+                    fontSize = 12.sp,
+                    color = if (stepCount >= 10000) Color(0xFF10b981) else Color(0xFF94a3b8),
+                    fontWeight = if (stepCount >= 10000) FontWeight.Bold else FontWeight.Normal
+                )
+            }
         }
 
         if (loading) {
