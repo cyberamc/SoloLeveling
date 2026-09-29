@@ -2966,7 +2966,10 @@ val SNACK_MEALS = listOf(
             "1 grass-fed beef stick (28g / 1 oz)",
             "Note: Pecans — 210 cal · 3p · 21f · 1nc\n      Beef stick — 90 cal · 9p · 6f · 1nc"
         ),
-        steps = emptyList()
+        steps = listOf(
+            MealStep("Toast the Pecans", "Air fry at 300°F for 4–6 min until fragrant and lightly toasted. Watch closely — pecans burn fast. Let cool 1–2 min before eating."),
+            MealStep("Serve", "Pair toasted pecans with the beef stick. Eat together as your snack.")
+        )
     )
 )
 
