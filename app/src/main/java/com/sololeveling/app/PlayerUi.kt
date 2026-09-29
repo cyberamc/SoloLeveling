@@ -2962,13 +2962,12 @@ val SNACK_MEALS = listOf(
         mealType = "Snack",
         macros = Macros(calories = 300, protein = 12, fat = 27, netCarbs = "2"),
         ingredients = listOf(
-            "30g Member's Mark Natural Pecan Halves",
-            "1 grass-fed beef stick (28g / 1 oz)",
-            "Note: Pecans — 210 cal · 3p · 21f · 1nc\n      Beef stick — 90 cal · 9p · 6f · 1nc"
+            "30g Member's Mark Natural Pecan Halves, toasted (chocolate) — 210 cal · 3g protein · 21g fat · 1g net carb",
+            "1 grass-fed beef stick (28g / 1 oz) — 90 cal · 9g protein · 6g fat · 1g net carb"
         ),
         steps = listOf(
-            MealStep("Toast the Pecans", "Air fry at 300°F for 4–6 min until fragrant and lightly toasted. Watch closely — pecans burn fast. Let cool 1–2 min before eating."),
-            MealStep("Serve", "Pair toasted pecans with the beef stick. Eat together as your snack.")
+            MealStep("Toast the Pecans", "Air fry the 30g pecans at 300°F for 4–6 min, shaking the basket once, until fragrant. Tip them out onto a plate right away and, while still warm, toss with 1/2 tsp cocoa powder, 1/2–1 tsp Swerve, and a pinch of salt until coated."),
+            MealStep("Serve", "Pair the chocolate pecans with the beef stick.")
         )
     )
 )
