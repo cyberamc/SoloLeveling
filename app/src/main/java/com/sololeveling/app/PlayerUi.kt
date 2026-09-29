@@ -1723,7 +1723,9 @@ fun TimerDialog(onDismiss: () -> Unit) {
         Triple("Foot Soak", 15 * 60, "Foot soak complete")
     )
     var selected by remember { mutableStateOf(0) }
-    var seconds by remember { mutableStateOf(presets[0].second.toString()) }
+    fun secsToMmss(s: Int): String { val m = s / 60; val sec = s % 60; return "%02d:%02d".format(m, sec) }
+    fun mmssToSecs(t: String): Int { val p = t.split(":"); return if (p.size == 2) (p[0].toIntOrNull() ?: 0) * 60 + (p[1].toIntOrNull() ?: 0) else t.toIntOrNull() ?: 0 }
+    var seconds by remember { mutableStateOf(secsToMmss(presets[0].second)) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1739,7 +1741,7 @@ fun TimerDialog(onDismiss: () -> Unit) {
                             .pointerInput(Unit) {
                                 detectTapGestures(onTap = {
                                     selected = i
-                                    seconds = def.toString()
+                                    seconds = secsToMmss(def)
                                 })
                             },
                         verticalAlignment = Alignment.CenterVertically
@@ -1754,10 +1756,10 @@ fun TimerDialog(onDismiss: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Text(if (selected == presets.size - 1) "Seconds" else "Minutes", fontSize = 11.sp, color = Color(0xFF777777))
+                Text("MM:SS", fontSize = 11.sp, color = Color(0xFF777777))
                 OutlinedTextField(
                     value = seconds,
-                    onValueChange = { v -> seconds = v.filter { it.isDigit() }.take(4) },
+                    onValueChange = { v -> seconds = v.filter { it.isDigit() || it == ':' }.take(5) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1776,10 +1778,9 @@ fun TimerDialog(onDismiss: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.pointerInput(Unit) {
                     detectTapGestures(onTap = {
-                        val secs = seconds.toIntOrNull() ?: 0
-                        if (secs > 0) {
+                        val totalSecs = mmssToSecs(seconds)
+                        if (totalSecs > 0) {
                             val preset = presets[selected]
-                            val totalSecs = if (selected == presets.size - 1) secs else secs * 60
                             TimerService.start(context, preset.first, totalSecs, preset.third)
                             onDismiss()
                         }
