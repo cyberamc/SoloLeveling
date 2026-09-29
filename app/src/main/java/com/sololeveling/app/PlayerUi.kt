@@ -1719,7 +1719,8 @@ fun TimerDialog(onDismiss: () -> Unit) {
         Triple("Meditation", 2 * 60, "Meditation complete"),
         Triple("Legs Up The Wall", 5 * 60, "Legs up the wall done — next: read"),
         Triple("Read A Book", 20 * 60, "Reading done — lights out soon"),
-        Triple("Wall Sit", 30, "Wall sit complete")
+        Triple("Wall Sit", 30, "Wall sit complete"),
+        Triple("Foot Soak", 15 * 60, "Foot soak complete")
     )
     var selected by remember { mutableStateOf(0) }
     var seconds by remember { mutableStateOf(presets[0].second.toString()) }
