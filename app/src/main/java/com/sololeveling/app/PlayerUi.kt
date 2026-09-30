@@ -1712,6 +1712,7 @@ fun TimerIconCanvas(modifier: Modifier = Modifier) {
 @Composable
 fun TimerDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
+    val prefs = context.getSharedPreferences("timer_presets", android.content.Context.MODE_PRIVATE)
     // Two presets (editable). label -> default minutes.
     // label, default minutes, notification text when it finishes
     val presets = listOf(
@@ -1741,7 +1742,7 @@ fun TimerDialog(onDismiss: () -> Unit) {
                             .pointerInput(Unit) {
                                 detectTapGestures(onTap = {
                                     selected = i
-                                    seconds = secsToMmss(def)
+                                    seconds = secsToMmss(prefs.getInt("preset_$i", def))
                                 })
                             },
                         verticalAlignment = Alignment.CenterVertically
@@ -1780,6 +1781,7 @@ fun TimerDialog(onDismiss: () -> Unit) {
                     detectTapGestures(onTap = {
                         val totalSecs = mmssToSecs(seconds)
                         if (totalSecs > 0) {
+                            prefs.edit().putInt("preset_$selected", totalSecs).apply()
                             val preset = presets[selected]
                             TimerService.start(context, preset.first, totalSecs, preset.third)
                             onDismiss()
