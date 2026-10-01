@@ -277,6 +277,11 @@ fun TasksScreen() {
                         .clickable { showStepScreen = true }
                         .padding(horizontal = 1.dp)
                 )
+                MobilityIconCanvas(
+                    modifier = Modifier
+                        .clickable { showMobilityScreen = true }
+                        .padding(horizontal = 1.dp)
+                )
                 AlarmIconCanvas(
                     modifier = Modifier
                         .clickable { showAlarmDialog = true }
