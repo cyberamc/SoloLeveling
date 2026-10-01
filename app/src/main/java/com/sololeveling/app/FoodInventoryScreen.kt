@@ -1,4 +1,4 @@
-package com.sololeveling.app
+﻿package com.sololeveling.app
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -30,7 +30,8 @@ data class FoodItem(
     val name: String,
     val source: String?,
     val level: Int,
-    val room: String? = null
+    val room: String? = null,
+    val timeOfDay: String? = null
 )
 
 // Three statuses: 0 = Out, 1 = Low, 2 = Good. Legacy levels 2/3 both read as Good.
@@ -62,7 +63,8 @@ fun fetchInventory(baseUrl: String, endpoint: String): List<FoodItem> {
                 name = obj.getString("name"),
                 source = if (obj.has("source") && !obj.isNull("source")) obj.getString("source") else null,
                 level = obj.getInt("level"),
-                room = if (obj.has("room") && !obj.isNull("room")) obj.getString("room") else null
+                room = if (obj.has("room") && !obj.isNull("room")) obj.getString("room") else null,
+                timeOfDay = if (obj.has("time_of_day") && !obj.isNull("time_of_day")) obj.getString("time_of_day") else null
             )
         }
     } finally {
@@ -95,6 +97,7 @@ fun InventoryScreen(
     endpoint: String,
     title: String,
     groupByRoom: Boolean = false,
+    groupByTime: Boolean = false,
     onBack: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -270,10 +273,47 @@ fun InventoryScreen(
                         }
                         item { Spacer(Modifier.height(24.dp)) }
                     }
+                } else if (groupByTime) {
+                    val timeGroups = listOf("AM", "PM").mapNotNull { time ->
+                        val group = items.filter { it.timeOfDay == time }
+                        if (group.isNotEmpty()) time to group else null
+                    }
+                    LazyColumn(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        timeGroups.forEach { (time, group) ->
+                            item(key = "time_$time") {
+                                Text(
+                                    text = time,
+                                    color = Color(0xFF7B8CDE),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 2.sp,
+                                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+                                )
+                            }
+                            items(group, key = { "${endpoint}_${it.id}" }) { item ->
+                                InventoryItemRow(
+                                    item = item,
+                                    onSetStatus = { newStatus ->
+                                        items = items.map { if (it.id == item.id) it.copy(level = newStatus) else it }
+                                        scope.launch {
+                                            try {
+                                                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                                    patchInventoryLevel(baseUrl, endpoint, item.id, newStatus)
+                                                }
+                                            } catch (e: Exception) {
+                                                items = items.map { if (it.id == item.id) it.copy(level = item.level) else it }
+                                            }
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                        item { Spacer(Modifier.height(24.dp)) }
+                    }
                 } else {
-                    // Flat list — order comes from the API (sort_order column).
-                    // Status is set inline and the item stays put — no grouping by status,
-                    // so nothing jumps when you change it.
                     LazyColumn(
                         modifier = Modifier.padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -395,6 +435,7 @@ fun SuppliesScreen(baseUrl: String) {
             endpoint = "/api/supplement-inventory",
             title = "Supplement Supply",
             groupByRoom = false,
+            groupByTime = true,
             onBack = { currentView = null }
         )
         else -> {
