@@ -1710,6 +1710,9 @@ fun TimerIconCanvas(modifier: Modifier = Modifier) {
     }
 }
 
+fun secsToMmss(s: Int): String { val m = s / 60; val sec = s % 60; return "%02d:%02d".format(m, sec) }
+fun mmssToSecs(t: String): Int { val p = t.split(":"); return if (p.size == 2) (p[0].toIntOrNull() ?: 0) * 60 + (p[1].toIntOrNull() ?: 0) else t.toIntOrNull() ?: 0 }
+
 @Composable
 fun TimerDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
@@ -1725,8 +1728,6 @@ fun TimerDialog(onDismiss: () -> Unit) {
         Triple("Foot Soak", 15 * 60, "Foot soak complete")
     )
     var selected by remember { mutableStateOf(0) }
-    fun secsToMmss(s: Int): String { val m = s / 60; val sec = s % 60; return "%02d:%02d".format(m, sec) }
-    fun mmssToSecs(t: String): Int { val p = t.split(":"); return if (p.size == 2) (p[0].toIntOrNull() ?: 0) * 60 + (p[1].toIntOrNull() ?: 0) else t.toIntOrNull() ?: 0 }
     var seconds by remember { mutableStateOf(secsToMmss(presets[0].second)) }
 
     AlertDialog(
@@ -2377,9 +2378,7 @@ fun MobilityScreen(onBack: () -> Unit) {
                                 Text(ex.meta, color = Color(0xFF7a8090), fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
                             }
                             Box(
-                                modifier = Modifier.size(28.dp).background(if (isDone) Color(0xFF10b981) else Color.Transparent, shape = androidx.compose.foundation.shape.CircleShape)
-                                    .border(2.dp, if (isDone) Color(0xFF10b981) else Color(0xFF2a2a3a), shape = androidx.compose.foundation.shape.CircleShape)
-                                    .clickable { completed[i] = !isDone },
+                                modifier = Modifier.size(28.dp).background(if (isDone) Color(0xFF10b981) else Color(0xFF2a2a3a), androidx.compose.foundation.shape.CircleShape).padding(2.dp).background(if (isDone) Color(0xFF10b981) else Color(0xFF0a0a1a), androidx.compose.foundation.shape.CircleShape).clickable { completed[i] = !isDone },
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (isDone) Text("\u2713", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
@@ -2403,13 +2402,13 @@ fun MobilityScreen(onBack: () -> Unit) {
                             }
                             if (ex.reps != null) {
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    IconButton(onClick = { if (repCount.value > 0) repCount.value-- }, modifier = Modifier.size(36.dp).background(Color(0xFF1e1e3a), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF3a3a5a), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))) {
+                                    androidx.compose.material3.IconButton(onClick = { if (repCount.value > 0) repCount.value-- }, modifier = Modifier.size(36.dp).background(Color(0xFF1e1e3a), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))) {
                                         Text("\u2212", color = Color(0xFFa78bfa), fontSize = 20.sp)
                                     }
                                     Text("${repCount.value}", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.widthIn(min = 30.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                                     Text("/ ${ex.reps} reps", color = Color(0xFF7a8090), fontSize = 13.sp)
                                     Spacer(Modifier.weight(1f))
-                                    IconButton(onClick = { repCount.value++ }, modifier = Modifier.size(36.dp).background(Color(0xFF1e1e3a), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).border(1.dp, Color(0xFF3a3a5a), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp))) {
+                                    androidx.compose.material3.IconButton(onClick = { repCount.value++ }, modifier = Modifier.size(36.dp).background(Color(0xFF1e1e3a), androidx.compose.foundation.shape.RoundedCornerShape(8.dp))) {
                                         Text("+", color = Color(0xFFa78bfa), fontSize = 20.sp)
                                     }
                                 }
