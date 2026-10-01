@@ -137,6 +137,10 @@ fun TasksScreen() {
         StepScreen(onBack = { showStepScreen = false })
         return
     }
+    if (showMobilityScreen) {
+        MobilityScreen(onBack = { showMobilityScreen = false })
+        return
+    }
 
     if (showTimerDialog) {
         TimerDialog(onDismiss = { showTimerDialog = false })
