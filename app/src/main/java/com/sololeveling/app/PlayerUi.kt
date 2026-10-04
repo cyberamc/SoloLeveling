@@ -251,14 +251,9 @@ fun TasksScreen() {
                         .clickable { showLuna = true }
                         .padding(horizontal = 9.dp, vertical = 6.dp)
                 )
-                WaterJugIconCanvas(
+                WeightIconCanvas(
                     modifier = Modifier
-                        .clickable { showHydration = true }
-                        .padding(horizontal = 1.dp)
-                )
-                StepsIconCanvas(
-                    modifier = Modifier
-                        .clickable { showSteps = true }
+                        .clickable { showWeightScreen = true }
                         .padding(horizontal = 1.dp)
                 )
                 MoonIconCanvas(
@@ -269,16 +264,6 @@ fun TasksScreen() {
                 TimerIconCanvas(
                     modifier = Modifier
                         .clickable { showTimerDialog = true }
-                        .padding(horizontal = 1.dp)
-                )
-                WeightIconCanvas(
-                    modifier = Modifier
-                        .clickable { showWeightScreen = true }
-                        .padding(horizontal = 1.dp)
-                )
-                StepIconCanvas(
-                    modifier = Modifier
-                        .clickable { showStepScreen = true }
                         .padding(horizontal = 1.dp)
                 )
                 MobilityIconCanvas(
