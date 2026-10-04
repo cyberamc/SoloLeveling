@@ -379,16 +379,38 @@ object BedtimeAlarm {
         alarmManager.cancel(pi)
     }
 
+    fun createChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val soundUri = android.net.Uri.parse("android.resource://${context.packageName}/raw/morning_alarm")
+            val attrs = android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                .build()
+            val channel = android.app.NotificationChannel(
+                CHANNEL_ID, "Bedtime Alarm", NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Nightly bedtime reminder"
+                setSound(soundUri, attrs)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 200, 500)
+            }
+            (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        }
+    }
+
     fun showNotification(context: Context) {
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val contentPi = PendingIntent.getActivity(context, NOTIF_ID, openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val soundUri = android.net.Uri.parse("android.resource://${context.packageName}/raw/morning_alarm")
         val notification = androidx.core.app.NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Bedtime")
             .setContentText("Time to wind down. Lights out soon.")
             .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setSound(soundUri)
+            .setVibrate(longArrayOf(0, 500, 200, 500))
             .setAutoCancel(true)
             .setContentIntent(contentPi)
             .build()
@@ -399,6 +421,7 @@ object BedtimeAlarm {
 class BedtimeAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != BedtimeAlarm.ACTION_FIRE) return
+        BedtimeAlarm.createChannel(context)
         BedtimeAlarm.showNotification(context)
         val prefs = context.getSharedPreferences("bedtime_alarm", Context.MODE_PRIVATE)
         val hour = prefs.getInt("alarm_hour", 21)
