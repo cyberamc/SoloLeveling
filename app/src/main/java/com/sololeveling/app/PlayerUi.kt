@@ -142,6 +142,10 @@ fun TasksScreen() {
         MobilityScreen(onBack = { showMobilityScreen = false })
         return
     }
+    if (showBirthdayScreen) {
+        BirthdayScreen(onBack = { showBirthdayScreen = false })
+        return
+    }
 
     if (showTimerDialog) {
         TimerDialog(onDismiss = { showTimerDialog = false })
