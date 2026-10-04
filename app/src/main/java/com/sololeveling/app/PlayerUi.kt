@@ -2483,24 +2483,28 @@ fun BirthdayScreen(onBack: () -> Unit) {
                 if (birthdays.isEmpty()) {
                     Text("No birthdays yet. Tap + Add to get started.", color = Color(0xFF94a3b8), fontSize = 14.sp)
                 } else {
-                    birthdays.forEach { b ->
-                        val days = daysUntilBirthday(b.birthday)
-                        val isClose = days <= 7
-                        val isSoon = days <= 30
-                        val accentColor = if (isClose) Color(0xFFf87171) else if (isSoon) Color(0xFFfbbf24) else Color(0xFFf472b6)
-                        val daysLabel = when (days) {
-                            0 -> "Today!"
-                            1 -> "Tomorrow!"
-                            else -> "In $days days"
-                        }
-                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp).background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(b.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                                Text(birthdayMonthDay(b.birthday), color = Color(0xFF94a3b8), fontSize = 13.sp)
+                    val monthNames = listOf("January","February","March","April","May","June","July","August","September","October","November","December")
+                    val grouped = birthdays.groupBy { it.birthday.split("-")[0].toIntOrNull() ?: 0 }
+                    val sortedMonths = grouped.keys.sorted()
+                    sortedMonths.forEach { monthNum ->
+                        val monthBirthdays = grouped[monthNum]?.sortedBy { it.birthday.split("-")[1].toIntOrNull() ?: 0 } ?: emptyList()
+                        Text(monthNames.getOrElse(monthNum - 1) { "Unknown" }.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFf472b6), letterSpacing = 2.sp, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
+                        monthBirthdays.forEach { b ->
+                            val days = daysUntilBirthday(b.birthday)
+                            val isClose = days <= 7
+                            val isSoon = days <= 30
+                            val accentColor = if (isClose) Color(0xFFf87171) else if (isSoon) Color(0xFFfbbf24) else Color(0xFFf472b6)
+                            val daysLabel = when (days) { 0 -> "Today!"; 1 -> "Tomorrow!"; else -> "In $days days" }
+                            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(b.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                    Text(birthdayMonthDay(b.birthday), color = Color(0xFF94a3b8), fontSize = 13.sp)
+                                }
+                                Text(daysLabel, color = accentColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                             }
-                            Text(daysLabel, color = accentColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
                     }
+                }
                 }
                 Spacer(Modifier.height(24.dp))
             }
