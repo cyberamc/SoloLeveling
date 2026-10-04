@@ -2167,7 +2167,6 @@ fun AlarmIconCanvas(modifier: Modifier = Modifier) {
 }
 
 @Composable
-@Composable
 fun AlarmTimeDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
     val morningPrefs = context.getSharedPreferences("morning_brief", android.content.Context.MODE_PRIVATE)
@@ -2186,8 +2185,8 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
             Column {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Morning Brief", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Switch(checked = morningEnabled, onCheckedChange = { morningEnabled = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF3b82f6), uncheckedTrackColor = Color(0xFF2a2a3a)))
+                    androidx.compose.material3.Switch(checked = morningEnabled, onCheckedChange = { morningEnabled = it },
+                        colors = androidx.compose.material3.SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF3b82f6), uncheckedTrackColor = Color(0xFF2a2a3a)))
                 }
                 if (morningEnabled) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
@@ -2209,8 +2208,8 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text("Bedtime", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                    Switch(checked = bedtimeEnabled, onCheckedChange = { bedtimeEnabled = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF3b82f6), uncheckedTrackColor = Color(0xFF2a2a3a)))
+                    androidx.compose.material3.Switch(checked = bedtimeEnabled, onCheckedChange = { bedtimeEnabled = it },
+                        colors = androidx.compose.material3.SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF3b82f6), uncheckedTrackColor = Color(0xFF2a2a3a)))
                 }
                 if (bedtimeEnabled) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
@@ -2246,6 +2245,8 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
         }
     )
 }
+
+@Composable
 fun MorningBriefOverlay(onDismiss: () -> Unit) {
     var tasks by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var streak by remember { mutableIntStateOf(0) }
