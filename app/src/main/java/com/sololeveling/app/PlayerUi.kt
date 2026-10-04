@@ -2377,19 +2377,17 @@ fun deleteBirthday(id: Int): Boolean {
 fun daysUntilBirthday(birthday: String): Int {
     return try {
         val parts = birthday.split("-")
-        val month = parts[0].toInt(); val day = parts[1].toInt()
-        val today = java.util.Calendar.getInstance()
-        val next = java.util.Calendar.getInstance().apply {
-            set(java.util.Calendar.MONTH, month - 1)
-            set(java.util.Calendar.DAY_OF_MONTH, day)
-            set(java.util.Calendar.HOUR_OF_DAY, 0)
-            set(java.util.Calendar.MINUTE, 0)
-            set(java.util.Calendar.SECOND, 0)
-            set(java.util.Calendar.MILLISECOND, 0)
-        }
-        if (next.before(today) || next == today) next.add(java.util.Calendar.YEAR, 1)
-        val diff = next.timeInMillis - today.timeInMillis
-        (diff / (1000 * 60 * 60 * 24)).toInt()
+        val bMonth = parts[0].toInt(); val bDay = parts[1].toInt()
+        val sdf = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.US)
+        val todayInt = sdf.format(java.util.Date()).toInt()
+        val cal = java.util.Calendar.getInstance()
+        val year = cal.get(java.util.Calendar.YEAR)
+        val thisYear = "%04d%02d%02d".format(year, bMonth, bDay).toInt()
+        val nextYear = "%04d%02d%02d".format(year + 1, bMonth, bDay).toInt()
+        val targetInt = if (thisYear > todayInt) thisYear else nextYear
+        val t = sdf.parse(todayInt.toString())!!
+        val n = sdf.parse(targetInt.toString())!!
+        ((n.time - t.time) / (1000 * 60 * 60 * 24)).toInt()
     } catch (e: Exception) { 999 }
 }
 
