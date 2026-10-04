@@ -2505,7 +2505,6 @@ fun BirthdayScreen(onBack: () -> Unit) {
                         }
                     }
                 }
-                }
                 Spacer(Modifier.height(24.dp))
             }
         }
