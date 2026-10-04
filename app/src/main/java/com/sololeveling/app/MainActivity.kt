@@ -1,4 +1,4 @@
-package com.sololeveling.app
+﻿package com.sololeveling.app
 
 import android.Manifest
 import android.content.pm.PackageManager

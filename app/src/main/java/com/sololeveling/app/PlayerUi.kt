@@ -2167,44 +2167,75 @@ fun AlarmIconCanvas(modifier: Modifier = Modifier) {
 }
 
 @Composable
+@Composable
 fun AlarmTimeDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
-    val prefs = context.getSharedPreferences("morning_brief", android.content.Context.MODE_PRIVATE)
-    var hour by remember { mutableIntStateOf(prefs.getInt("alarm_hour", 5)) }
-    var minute by remember { mutableIntStateOf(prefs.getInt("alarm_minute", 0)) }
-
+    val morningPrefs = context.getSharedPreferences("morning_brief", android.content.Context.MODE_PRIVATE)
+    val bedtimePrefs = context.getSharedPreferences("bedtime_alarm", android.content.Context.MODE_PRIVATE)
+    var morningEnabled by remember { mutableStateOf(morningPrefs.getBoolean("alarm_enabled", true)) }
+    var morningHour by remember { mutableIntStateOf(morningPrefs.getInt("alarm_hour", 5)) }
+    var morningMinute by remember { mutableIntStateOf(morningPrefs.getInt("alarm_minute", 0)) }
+    var bedtimeEnabled by remember { mutableStateOf(bedtimePrefs.getBoolean("alarm_enabled", true)) }
+    var bedtimeHour by remember { mutableIntStateOf(bedtimePrefs.getInt("alarm_hour", 21)) }
+    var bedtimeMinute by remember { mutableIntStateOf(bedtimePrefs.getInt("alarm_minute", 30)) }
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Color(0xFF1a1a2e),
-        title = { Text("Morning Brief Alarm", color = Color.White, fontWeight = FontWeight.Bold) },
+        title = { Text("Alarms", color = Color.White, fontWeight = FontWeight.Bold) },
         text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("Set the time for your daily morning brief", color = Color(0xFF94a3b8), fontSize = 13.sp)
-                Spacer(Modifier.height(20.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                    // Hour
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        TextButton(onClick = { hour = (hour + 1) % 24 }) { Text("▲", color = Color(0xFF3b82f6), fontSize = 18.sp) }
-                        Text("%02d".format(hour), color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold)
-                        TextButton(onClick = { hour = (hour + 23) % 24 }) { Text("▼", color = Color(0xFF3b82f6), fontSize = 18.sp) }
-                    }
-                    Text(":", color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
-                    // Minute
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        TextButton(onClick = { minute = (minute + 1) % 60 }) { Text("▲", color = Color(0xFF3b82f6), fontSize = 18.sp) }
-                        Text("%02d".format(minute), color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold)
-                        TextButton(onClick = { minute = (minute + 59) % 60 }) { Text("▼", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+            Column {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Morning Brief", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Switch(checked = morningEnabled, onCheckedChange = { morningEnabled = it },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF3b82f6), uncheckedTrackColor = Color(0xFF2a2a3a)))
+                }
+                if (morningEnabled) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            TextButton(onClick = { morningHour = (morningHour + 1) % 24 }) { Text("\u25b2", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                            Text("%02d".format(morningHour), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                            TextButton(onClick = { morningHour = (morningHour + 23) % 24 }) { Text("\u25bc", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        }
+                        Text(":", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            TextButton(onClick = { morningMinute = (morningMinute + 1) % 60 }) { Text("\u25b2", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                            Text("%02d".format(morningMinute), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                            TextButton(onClick = { morningMinute = (morningMinute + 59) % 60 }) { Text("\u25bc", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                Text("Current: %02d:%02d daily".format(hour, minute), color = Color(0xFF94a3b8), fontSize = 12.sp)
+                Spacer(Modifier.height(16.dp))
+                androidx.compose.material3.HorizontalDivider(color = Color(0xFF2a2a3a))
+                Spacer(Modifier.height(16.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Text("Bedtime", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Switch(checked = bedtimeEnabled, onCheckedChange = { bedtimeEnabled = it },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = Color(0xFF3b82f6), uncheckedTrackColor = Color(0xFF2a2a3a)))
+                }
+                if (bedtimeEnabled) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            TextButton(onClick = { bedtimeHour = (bedtimeHour + 1) % 24 }) { Text("\u25b2", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                            Text("%02d".format(bedtimeHour), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                            TextButton(onClick = { bedtimeHour = (bedtimeHour + 23) % 24 }) { Text("\u25bc", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        }
+                        Text(":", color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp))
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            TextButton(onClick = { bedtimeMinute = (bedtimeMinute + 1) % 60 }) { Text("\u25b2", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                            Text("%02d".format(bedtimeMinute), color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold)
+                            TextButton(onClick = { bedtimeMinute = (bedtimeMinute + 59) % 60 }) { Text("\u25bc", color = Color(0xFF3b82f6), fontSize = 18.sp) }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
                 onClick = {
-                    prefs.edit().putInt("alarm_hour", hour).putInt("alarm_minute", minute).apply()
-                    MorningBrief.schedule(context, hour, minute)
+                    morningPrefs.edit().putInt("alarm_hour", morningHour).putInt("alarm_minute", morningMinute).putBoolean("alarm_enabled", morningEnabled).apply()
+                    if (morningEnabled) MorningBrief.schedule(context, morningHour, morningMinute) else MorningBrief.cancel(context)
+                    bedtimePrefs.edit().putInt("alarm_hour", bedtimeHour).putInt("alarm_minute", bedtimeMinute).putBoolean("alarm_enabled", bedtimeEnabled).apply()
+                    if (bedtimeEnabled) BedtimeAlarm.schedule(context, bedtimeHour, bedtimeMinute) else BedtimeAlarm.cancel(context)
                     onDismiss()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6))
@@ -2215,8 +2246,6 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
         }
     )
 }
-
-@Composable
 fun MorningBriefOverlay(onDismiss: () -> Unit) {
     var tasks by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var streak by remember { mutableIntStateOf(0) }

@@ -300,6 +300,13 @@ object MorningBrief {
         }
     }
 
+    fun cancel(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, MorningBriefReceiver::class.java).apply { action = ACTION_FIRE }
+        val pi = PendingIntent.getBroadcast(context, REQ_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        alarmManager.cancel(pi)
+    }
+
     fun showNotification(context: Context) {
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -333,6 +340,70 @@ object MorningBrief {
 
         (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager)
             .notify(NOTIF_ID, notification)
+    }
+}
+
+/** Bedtime reminder — simple notification at a configurable time, on/off toggle. */
+object BedtimeAlarm {
+    const val CHANNEL_ID = "morning_brief"
+    const val ACTION_FIRE = "com.sololeveling.app.BEDTIME_ALARM_FIRE"
+    private const val REQ_CODE = 9002
+    const val NOTIF_ID = 9002
+
+    fun schedule(context: Context, hour: Int = 21, minute: Int = 30) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, BedtimeAlarmReceiver::class.java).apply { action = ACTION_FIRE }
+        val pi = PendingIntent.getBroadcast(context, REQ_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_YEAR, 1)
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
+            }
+        } catch (e: SecurityException) {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, cal.timeInMillis, pi)
+        }
+    }
+
+    fun cancel(context: Context) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, BedtimeAlarmReceiver::class.java).apply { action = ACTION_FIRE }
+        val pi = PendingIntent.getBroadcast(context, REQ_CODE, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        alarmManager.cancel(pi)
+    }
+
+    fun showNotification(context: Context) {
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val contentPi = PendingIntent.getActivity(context, NOTIF_ID, openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val notification = androidx.core.app.NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle("Bedtime")
+            .setContentText("Time to wind down. Lights out soon.")
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentPi)
+            .build()
+        (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(NOTIF_ID, notification)
+    }
+}
+
+class BedtimeAlarmReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != BedtimeAlarm.ACTION_FIRE) return
+        BedtimeAlarm.showNotification(context)
+        val prefs = context.getSharedPreferences("bedtime_alarm", Context.MODE_PRIVATE)
+        val hour = prefs.getInt("alarm_hour", 21)
+        val minute = prefs.getInt("alarm_minute", 30)
+        BedtimeAlarm.schedule(context, hour, minute)
     }
 }
 

@@ -4,10 +4,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.health.READ_STEPS" />
-    <queries>
-        <package android:name="com.google.android.apps.healthdata" />
-    </queries>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
@@ -53,6 +49,12 @@
         <receiver android:name=".MorningBriefReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="com.sololeveling.app.MORNING_BRIEF_FIRE"/>
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name=".BedtimeAlarmReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="com.sololeveling.app.BEDTIME_ALARM_FIRE"/>
             </intent-filter>
         </receiver>
 
