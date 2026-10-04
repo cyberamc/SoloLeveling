@@ -2485,8 +2485,8 @@ fun BirthdayScreen(onBack: () -> Unit) {
                 } else {
                     val monthNames = listOf("January","February","March","April","May","June","July","August","September","October","November","December")
                     val grouped = birthdays.groupBy { it.birthday.split("-")[0].toIntOrNull() ?: 0 }
-                    val sortedMonths = grouped.keys.sorted()
-                    sortedMonths.forEach { monthNum ->
+                    val currentMonth = java.util.Calendar.getInstance().get(java.util.Calendar.MONTH) + 1
+                    val sortedMonths = ((currentMonth..12) + (1 until currentMonth)).filter { grouped.containsKey(it) }
                         val monthBirthdays = grouped[monthNum]?.sortedBy { it.birthday.split("-")[1].toIntOrNull() ?: 0 } ?: emptyList()
                         Text(monthNames.getOrElse(monthNum - 1) { "Unknown" }.uppercase(), fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFf472b6), letterSpacing = 2.sp, modifier = Modifier.padding(top = 16.dp, bottom = 8.dp))
                         monthBirthdays.forEach { b ->
