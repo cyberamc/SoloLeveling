@@ -1,4 +1,4 @@
-package com.sololeveling.app
+﻿package com.sololeveling.app
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -29,29 +29,6 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
-import javax.net.ssl.X509TrustManager
-import java.security.cert.X509Certificate
-
-private val financeTrustAllCerts = arrayOf<X509TrustManager>(object : X509TrustManager {
-    override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
-    override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
-    override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-})
-
-private val financeSslContext = SSLContext.getInstance("SSL").also {
-    it.init(null, financeTrustAllCerts, java.security.SecureRandom())
-}
-
-private fun openFinanceConn(url: URL): HttpURLConnection {
-    val conn = url.openConnection() as HttpURLConnection
-    if (conn is HttpsURLConnection) {
-        conn.sslSocketFactory = financeSslContext.socketFactory
-        conn.hostnameVerifier = javax.net.ssl.HostnameVerifier { _, _ -> true }
-    }
-    return conn
-}
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -167,7 +144,7 @@ const val DELIVERY_FRISAT_FROM = "2026-08-16"
 
 fun fetchDeliveryWeeks(baseUrl: String, workedMonth: String? = null): List<DeliveryWeek> {
     val url = URL("$baseUrl/api/delivery-weeks" + (if (workedMonth != null) "?worked_month=$workedMonth" else ""))
-    val conn = openFinanceConn(url)
+    val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
@@ -199,7 +176,7 @@ fun fetchDeliveryWeeks(baseUrl: String, workedMonth: String? = null): List<Deliv
 
 fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
     val url = URL("$baseUrl/api/delivery-weeks/${week.id}")
-    val conn = openFinanceConn(url)
+    val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "PATCH"
     conn.setRequestProperty("Content-Type", "application/json")
     conn.doOutput = true
@@ -243,7 +220,7 @@ fun patchDeliveryWeek(baseUrl: String, week: DeliveryWeek): DeliveryWeek {
 
 fun deleteDeliveryWeek(baseUrl: String, id: Int) {
     val url = URL("$baseUrl/api/delivery-weeks/$id")
-    val conn = openFinanceConn(url)
+    val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "DELETE"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
@@ -265,7 +242,7 @@ data class SpeedxCheck(
 
 fun fetchSpeedxChecks(baseUrl: String): Pair<String?, List<SpeedxCheck>> {
     val url = URL("$baseUrl/api/speedx-checks")
-    val conn = openFinanceConn(url)
+    val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
@@ -296,7 +273,7 @@ fun fetchSpeedxChecks(baseUrl: String): Pair<String?, List<SpeedxCheck>> {
 
 fun patchSpeedxCheckPaid(baseUrl: String, id: Int, paid: Boolean) {
     val url = URL("$baseUrl/api/speedx-checks/$id")
-    val conn = openFinanceConn(url)
+    val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "PATCH"
     conn.setRequestProperty("Content-Type", "application/json")
     conn.doOutput = true
@@ -333,7 +310,7 @@ data class DeliveryMonthHist(
 
 fun fetchDeliveryHistory(baseUrl: String): List<DeliveryMonthHist> {
     val url = URL("$baseUrl/api/delivery-history")
-    val conn = openFinanceConn(url)
+    val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "GET"
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
@@ -999,10 +976,10 @@ fun TodayDeliveryTracker(baseUrl: String) {
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        // Saturday is day 2 (fri_* columns); Friday is day 1 (sat_* columns).
-        isDay2 = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY
+        // Friday is day 2 (fri_* columns); Saturday is day 1 (sat_* columns).
+        isDay2 = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
         val wks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try { fetchDeliveryWeeks(baseUrl, currentWorkedMonth()) } catch (e: Exception) { emptyList() }
+            try { fetchDeliveryWeeks(baseUrl, null) } catch (e: Exception) { emptyList() }
         }
         // Pick the week whose week_start <= today and is closest (current week).
         val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
