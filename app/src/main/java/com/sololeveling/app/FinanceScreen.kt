@@ -663,12 +663,12 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
     }
 }
 
-// Quota targets: $125 per delivery day; $250 for the week. Day 1 is measured
-// against the daily $125. Day 2 is measured against whatever remains of the
-// $250 weekly goal after day 1's pay, so a strong day 1 shrinks day 2's
-// target. The weekly line reports the week's total against $250.
-const val DAILY_QUOTA = 125.0
-const val WEEKLY_QUOTA = 250.0
+// Quota targets: $150 per delivery day; $300 for the week. Day 1 is measured
+// against the daily $150. Day 2 is measured against whatever remains of the
+// $300 weekly goal after day 1's pay, so a strong day 1 shrinks day 2's
+// target. The weekly line reports the week's total against $300.
+const val DAILY_QUOTA = 150.0
+const val WEEKLY_QUOTA = 300.0
 
 @Composable
 fun DayQuotaLine(delivered: Int, billable: Int, pay: Double, rate: Double, target: Double = DAILY_QUOTA) {
