@@ -2498,12 +2498,7 @@ fun BirthdayScreen(onBack: () -> Unit) {
                                 Text(b.name, color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                 Text(birthdayMonthDay(b.birthday), color = Color(0xFF94a3b8), fontSize = 13.sp)
                             }
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text(daysLabel, color = accentColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                                TextButton(onClick = { scope.launch(Dispatchers.IO) { deleteBirthday(b.id); reload() } }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                                    Text("\u2715", color = Color(0xFFa55555), fontSize = 14.sp)
-                                }
-                            }
+                            Text(daysLabel, color = accentColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
