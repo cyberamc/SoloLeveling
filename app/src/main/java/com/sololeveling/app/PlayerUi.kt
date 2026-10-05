@@ -2335,13 +2335,12 @@ fun markDismissedToday(context: android.content.Context) {
 }
 
 @Composable
-@Composable
 fun TravelIconCanvas(modifier: Modifier = Modifier) {
     val color = Color(0xFF60a5fa)
     androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
         val w = size.width; val h = size.height
-        drawRect(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.1f, h*0.3f), size = androidx.compose.ui.geometry.Size(w*0.8f, h*0.6f), style = androidx.compose.ui.graphics.drawscope.Stroke(strokeWidth = 2.dp.toPx()))
-        drawRect(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.32f, h*0.12f), size = androidx.compose.ui.geometry.Size(w*0.36f, h*0.18f), style = androidx.compose.ui.graphics.drawscope.Stroke(strokeWidth = 2.dp.toPx()))
+        drawRect(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.1f, h*0.3f), size = androidx.compose.ui.geometry.Size(w*0.8f, h*0.6f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
+        drawRect(color = color, topLeft = androidx.compose.ui.geometry.Offset(w*0.32f, h*0.12f), size = androidx.compose.ui.geometry.Size(w*0.36f, h*0.18f), style = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx()))
         drawLine(color = color, start = androidx.compose.ui.geometry.Offset(w*0.1f, h*0.6f), end = androidx.compose.ui.geometry.Offset(w*0.9f, h*0.6f), strokeWidth = 1.5.dp.toPx())
     }
 }
@@ -2564,7 +2563,7 @@ fun TravelScreen(onBack: () -> Unit) {
                             items = items.map { if (it.id == item.id) it.copy(checked = newChecked) else it }
                             scope.launch(Dispatchers.IO) { patchTravelItem(item.id, newChecked) }
                         }.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(20.dp).background(if (item.checked) Color(0xFF60a5fa) else Color.Transparent, androidx.compose.foundation.shape.RoundedCornerShape(4.dp)).border(2.dp, if (item.checked) Color(0xFF60a5fa) else Color(0xFF3a3a5a), androidx.compose.foundation.shape.RoundedCornerShape(4.dp)), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.size(20.dp).background(if (item.checked) Color(0xFF60a5fa) else Color(0xFF3a3a5a), androidx.compose.foundation.shape.RoundedCornerShape(4.dp)).padding(2.dp).background(if (item.checked) Color(0xFF60a5fa) else Color(0xFF0a0a1a), androidx.compose.foundation.shape.RoundedCornerShape(3.dp)), contentAlignment = Alignment.Center) {
                                 if (item.checked) Text("\u2713", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.width(12.dp))
@@ -2582,6 +2581,7 @@ fun TravelScreen(onBack: () -> Unit) {
     }
 }
 
+@Composable
 fun BirthdayIconCanvas(modifier: Modifier = Modifier) {
     val pink = Color(0xFFf472b6)
     androidx.compose.foundation.Canvas(modifier = modifier.size(18.dp)) {
