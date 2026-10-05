@@ -345,7 +345,7 @@ object MorningBrief {
 
 /** Bedtime reminder — simple notification at a configurable time, on/off toggle. */
 object BedtimeAlarm {
-    const val CHANNEL_ID = "morning_brief"
+    const val CHANNEL_ID = "bedtime_alarm"
     const val ACTION_FIRE = "com.sololeveling.app.BEDTIME_ALARM_FIRE"
     private const val REQ_CODE = 9002
     const val NOTIF_ID = 9002
@@ -387,7 +387,7 @@ object BedtimeAlarm {
                 .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build()
             val channel = android.app.NotificationChannel(
-                CHANNEL_ID, "Bedtime Alarm", NotificationManager.IMPORTANCE_HIGH
+                "bedtime_alarm", "Bedtime Alarm", NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Nightly bedtime reminder"
                 setSound(soundUri, attrs)
