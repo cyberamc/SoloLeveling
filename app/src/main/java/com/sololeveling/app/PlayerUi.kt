@@ -261,40 +261,54 @@ fun TasksScreen() {
                         .clickable { showLuna = true }
                         .padding(horizontal = 9.dp, vertical = 6.dp)
                 )
-                WeightIconCanvas(
+                Text(
+                    text = "📊",
+                    fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showWeightScreen = true }
-                        .padding(horizontal = 1.dp)
+                        .padding(horizontal = 2.dp)
                 )
-                MoonIconCanvas(
+                Text(
+                    text = "🌙",
+                    fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showPreSleep = true }
-                        .padding(horizontal = 1.dp)
+                        .padding(horizontal = 2.dp)
                 )
-                TimerIconCanvas(
+                Text(
+                    text = "⏱️",
+                    fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showTimerDialog = true }
-                        .padding(horizontal = 1.dp)
+                        .padding(horizontal = 2.dp)
                 )
-                MobilityIconCanvas(
+                Text(
+                    text = "🤸",
+                    fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showMobilityScreen = true }
-                        .padding(horizontal = 1.dp)
+                        .padding(horizontal = 2.dp)
                 )
-                TravelIconCanvas(
+                Text(
+                    text = "🧳",
+                    fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showTravelScreen = true }
-                        .padding(horizontal = 1.dp)
+                        .padding(horizontal = 2.dp)
                 )
-                BirthdayIconCanvas(
+                Text(
+                    text = "🎂",
+                    fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showBirthdayScreen = true }
-                        .padding(horizontal = 1.dp)
+                        .padding(horizontal = 2.dp)
                 )
-                AlarmIconCanvas(
+                Text(
+                    text = "🔔",
+                    fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showAlarmDialog = true }
-                        .padding(horizontal = 1.dp)
+                        .padding(horizontal = 2.dp)
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -2569,9 +2583,6 @@ fun TravelScreen(onBack: () -> Unit) {
                             Spacer(Modifier.width(12.dp))
                             Text(item.name, color = if (item.checked) Color(0xFF555577) else Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f),
                                 style = if (item.checked) androidx.compose.ui.text.TextStyle(textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough) else androidx.compose.ui.text.TextStyle.Default)
-                            TextButton(onClick = { scope.launch(Dispatchers.IO) { deleteTravelItem(item.id); reload() } }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
-                                Text("\u2715", color = Color(0xFF3a3a5a), fontSize = 14.sp)
-                            }
                         }
                     }
                 }
