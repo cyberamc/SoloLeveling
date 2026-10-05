@@ -421,8 +421,9 @@ object BedtimeAlarm {
 class BedtimeAlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != BedtimeAlarm.ACTION_FIRE) return
-        BedtimeAlarm.createChannel(context)
-        BedtimeAlarm.showNotification(context)
+        // Start the alarm service (plays audio, shows full-screen) same as morning alarm
+        MorningAlarmService.start(context)
+        // Reschedule for tomorrow
         val prefs = context.getSharedPreferences("bedtime_alarm", Context.MODE_PRIVATE)
         val hour = prefs.getInt("alarm_hour", 21)
         val minute = prefs.getInt("alarm_minute", 30)
