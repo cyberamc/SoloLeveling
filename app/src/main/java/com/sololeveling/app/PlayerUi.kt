@@ -232,34 +232,25 @@ fun TasksScreen() {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Routine",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
+                    text = "📅",
+                    fontSize = 18.sp,
                     modifier = Modifier
-                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showRoutine = true }
-                        .padding(horizontal = 9.dp, vertical = 6.dp)
+                        .padding(horizontal = 2.dp)
                 )
                 Text(
-                    text = "Notepad",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
+                    text = "📝",
+                    fontSize = 18.sp,
                     modifier = Modifier
-                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showNotepad = true }
-                        .padding(horizontal = 9.dp, vertical = 6.dp)
+                        .padding(horizontal = 2.dp)
                 )
                 Text(
-                    text = "Luna",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
+                    text = "🐶",
+                    fontSize = 18.sp,
                     modifier = Modifier
-                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
                         .clickable { showLuna = true }
-                        .padding(horizontal = 9.dp, vertical = 6.dp)
+                        .padding(horizontal = 2.dp)
                 )
                 Text(
                     text = "📊",
