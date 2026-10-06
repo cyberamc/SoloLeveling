@@ -2308,6 +2308,17 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
                 textAlign = TextAlign.Center, lineHeight = 32.sp
             )
+            Spacer(Modifier.height(16.dp))
+            Box(
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
+            ) {
+                Column {
+                    Text("I am getting my CCNA so I can:", color = Color(0xFF4ade80), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
+                    Text("\u2022 Stop working two jobs", color = Color(0xFF86efac), fontSize = 13.sp)
+                    Text("\u2022 Get my own place", color = Color(0xFF86efac), fontSize = 13.sp)
+                    Text("\u2022 Leave Level 1 support behind", color = Color(0xFF86efac), fontSize = 13.sp)
+                }
+            }
             Spacer(Modifier.height(44.dp))
             if (tasks.isNotEmpty()) {
                 Text("TODAY'S TASKS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
