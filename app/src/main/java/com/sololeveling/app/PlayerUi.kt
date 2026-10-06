@@ -356,6 +356,17 @@ fun TasksScreen() {
                     DailyRoutineReference()
                     Spacer(modifier = Modifier.height(8.dp))
                     CcnaScheduleReference()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
+                    ) {
+                        Column {
+                            Text("I am getting my CCNA so I can:", color = Color(0xFF4ade80), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
+                            Text("\u2022 Stop working two jobs", color = Color(0xFF86efac), fontSize = 13.sp)
+                            Text("\u2022 Get my own place", color = Color(0xFF86efac), fontSize = 13.sp)
+                            Text("\u2022 Leave Level 1 support behind", color = Color(0xFF86efac), fontSize = 13.sp)
+                        }
+                    }
                 }
                 item(key = "today-header") {
                     SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
