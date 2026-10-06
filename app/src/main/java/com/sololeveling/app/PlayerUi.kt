@@ -2621,7 +2621,7 @@ fun BirthdayIconCanvas(modifier: Modifier = Modifier) {
     }
 }
 
-data class Birthday(val id: Int, val name: String, val birthday: String)
+data class Birthday(val id: Int, val name: String, val birthday: String, val birthYear: Int? = null)
 
 fun fetchBirthdays(): List<Birthday> {
     return try {
