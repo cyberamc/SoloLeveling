@@ -2353,7 +2353,7 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
 fun EveningBriefOverlay(onDismiss: () -> Unit) {
     BackHandler { onDismiss() }
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a))
+        modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a)),
         contentAlignment = Alignment.TopCenter
     ) {
         Column(
