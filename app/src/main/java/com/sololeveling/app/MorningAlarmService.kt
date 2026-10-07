@@ -1,4 +1,4 @@
-package com.sololeveling.app
+﻿package com.sololeveling.app
 
 import android.app.Notification
 import android.app.NotificationChannel
@@ -26,9 +26,14 @@ class MorningAlarmService : Service() {
         private const val NOTIF_ID = 9002
         private const val CHANNEL_ID = "morning_alarm_service"
 
-        fun start(context: Context) {
+        const val EXTRA_TYPE = "alarm_type"
+        const val TYPE_MORNING = "morning_brief"
+        const val TYPE_EVENING = "evening_brief"
+
+        fun start(context: Context, type: String = TYPE_MORNING) {
             val intent = Intent(context, MorningAlarmService::class.java).apply {
                 action = ACTION_START
+                putExtra(EXTRA_TYPE, type)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
@@ -54,7 +59,7 @@ class MorningAlarmService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_START -> startAlarm()
+            ACTION_START -> startAlarm(intent?.getStringExtra(EXTRA_TYPE) ?: TYPE_MORNING)
             ACTION_DISMISS -> stopAlarm()
         }
         return START_NOT_STICKY
@@ -73,7 +78,10 @@ class MorningAlarmService : Service() {
         }
     }
 
-    private fun startAlarm() {
+    private var alarmType: String = TYPE_MORNING
+
+    private fun startAlarm(type: String = TYPE_MORNING) {
+        alarmType = type
         // Acquire wake lock to keep CPU running
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(
@@ -83,7 +91,7 @@ class MorningAlarmService : Service() {
         // Build dismiss intent — opens MainActivity with morning brief overlay and stops alarm
         val dismissIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("navigate_to", "morning_brief")
+            putExtra("navigate_to", alarmType)
         }
         val dismissPi = PendingIntent.getActivity(
             this, 0, dismissIntent,
@@ -93,7 +101,7 @@ class MorningAlarmService : Service() {
         // Open app intent for notification tap
         val openIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("navigate_to", "morning_brief")
+            putExtra("navigate_to", alarmType)
         }
         val openPi = PendingIntent.getActivity(
             this, 1, openIntent,

@@ -2348,6 +2348,43 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
     }
 }
 
+
+@Composable
+fun EveningBriefOverlay(onDismiss: () -> Unit) {
+    BackHandler { onDismiss() }
+    Box(
+        modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a))
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(top = 48.dp, bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text("Good Night", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA5B4FC), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Spacer(Modifier.height(6.dp))
+            Text("Wind down. Same sequence every night.", fontSize = 14.sp, color = Color(0xFF94a3b8), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Spacer(Modifier.height(24.dp))
+            PRE_SLEEP_STEPS.forEachIndexed { index, step ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp).background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
+                ) {
+                    Text("${index + 1}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA5B4FC), modifier = Modifier.padding(end = 12.dp))
+                    Column {
+                        Text(step.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFDDDDDD), lineHeight = 21.sp)
+                        Spacer(Modifier.height(3.dp))
+                        Text(step.detail, fontSize = 13.sp, color = Color(0xFF999999), lineHeight = 19.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(24.dp))
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA5B4FC)),
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) { Text("Dismiss", color = Color(0xFF0a0a1a), fontSize = 16.sp, fontWeight = FontWeight.Bold) }
+        }
+    }
+}
 fun getMorningBriefPrefs(context: android.content.Context) =
     context.getSharedPreferences("morning_brief", android.content.Context.MODE_PRIVATE)
 
