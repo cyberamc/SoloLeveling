@@ -2299,7 +2299,21 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
         ) {
             Spacer(Modifier.height(48.dp))
             Text("🔥 $streak day streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(36.dp))
+            Spacer(Modifier.height(10.dp))
+            val streakMsg = when {
+                streak == 0 -> "Today is day one. You don\u2019t need a perfect streak \u2014 you just need today. One day without. That\u2019s it."
+                streak == 1 -> "One day in. The hardest part is behind you. Keep it moving."
+                streak < 7 -> "Day $streak. You\u2019re building something real. Don\u2019t give it up for five minutes of nothing."
+                streak < 14 -> "$streak days. A week-plus of discipline. You\u2019re rewiring your brain \u2014 that\u2019s not small."
+                streak < 30 -> "$streak days strong. The urges are quieter now. That\u2019s you taking your power back."
+                streak < 60 -> "$streak days. A month of clarity. The version of you from day 0 would be proud."
+                streak < 90 -> "$streak days. Two months in. You\u2019re not the same person who started this."
+                else -> "$streak days. This is who you are now. Protect it."
+            }
+            Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a0a), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)) {
+                Text(streakMsg, color = Color(0xFFF59E0B), fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.height(24.dp))
             Box(modifier = Modifier.width(40.dp).height(3.dp).background(Color(0xFF3b82f6),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)))
             Spacer(Modifier.height(20.dp))
