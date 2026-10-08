@@ -3574,35 +3574,48 @@ val BREAKFAST_MEALS = listOf(
 
 val LUNCH_MEALS = listOf(
     Meal(
-        name = "Bacon & Ham Sliders",
+        name = "Turkey & Bacon Toast",
         mealType = "Lunch",
-        macros = Macros(calories = 710, protein = 63, fat = 33, netCarbs = "36"),
+        macros = Macros(calories = 700, protein = 60, fat = 31, netCarbs = "36"),
         ingredients = listOf(
-            "3 slices Member's Mark Double Smoked Thick Cut Bacon",
-            "6 slices Member's Mark Uncured Black Forest Ham",
-            "2 Member's Mark brioche slider buns",
-            "1 oz (approx. 1/3 cup) Member's Mark Mexican Style Finely Shredded Cheese"
+            "3 slices Member
+'
+s Mark Double Smoked Thick Cut Bacon",
+            "6 slices Member
+'
+s Mark Oven Roasted Turkey Breast",
+            "2 Member
+'
+s Mark brioche slider buns",
+            "1 oz (approx. 1/3 cup) Member
+'
+s Mark Mexican Style Finely Shredded Cheese"
         ),
         steps = listOf(
             MealStep(
-                "1. Air Fry the Bacon",
-                "Lay the thick-cut bacon in a single layer in the air fryer basket (cut in half if needed to fit, don't overlap). Air fry at 350°F for 14 min, until crispy. No need to flip. Drain on a paper towel. Thick-cut renders a lot of fat, so manage grease partway through to cut smoke."
+                "1. Bake the Bacon (Oven)",
+                "Preheat oven to 350
+°
+F. Lay the 3 bacon slices flat on a baking sheet. Bake 12-15 min until crispy. Drain on a paper towel."
             ),
             MealStep(
-                "2. Warm the Ham, Cheese & Buns (Oven)",
-                "Preheat oven to 300°F. Lay the 6 ham slices on a baking sheet (3 per slider), sprinkle the cheese over the ham, and add the split buns cut-side up alongside. Warm everything 5 min — ham heated through, cheese melted, buns lightly toasted."
+                "2. Warm the Turkey & Melt Cheese (Oven)",
+                "Lay the 6 turkey slices on the baking sheet (3 per slider). Warm 5 min until heated through. Sprinkle the cheese over the turkey for the last 1-2 min so it melts."
             ),
             MealStep(
-                "3. Build the Sliders",
-                "On each bottom bun, stack the cheesy ham (3 slices, folded to fit), then the bacon. With 3 slices, put 1.5 slices per slider (halve as needed to fit). Cap with the top bun. Press gently."
+                "3. Toast the Buns (Oven)",
+                "Place the split buns cut-side up on the sheet alongside the turkey for the last 2-3 min until lightly toasted."
             ),
             MealStep(
-                "4. Serve",
-                "Eat while the cheese is melty and the bacon is crisp. On delivery days, wrap in foil to eat one-handed in the truck."
+                "4. Build",
+                "On each bottom bun, stack the cheesy turkey (3 slices, folded to fit), then the bacon. Cap with the top bun and press gently."
+            ),
+            MealStep(
+                "5. Serve",
+                "Eat while the cheese is melty and the bacon is crisp."
             )
         )
     )
-)
 
 val DINNER_MEALS = listOf(
     Meal(
@@ -3807,9 +3820,9 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet) "2,135" else "2,095", Modifier.weight(1f))
-                    MacroBox("Protein", if (deliveryDiet) "149g" else "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet) "96g" else "107g", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet) "2,135" else "2,085", Modifier.weight(1f))
+                    MacroBox("Protein", if (deliveryDiet) "149g" else "152g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet) "96g" else "105g", Modifier.weight(1f))
                     MacroBox("Net Carbs", if (deliveryDiet) "141g" else "93.5g", Modifier.weight(1f))
                 }
             }
