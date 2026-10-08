@@ -3606,6 +3606,7 @@ val LUNCH_MEALS = listOf(
             )
         )
     )
+)
 
 val DINNER_MEALS = listOf(
     Meal(
