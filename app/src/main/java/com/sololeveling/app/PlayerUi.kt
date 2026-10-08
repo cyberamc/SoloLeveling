@@ -3583,7 +3583,6 @@ val LUNCH_MEALS = listOf(
             "2 Member's Mark brioche slider buns",
             "1 oz (approx. 1/3 cup) Member's Mark Mexican Style Finely Shredded Cheese"
         ),
-        ),
         steps = listOf(
             MealStep(
                 "1. Bake the Bacon (Oven)",
