@@ -3578,25 +3578,16 @@ val LUNCH_MEALS = listOf(
         mealType = "Lunch",
         macros = Macros(calories = 700, protein = 60, fat = 31, netCarbs = "36"),
         ingredients = listOf(
-            "3 slices Member
-'
-s Mark Double Smoked Thick Cut Bacon",
-            "6 slices Member
-'
-s Mark Oven Roasted Turkey Breast",
-            "2 Member
-'
-s Mark brioche slider buns",
-            "1 oz (approx. 1/3 cup) Member
-'
-s Mark Mexican Style Finely Shredded Cheese"
+            "3 slices Member's Mark Double Smoked Thick Cut Bacon",
+            "6 slices Member's Mark Oven Roasted Turkey Breast",
+            "2 Member's Mark brioche slider buns",
+            "1 oz (approx. 1/3 cup) Member's Mark Mexican Style Finely Shredded Cheese"
+        ),
         ),
         steps = listOf(
             MealStep(
                 "1. Bake the Bacon (Oven)",
-                "Preheat oven to 350
-°
-F. Lay the 3 bacon slices flat on a baking sheet. Bake 12-15 min until crispy. Drain on a paper towel."
+                "Preheat oven to 350°F. Lay the 3 bacon slices flat on a baking sheet. Bake 12-15 min until crispy. Drain on a paper towel."
             ),
             MealStep(
                 "2. Warm the Turkey & Melt Cheese (Oven)",
