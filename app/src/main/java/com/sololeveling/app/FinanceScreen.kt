@@ -1048,6 +1048,15 @@ fun TodayDeliveryTracker(baseUrl: String) {
         StepperRow("Duplicates", duplicates, { setDup(duplicates - 1) }, { setDup(duplicates + 1) })
         Spacer(Modifier.height(8.dp))
         StepperRow("Undeliverable", undeliverable, { setUnd(undeliverable - 1) }, { setUnd(undeliverable + 1) })
+
+        Spacer(Modifier.height(12.dp))
+        val todayPay = if (isDay2) w.friPay else w.satPay
+        val todayRate = if (isDay2) w.friRate else w.satRate
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Earned today", color = Color(0xFFCFCFE0), fontSize = 14.sp)
+            Text("$${String.format("%.2f", todayPay)}", color = Color(0xFF97C459), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        }
+        DayQuotaLine(delivered = delivered, billable = billable, pay = todayPay, rate = todayRate)
     }
 }
 
