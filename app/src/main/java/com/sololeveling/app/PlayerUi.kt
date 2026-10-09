@@ -1560,7 +1560,7 @@ suspend fun fetchConfidence(): ConfidenceState? {
     } catch (e: Exception) { null }
 }
 
-fun logConfidenceWin(type: String) {
+fun logConfidenceWin(type: String, points: Int? = null) {
     val url = URL("https://mysololeveling.us/api/confidence")
     val conn = url.openConnection() as HttpURLConnection
     conn.requestMethod = "POST"
@@ -1569,7 +1569,8 @@ fun logConfidenceWin(type: String) {
     conn.connectTimeout = 5000
     conn.readTimeout = 5000
     try {
-        conn.outputStream.use { it.write("{\"type\":\"$type\"}".toByteArray()) }
+        val body = if (points != null) "{\"type\":\"$type\",\"points\":$points}" else "{\"type\":\"$type\"}"
+        conn.outputStream.use { it.write(body.toByteArray()) }
         conn.responseCode
     } finally { conn.disconnect() }
 }
@@ -3261,7 +3262,9 @@ fun WeightScreen(onBack: () -> Unit) {
                         val ok = postWeightEntry(today, w)
                         if (ok) {
                             if (prevLast != null && w < prevLast) {
-                                kotlinx.coroutines.withContext(Dispatchers.IO) { logConfidenceWin("hunger") }
+                                val lostLbs = prevLast - w
+                                val pts = kotlin.math.max(5, kotlin.math.round(lostLbs * 10f).toInt())
+                                kotlinx.coroutines.withContext(Dispatchers.IO) { logConfidenceWin("hunger", pts) }
                             }
                             showLogDialog = false; weightInput = ""; errorMsg = ""; reload()
                         } else { errorMsg = "Failed to save" }
