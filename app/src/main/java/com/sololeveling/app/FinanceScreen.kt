@@ -612,7 +612,7 @@ fun DeliveryWeekCard(week: DeliveryWeek, isActiveWeek: Boolean, onSave: (Deliver
             DayRow(label = week.friDate(), billable = week.friBillable, pay = week.friPay,
                 isExpanded = expandedDay == "fri", onClick = { expandedDay = if (expandedDay == "fri") null else "fri" })
             DayQuotaLine(delivered = week.friDelivered, billable = week.friBillable, pay = week.friPay, rate = week.friRate,
-                target = WEEKLY_QUOTA - week.satPay)
+                target = DAILY_QUOTA)
 
             if (expandedDay == "fri") {
                 Spacer(Modifier.height(10.dp))
@@ -977,13 +977,31 @@ fun TodayDeliveryTracker(baseUrl: String) {
 
     LaunchedEffect(Unit) {
         // Friday is day 2 (fri_* columns); Saturday is day 1 (sat_* columns).
-        isDay2 = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
-        val wks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try { fetchDeliveryWeeks(baseUrl, null) } catch (e: Exception) { emptyList() }
+        val now = Calendar.getInstance()
+        isDay2 = now.get(Calendar.DAY_OF_WEEK) == Calendar.FRIDAY
+        // A week_start is a Sunday: its Saturday is the day before it and its Friday is
+        // 5 days after it. So the row for today is (Friday) today - 5 days, or (Saturday)
+        // tomorrow.
+        val target = (now.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, if (isDay2) -5 else 1) }
+        val dayFmt = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+        val monthFmt = java.text.SimpleDateFormat("yyyy-MM", java.util.Locale.US)
+        val targetStr = dayFmt.format(target.time)
+        // Ask the server by worked month, never by latest month: the no-month default only
+        // returns the newest bookkeeping month, which hid the current week as soon as a newer
+        // pay month existed. Try the current month first, then the months of that weeks
+        // Wednesday, Friday and Saturday, until the row for today turns up.
+        fun monthAt(offset: Int): String =
+            monthFmt.format((target.clone() as Calendar).apply { add(Calendar.DAY_OF_MONTH, offset) }.time)
+        val months = listOf(monthFmt.format(now.time), monthAt(3), monthAt(5), monthAt(-1)).distinct()
+        var found: DeliveryWeek? = null
+        for (m in months) {
+            val wks = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try { fetchDeliveryWeeks(baseUrl, m) } catch (e: Exception) { emptyList() }
+            }
+            found = wks.firstOrNull { it.weekStart == targetStr }
+            if (found != null) break
         }
-        // Pick the week whose week_start <= today and is closest (current week).
-        val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
-        week = wks.filter { it.weekStart <= todayStr }.maxByOrNull { it.weekStart }
+        week = found
         loading = false
     }
 
