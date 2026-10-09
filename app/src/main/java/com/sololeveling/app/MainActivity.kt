@@ -51,6 +51,9 @@ class MainActivity : ComponentActivity() {
                 MorningAlarmService.dismiss(this)
                 markDismissedToday(this)
             }
+            if (navigateTo == "evening_brief") {
+                MorningAlarmService.dismiss(this)
+            }
         }
     }
 
