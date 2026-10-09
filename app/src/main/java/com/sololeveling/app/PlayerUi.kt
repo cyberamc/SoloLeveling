@@ -3354,11 +3354,29 @@ fun MainTabScreen() {
         }
     }
 
+    var showEveningBrief by remember { mutableStateOf(
+        NavigationState.pendingNavigation.value == "evening_brief"
+    ) }
+    val eveningNavKey = NavigationState.pendingNavigation.value
+    LaunchedEffect(eveningNavKey) {
+        if (eveningNavKey == "evening_brief") {
+            showEveningBrief = true
+            if (NavigationState.pendingNavigation.value == "evening_brief") {
+                NavigationState.pendingNavigation.value = null
+            }
+        }
+    }
+
     if (showMorningBrief) {
         MorningBriefOverlay(onDismiss = {
             markDismissedToday(context)
             showMorningBrief = false
         })
+        return
+    }
+
+    if (showEveningBrief) {
+        EveningBriefOverlay(onDismiss = { showEveningBrief = false })
         return
     }
 
@@ -3486,28 +3504,20 @@ val DELIVERY_BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake (Double)",
         mealType = "Breakfast",
-        macros = Macros(calories = 450, protein = 62, fat = 11, netCarbs = "25"),
+        macros = Macros(calories = 450, protein = 70, fat = 11, netCarbs = "21"),
         ingredients = listOf(
-            "4 scoops (78g) Premier Protein Vanilla Milkshake powder — 2 per batch",
-            "1/2 banana (~60g), frozen — batch 1 only",
-            "1 tbsp cocoa powder — batch 1 only",
-            "7g pecans (about 1 tbsp chopped) — batch 1 only",
-            "Swerve sweetener, to taste (1–2 tsp) — batch 1 only",
-            "16 to 24 oz cold water total"
+            "4.5 scoops (approx. 88g) Premier Protein Vanilla Milkshake powder",
+            "1/2 banana (~60g), frozen",
+            "1 tbsp cocoa powder",
+            "7g pecans (about 1 tbsp chopped, ~10 halves)",
+            "Swerve sweetener, to taste (start with 1-2 tsp)",
+            "8 to 12 oz cold water"
         ),
         steps = listOf(
-            MealStep(
-                "Batch 1 — Full Shake",
-                "2 scoops (39g) Premier Protein powder, 1/2 frozen banana, 1 tbsp cocoa powder, 7g pecans, Swerve to taste, and 8–12 oz cold water.\n\nBlend 20–30 sec until smooth."
-            ),
-            MealStep(
-                "Batch 2 — Plain Protein",
-                "2 scoops (39g) Premier Protein powder and 8–12 oz cold water.\n\nBlend or shake until smooth."
-            ),
-            MealStep(
-                "Space Them Out",
-                "Full shake in the morning, plain one mid-route — for steadier protein and to keep the calorie/carb bump down."
-            )
+            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar. Thicker shake: 8 oz. More fluid: up to 12 oz."),
+            MealStep("Add Everything", "Add the frozen banana, 4.5 scoops Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
+            MealStep("Blend", "Blend 20-30 seconds until smooth."),
+            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink. The half scoop is approximate -- eyeball half a heaping scoop. Shake will be thicker than usual from the extra powder -- add a splash more water if needed.")
         )
     )
 )
@@ -3542,32 +3552,20 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake",
         mealType = "Breakfast",
-        macros = Macros(calories = 300, protein = 32, fat = 8, netCarbs = "22"),
+        macros = Macros(calories = 375, protein = 40, fat = 9, netCarbs = "24"),
         ingredients = listOf(
-            "2 scoops (39g) Premier Protein Vanilla Milkshake powder",
+            "2.5 scoops (approx. 49g) Premier Protein Vanilla Milkshake powder",
             "1/2 banana (~60g), frozen",
             "1 tbsp cocoa powder",
             "7g pecans (about 1 tbsp chopped, ~10 halves)",
-            "Swerve sweetener, to taste (start with 1–2 tsp)",
+            "Swerve sweetener, to taste (start with 1-2 tsp)",
             "8 to 12 oz cold water"
         ),
         steps = listOf(
-            MealStep(
-                "1. Measure the Base",
-                "Pour 8 to 12 oz of cold water into the Ninja blender jar. (Thicker shake: stick to 8 oz. More fluid: go up to 12 oz.)"
-            ),
-            MealStep(
-                "2. Add Everything",
-                "Add the frozen banana, 2 scoops of Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."
-            ),
-            MealStep(
-                "3. Blend",
-                "Secure the lid and blend 20–30 seconds until smooth and the pecans and banana are broken down."
-            ),
-            MealStep(
-                "4. Finish",
-                "Let it sit 30 seconds for foam to settle, then pour and drink."
-            )
+            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar. Thicker shake: 8 oz. More fluid: up to 12 oz."),
+            MealStep("Add Everything", "Add the frozen banana, 2.5 scoops Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
+            MealStep("Blend", "Secure the lid and blend 20-30 seconds until smooth."),
+            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink. The half scoop is approximate -- eyeball half a heaping scoop.")
         )
     )
 )
@@ -3585,23 +3583,23 @@ val LUNCH_MEALS = listOf(
         ),
         steps = listOf(
             MealStep(
-                "1. Bake the Bacon (Oven)",
-                "Preheat oven to 350°F. Lay the 3 bacon slices flat on a baking sheet. Bake 12-15 min until crispy. Drain on a paper towel."
+                "Air Fry the Bacon",
+                "Lay the 3 bacon slices in a single layer in the air fryer basket (cut in half if needed to fit). Air fry at 360F for 18 min until crispy. No need to flip. Drain on a paper towel."
             ),
             MealStep(
-                "2. Warm the Turkey & Melt Cheese (Oven)",
-                "Lay the 6 turkey slices on the baking sheet (3 per slider). Warm 5 min until heated through. Sprinkle the cheese over the turkey for the last 1-2 min so it melts."
+                "Warm the Turkey & Melt Cheese",
+                "Preheat oven to 300F. Lay the 6 turkey slices on a baking sheet (3 per slider). Warm 5 min until heated through. Sprinkle the cheese over the turkey for the last 1-2 min so it melts."
             ),
             MealStep(
-                "3. Toast the Buns (Oven)",
+                "Toast the Buns",
                 "Place the split buns cut-side up on the sheet alongside the turkey for the last 2-3 min until lightly toasted."
             ),
             MealStep(
-                "4. Build",
+                "Build",
                 "On each bottom bun, stack the cheesy turkey (3 slices, folded to fit), then the bacon. Cap with the top bun and press gently."
             ),
             MealStep(
-                "5. Serve",
+                "Serve",
                 "Eat while the cheese is melty and the bacon is crisp."
             )
         )
@@ -3612,7 +3610,7 @@ val DINNER_MEALS = listOf(
     Meal(
         name = "Pork Blade Steak & Rice",
         mealType = "Dinner",
-        macros = Macros(calories = 640, protein = 47, fat = 24, netCarbs = "32"),
+        macros = Macros(calories = 585, protein = 42, fat = 27, netCarbs = "33"),
         ingredients = listOf(
             "1 bone-in pork shoulder blade steak (~10 oz raw)",
             "3/4 cup jasmine rice (uncooked)",
@@ -3622,38 +3620,15 @@ val DINNER_MEALS = listOf(
             "Touch of oil, black pepper"
         ),
         steps = listOf(
-            MealStep(
-                "Pork 1. Season & Oven",
-                "Preheat oven to 300°F. Pat the steak dry, season both sides with Tony Chachere's and black pepper."
-            ),
-            MealStep(
-                "Pork 2. Cook To Temp",
-                "Place the steak on a rack over a baking sheet. Cook in the oven until it reaches ~135–140°F internal (about 20–30 min depending on thickness). Use a meat thermometer — this is the key to reverse sear."
-            ),
-            MealStep(
-                "Pork 3. Rest & Heat Pan",
-                "Pull it out and let it rest a few minutes while you heat the pan."
-            ),
-            MealStep(
-                "Pork 4. Sear (Cast Iron)",
-                "Get a cast iron skillet screaming hot over high heat with a touch of oil. Sear the steak hard, ~1 min per side, just to build a deep crust. Don't overcook — the interior is already done."
-            ),
-            MealStep(
-                "Pork 5. Rest & Serve",
-                "Rest a couple minutes. Serve whole, bone-in — cut and eat at the plate."
-            ),
-            MealStep(
-                "Rice 1. Cook (Aroma ARC-5204SB)",
-                "Add the 3/4 cup rice and water to the cooker's fill line. Stir in 1 tsp bouillon until dissolved. Close the lid, select White Rice, and start."
-            ),
-            MealStep(
-                "Rice 2. Fluff",
-                "When it switches to Keep Warm, let it rest 5 min, then fluff with the spatula (lift and turn, don't stir)."
-            ),
-            MealStep(
-                "Combine",
-                "Plate the whole steak alongside the bouillon rice.\n\nNote: Tony Chachere's is salt-based — it seasons and salts in one, so no separate salt needed. Between the Creole seasoning and the bouillon rice, sodium runs high — keep water up on delivery days."
-            )
+            MealStep("Season", "Preheat oven to 300F. Pat the steak dry, season both sides with Tony Chachere's and black pepper."),
+            MealStep("Oven", "Place on a rack over a baking sheet. Cook until ~135-140F internal (about 20-30 min). Use a meat thermometer -- this is the key to reverse sear."),
+            MealStep("Rest", "Pull it out and let it rest a few minutes while you heat the pan."),
+            MealStep("Sear", "Get a cast iron skillet screaming hot over high heat with a touch of oil. Sear ~1 min per side to build a deep crust. Don't overcook -- the interior is already done."),
+            MealStep("Serve", "Rest a couple minutes. Serve whole, bone-in -- cut and eat at the plate."),
+            MealStep("Rice -- Setup", "Add 3/4 cup rice and water to the fill line. Stir in 1 tsp bouillon until dissolved."),
+            MealStep("Rice -- Cook", "Close the lid, select White Rice, and start."),
+            MealStep("Rice -- Fluff", "When it switches to Keep Warm, let it rest 5 min, then fluff with the spatula (lift and turn, don't stir)."),
+            MealStep("Plate", "Plate the steak alongside the bouillon rice. Tony Chachere's is salt-based -- no separate salt needed. Sodium runs high, keep water up. Steak macros vary +/-10% on marbling.")
         )
     )
 )
@@ -3715,6 +3690,28 @@ val DESSERT_MEALS = listOf(
     )
 )
 
+val BACKUP_DINNER_MEALS = listOf(
+    Meal(
+        name = "Panda Express",
+        mealType = "Dinner",
+        macros = Macros(calories = 615, protein = 42, fat = 24, netCarbs = "54"),
+        ingredients = listOf(
+            "Grilled Teriyaki Chicken (entree only, no side)",
+            "Chicken Egg Roll (1 roll)",
+            "1/2 cup jasmine rice (uncooked, from home)",
+            "3/4 tsp Knorr Granulated Beef Bouillon"
+        ),
+        steps = listOf(
+            MealStep("Order", "Order the Teriyaki Chicken entree and 1 Chicken Egg Roll a la carte -- no bowl, no plate, no side. Skip their rice entirely."),
+            MealStep("What You Get", "Grilled Teriyaki Chicken: 280 cal, 33g P, 14g C. Chicken Egg Roll (1 roll): 200 cal, 6g P, 10g F, 20g C."),
+            MealStep("Rice -- Setup", "Cook 1/2 cup jasmine rice in the Aroma ARC-5204SB. Add water to fill line for 1/2 cup. Stir in 3/4 tsp bouillon until dissolved."),
+            MealStep("Rice -- Cook", "Close the lid, select White Rice, and start."),
+            MealStep("Rice -- Fluff", "When it switches to Keep Warm, let it rest 5 min, then fluff with the spatula."),
+            MealStep("Plate", "Plate the Teriyaki Chicken and Egg Roll alongside the bouillon rice. Sodium runs high from the teriyaki sauce -- keep water up.")
+        )
+    )
+)
+
 @Composable
 fun DietScreen() {
     var selectedMeal by remember { mutableStateOf<Meal?>(null) }
@@ -3725,6 +3722,7 @@ fun DietScreen() {
             todayDow == java.util.Calendar.FRIDAY || todayDow == java.util.Calendar.SATURDAY
         )
     }
+    var backupDinner by remember { mutableStateOf(false) }
 
     BackHandler(enabled = selectedMeal != null) {
         selectedMeal = null
@@ -3735,6 +3733,8 @@ fun DietScreen() {
         DietListScreen(
             deliveryDiet = deliveryDiet,
             onToggleDiet = { deliveryDiet = !deliveryDiet },
+            backupDinner = backupDinner,
+            onToggleBackup = { backupDinner = !backupDinner },
             onMealSelected = { selectedMeal = it }
         )
     } else {
@@ -3757,7 +3757,7 @@ fun MacroBox(label: String, value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelected: (Meal) -> Unit) {
+fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner: Boolean, onToggleBackup: () -> Unit, onMealSelected: (Meal) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -3784,16 +3784,28 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     letterSpacing = 1.sp
                 )
             }
-            Text(
-                text = if (deliveryDiet) "View WFM" else "View Delivery",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color(0xFFFFD700),
-                modifier = Modifier
-                    .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
-                    .clickable { onToggleDiet() }
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Backup Dinner",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (backupDinner) Color(0xFFFF8C00) else Color(0xFF666666),
+                    modifier = Modifier
+                        .background(if (backupDinner) Color(0xFF3a2200) else Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                        .clickable { onToggleBackup() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+                Text(
+                    text = if (deliveryDiet) "View WFM" else "View Delivery",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier
+                        .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+                        .clickable { onToggleDiet() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                )
+            }
         }
 
         // Daily macro summary
@@ -3811,10 +3823,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet) "2,135" else "2,085", Modifier.weight(1f))
-                    MacroBox("Protein", if (deliveryDiet) "149g" else "152g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet) "96g" else "105g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet) "141g" else "93.5g", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,185" else if (deliveryDiet) "2,135" else if (backupDinner) "2,135" else "2,105", Modifier.weight(1f))
+                    MacroBox("Protein", if (deliveryDiet && backupDinner) "160g" else if (deliveryDiet) "157g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet && backupDinner) "97g" else if (deliveryDiet) "96g" else if (backupDinner) "106g" else "109g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "161g" else if (deliveryDiet) "137g" else if (backupDinner) "117.5g" else "96.5g", Modifier.weight(1f))
                 }
             }
         }
@@ -3824,15 +3836,6 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item {
-                Text(
-                    text = "Breakfast",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF999999),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
             items(if (deliveryDiet) DELIVERY_BREAKFAST_MEALS else BREAKFAST_MEALS, key = { it.name }) { meal ->
                 Button(
                     onClick = { onMealSelected(meal) },
@@ -3850,7 +3853,7 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
             }
             item {
                 Text(
-                    text = "Lunch",
+                    text = "Breakfast",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color(0xFF999999),
@@ -3900,7 +3903,7 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, onMealSelect
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-            items(DINNER_MEALS, key = { it.name }) { meal ->
+            items(if (backupDinner) BACKUP_DINNER_MEALS else DINNER_MEALS, key = { it.name }) { meal ->
                 Button(
                     onClick = { onMealSelected(meal) },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
