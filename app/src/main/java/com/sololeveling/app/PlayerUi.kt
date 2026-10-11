@@ -3527,7 +3527,7 @@ val DELIVERY_BREAKFAST_MEALS = listOf(
 
 val DELIVERY_SNACK_MEALS = listOf(
     Meal(
-        name = "Protein Snack (Delivery)",
+        name = "Protein Snack",
         mealType = "Snack",
         macros = Macros(calories = 300, protein = 12, fat = 27, netCarbs = "2"),
         ingredients = listOf(
