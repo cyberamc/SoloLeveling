@@ -10,6 +10,7 @@ import kotlinx.coroutines.SupervisorJob
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -1944,6 +1945,7 @@ fun CcnaScheduleReference() {
 }
 
 @Composable
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 fun QuestItem(
     quest: Quest,
     onCompleteToggle: () -> Unit,
@@ -1991,7 +1993,7 @@ fun QuestItem(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFF1a1a1a))
-            .then(if (isHeld) Modifier.clickable(enabled = !isLoading) { toggleTo(!checked) } else Modifier)
+            .then(if (isHeld) Modifier.combinedClickable(enabled = !isLoading, onClick = {}, onLongClick = { toggleTo(!checked) }) else Modifier)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
