@@ -3527,13 +3527,16 @@ val DELIVERY_BREAKFAST_MEALS = listOf(
 
 val DELIVERY_SNACK_MEALS = listOf(
     Meal(
-        name = "Beef Stick",
+        name = "Protein Snack (Delivery)",
         mealType = "Snack",
-        macros = Macros(calories = 90, protein = 9, fat = 6, netCarbs = "1"),
+        macros = Macros(calories = 300, protein = 12, fat = 27, netCarbs = "2"),
         ingredients = listOf(
-            "1 grass-fed beef stick (28g / 1 oz)"
+            "30g Member's Mark Natural Pecan Halves — 210 cal · 3g protein · 21g fat · 1g net carb",
+            "1 grass-fed beef stick (28g / 1 oz) — 90 cal · 9g protein · 6g fat · 1g net carb"
         ),
-        steps = emptyList()
+        steps = listOf(
+            MealStep("Serve", "Eat the 30g pecans with the beef stick.")
+        )
     )
 )
 
@@ -3826,10 +3829,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,185" else if (deliveryDiet) "2,135" else if (backupDinner) "2,135" else "2,105", Modifier.weight(1f))
-                    MacroBox("Protein", if (deliveryDiet && backupDinner) "160g" else if (deliveryDiet) "157g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet && backupDinner) "97g" else if (deliveryDiet) "96g" else if (backupDinner) "106g" else "109g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "161g" else if (deliveryDiet) "137g" else if (backupDinner) "117.5g" else "96.5g", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,395" else if (deliveryDiet) "2,345" else if (backupDinner) "2,135" else "2,105", Modifier.weight(1f))
+                    MacroBox("Protein", if (deliveryDiet && backupDinner) "163g" else if (deliveryDiet) "160g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet && backupDinner) "118g" else if (deliveryDiet) "117g" else if (backupDinner) "106g" else "109g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "162g" else if (deliveryDiet) "138g" else if (backupDinner) "117.5g" else "96.5g", Modifier.weight(1f))
                 }
             }
         }
