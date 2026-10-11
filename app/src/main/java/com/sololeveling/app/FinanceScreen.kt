@@ -36,6 +36,9 @@ import java.util.*
 // Today's week_start (Sunday) -> Wednesday (+3) -> pay date (+17) -> that month.
 fun currentDeliveryPayMonth(): String {
     val cal = Calendar.getInstance()
+    // Saturday belongs to the NEXT Sunday's delivery week (Sat -> Fri), so step
+    // forward a day before backing up to Sunday.
+    if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) cal.add(Calendar.DAY_OF_MONTH, 1)
     // Back up to this week's Sunday
     while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
         cal.add(Calendar.DAY_OF_MONTH, -1)
@@ -55,6 +58,9 @@ fun currentWorkedMonth(): String {
 fun isCurrentDeliveryWeek(weekStart: String): Boolean {
     return try {
         val cal = Calendar.getInstance()
+        // Saturday belongs to the NEXT Sunday's delivery week (Sat -> Fri), so step
+        // forward a day before backing up to Sunday.
+        if (cal.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) cal.add(Calendar.DAY_OF_MONTH, 1)
         // Back up to this week's Sunday
         while (cal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
             cal.add(Calendar.DAY_OF_MONTH, -1)
