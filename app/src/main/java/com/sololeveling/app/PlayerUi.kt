@@ -1960,48 +1960,50 @@ fun QuestItem(
         checked = isCompleted
     }
 
+    val isDaily = !isWeekly
+    val isHeld = isDaily && quest.title.contains("Held The Line", ignoreCase = true)
+
+    // Daily tasks are born ticked (done). Only Held The Line can be tapped, to mark it failed.
+    fun toggleTo(newValue: Boolean) {
+        if (isLoading) return
+        isLoading = true
+        checked = newValue
+        appNetworkScope.launch {
+            try {
+                val endpoint = if (newValue) "/complete" else "/uncomplete"
+                val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
+                val response = postToApi(apiPath)
+                if (response.contains("success")) {
+                    onCompleteToggle()
+                } else {
+                    checked = isCompleted
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("QUEST_TOGGLE", "Exception: ${e.message}", e)
+                checked = isCompleted
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFF1a1a1a))
+            .then(if (isHeld) Modifier.clickable(enabled = !isLoading) { toggleTo(!checked) } else Modifier)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Checkbox(
-            checked = checked,
-            enabled = !isLoading,
-            onCheckedChange = { newValue ->
-                if (!isLoading) {
-                    isLoading = true
-                    checked = newValue
-                    appNetworkScope.launch {
-                        try {
-                            val endpoint = if (newValue) "/complete" else "/uncomplete"
-                            val apiPath = if (isWeekly) "/api/weekly-quests/$questId$endpoint" else "/api/quests/$questId$endpoint"
-
-                            android.util.Log.d("QUEST_TOGGLE", "Calling: $apiPath")
-                            val response = postToApi(apiPath)
-                            android.util.Log.d("QUEST_TOGGLE", "Response: $response")
-
-                            if (response.contains("success")) {
-                                android.util.Log.d("QUEST_TOGGLE", "Success! Quest $questId toggled to $newValue")
-                                onCompleteToggle()
-                            } else {
-                                android.util.Log.e("QUEST_TOGGLE", "API error: $response")
-                                checked = isCompleted
-                            }
-                        } catch (e: Exception) {
-                            android.util.Log.e("QUEST_TOGGLE", "Exception: ${e.message}", e)
-                            checked = isCompleted
-                        } finally {
-                            isLoading = false
-                        }
-                    }
-                }
-            },
-            modifier = Modifier.size(24.dp)
-        )
+        if (!isDaily) {
+            Checkbox(
+                checked = checked,
+                enabled = !isLoading,
+                onCheckedChange = { newValue -> toggleTo(newValue) },
+                modifier = Modifier.size(24.dp)
+            )
+        }
 
         Column(modifier = Modifier.weight(1f)) {
             val dayNames = arrayOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
@@ -2011,16 +2013,17 @@ fun QuestItem(
                 else -> quest.title.replaceFirst(Regex(" - (\\d+:\\d+|\\d{1,2}:\\d{2} [AP]M)"), " @ $1").replace("daily ", "")
             }
             val titleColor = when {
-                checked -> Color.Gray
+                isHeld && !checked -> Color(0xFFFF6B6B)
+                !isDaily && checked -> Color.Gray
                 isOverdue -> Color(0xFFFCA5A5)
                 else -> Color.White
             }
             Text(
-                text = displayTitle,
+                text = if (isHeld && !checked) "$displayTitle [FAILED]" else displayTitle,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = titleColor,
-                textDecoration = if (checked) TextDecoration.LineThrough else TextDecoration.None
+                textDecoration = if (!isDaily && checked) TextDecoration.LineThrough else TextDecoration.None
             )
             Row(
                 modifier = Modifier.padding(top = 4.dp),
