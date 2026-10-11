@@ -100,6 +100,7 @@ fun TasksScreen() {
     var showMobilityScreen by remember { mutableStateOf(false) }
     var showBirthdayScreen by remember { mutableStateOf(false) }
     var showTravelScreen by remember { mutableStateOf(false) }
+    var showFinishedDelivering by remember { mutableStateOf(false) }
     var showTimerDialog by remember { mutableStateOf(false) }
     var showAlarmDialog by remember { mutableStateOf(false) }
 
@@ -150,6 +151,10 @@ fun TasksScreen() {
     }
     if (showTravelScreen) {
         TravelScreen(onBack = { showTravelScreen = false })
+        return
+    }
+    if (showFinishedDelivering) {
+        FinishedDeliveringScreen(onBack = { showFinishedDelivering = false })
         return
     }
 
@@ -381,6 +386,21 @@ fun TasksScreen() {
                         isWeekly = quest.type == "weekly",
                         showDaySuffix = false
                     )
+                }
+
+                if (todayWeekday == 5 || todayWeekday == 6) {
+                    item(key = "finished-delivering") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFF12261a), shape = RoundedCornerShape(10.dp))
+                                .clickable { showFinishedDelivering = true }
+                                .padding(14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("After Delivery Routine", color = Color(0xFF4ade80), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
 
                 if (overdueQuests.isNotEmpty()) {
@@ -1938,6 +1958,86 @@ fun CcnaScheduleReference() {
                 ) {
                     Text(text = "•", fontSize = 13.sp, color = Color(0xFF6A6A6A), modifier = Modifier.padding(end = 8.dp))
                     Text(text = step, fontSize = 13.sp, color = Color(0xFFBFCADF))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FinishedDeliveringScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("finished_delivering", android.content.Context.MODE_PRIVATE) }
+    val today = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
+    val steps = listOf(
+        "Turn On Air Humidifier",
+        "Charge Power Bank",
+        "Shower & Eat",
+        "Feed Toby",
+        "Carwash",
+        "Drink Evening Supplement",
+        "Prepare Supplement Drinks",
+        "Add Water To Air Humidifier",
+        "Walk Toby",
+        "Brush Teeth",
+        "Prepare Water Jug",
+        "Soak Feet"
+    )
+    // Checks are kept on the phone for today only; a new day starts clean.
+    var done by remember {
+        mutableStateOf(
+            if (prefs.getString("date", "") == today) (prefs.getStringSet("done", emptySet()) ?: emptySet()).toSet()
+            else emptySet<String>()
+        )
+    }
+    fun toggle(name: String) {
+        val next = if (done.contains(name)) done - name else done + name
+        done = next
+        prefs.edit().putString("date", today).putStringSet("done", next).apply()
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Row(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text("After Delivery Routine", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("${done.size} of ${steps.size} done", color = Color.Gray, fontSize = 13.sp)
+            }
+            Text(
+                "Back",
+                color = Color(0xFFFFD700),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { onBack() }.padding(8.dp)
+            )
+        }
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            steps.forEach { name ->
+                val isDone = done.contains(name)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                        .clickable { toggle(name) }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Checkbox(checked = isDone, onCheckedChange = { toggle(name) }, modifier = Modifier.size(24.dp))
+                    Text(
+                        text = name,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isDone) Color.Gray else Color.White,
+                        textDecoration = if (isDone) TextDecoration.LineThrough else TextDecoration.None
+                    )
                 }
             }
         }
