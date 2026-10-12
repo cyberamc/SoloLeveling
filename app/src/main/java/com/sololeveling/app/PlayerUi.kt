@@ -388,12 +388,19 @@ fun TasksScreen() {
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "daily-routine-reference") {
-                    TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6))
+                    TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6)) {
+                        val held = combinedToday.firstOrNull { it.title.contains("Held The Line", ignoreCase = true) }
+                        if (held != null) {
+                            HeldTheLineRow(quest = held, onCompleteToggle = { refreshTrigger++ })
+                        }
+                    }
                 }
-                item(key = "today-header") {
-                    SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
+                val shownToday = combinedToday.filter { it.type == "weekly" }
+                if (shownToday.isNotEmpty()) {
+                    item(key = "today-header") {
+                        SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
+                    }
                 }
-                val shownToday = combinedToday.filter { it.type == "weekly" || it.title.contains("Held The Line", ignoreCase = true) }
                 items(shownToday, key = { "${it.type}${it.id}" }) { quest ->
                     QuestItem(
                         quest = quest,
@@ -1903,8 +1910,64 @@ fun fetchRoutineToday(weekday: Int, haircut: Boolean): TodayRoutine? {
     }
 }
 
+// Held The Line as a row of the routine card: same layout as the other rows. Long-press marks
+// it failed (streak breaks at midnight); long-press again undoes it.
 @Composable
-fun TodayRoutineCard(weekday: Int, haircut: Boolean) {
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+fun HeldTheLineRow(quest: Quest, onCompleteToggle: () -> Unit) {
+    var checked by remember(quest.id, quest.completed) { mutableStateOf(quest.completed) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    LaunchedEffect(quest.completed) {
+        checked = quest.completed
+    }
+
+    fun toggleTo(newValue: Boolean) {
+        if (isLoading) return
+        isLoading = true
+        checked = newValue
+        appNetworkScope.launch {
+            try {
+                val endpoint = if (newValue) "/complete" else "/uncomplete"
+                val response = postToApi("/api/quests/${quest.id}$endpoint")
+                if (response.contains("success")) {
+                    onCompleteToggle()
+                } else {
+                    checked = quest.completed
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("QUEST_TOGGLE", "Exception: ${e.message}", e)
+                checked = quest.completed
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(enabled = !isLoading, onClick = {}, onLongClick = { toggleTo(!checked) })
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = "9:30 PM",
+            fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            color = Color(0xFF6b7bd6),
+            modifier = Modifier.width(76.dp)
+        )
+        Text(
+            text = if (checked) "Held The Line" else "Held The Line [FAILED]",
+            fontSize = 14.sp,
+            color = if (checked) Color(0xFFe0e0f0) else Color(0xFFFF6B6B)
+        )
+    }
+}
+
+@Composable
+fun TodayRoutineCard(weekday: Int, haircut: Boolean, extra: @Composable () -> Unit = {}) {
     var data by remember(weekday, haircut) { mutableStateOf<TodayRoutine?>(null) }
 
     LaunchedEffect(weekday, haircut) {
@@ -1912,7 +1975,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean) {
         if (fetched != null) data = fetched
     }
 
-    val d = data ?: return
+    val d = data ?: TodayRoutine("DAILY ROUTINE", emptyList(), emptyList())
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -1948,6 +2011,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean) {
                     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
                 }
             }
+            extra()
             if (d.study.isNotEmpty()) {
                 Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
                 Row(
