@@ -388,20 +388,12 @@ fun TasksScreen() {
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "daily-routine-reference") {
-                    DailyRoutineReference()
-                    Spacer(modifier = Modifier.height(8.dp))
-                    CcnaScheduleReference()
+                    TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6))
                 }
                 item(key = "today-header") {
                     SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
                 }
-                val haircutOn = haircutMode && (todayWeekday == 5 || todayWeekday == 6)
-                val shownToday = if (haircutOn) combinedToday.filter { it.title.contains("Held The Line", ignoreCase = true) } else combinedToday
-                if (haircutOn) {
-                    items(HAIRCUT_TASKS, key = { "haircut-${it.first}" }) { t ->
-                        HaircutTaskRow(time = t.first, title = t.second)
-                    }
-                }
+                val shownToday = combinedToday.filter { it.type == "weekly" || it.title.contains("Held The Line", ignoreCase = true) }
                 items(shownToday, key = { "${it.type}${it.id}" }) { quest ->
                     QuestItem(
                         quest = quest,
@@ -1882,6 +1874,101 @@ fun TimerDialog(onDismiss: () -> Unit) {
             )
         }
     )
+}
+
+// Today's routine card (Tasks screen). Static - not collapsible. Data comes from
+// /api/routine-today, which uses the same WFH GYM / WFM REST / Delivery / Hair Cut data
+// as the /routine page, already filtered to today's weekday.
+data class TodayRoutineRow(val time: String, val lines: List<String>)
+data class TodayRoutine(val label: String, val rows: List<TodayRoutineRow>, val study: List<String>)
+
+fun fetchRoutineToday(weekday: Int, haircut: Boolean): TodayRoutine? {
+    return try {
+        val flag = if (haircut) 1 else 0
+        val conn = java.net.URL("https://mysololeveling.us/api/routine-today?weekday=$weekday&haircut=$flag").openConnection() as java.net.HttpURLConnection
+        conn.connectTimeout = 8000
+        conn.readTimeout = 8000
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        val json = org.json.JSONObject(body)
+        val rowsJson = json.getJSONArray("rows")
+        val rows = (0 until rowsJson.length()).map { i ->
+            val r = rowsJson.getJSONObject(i)
+            val ls = r.getJSONArray("lines")
+            TodayRoutineRow(r.getString("time"), (0 until ls.length()).map { ls.getString(it) })
+        }
+        val sj = json.getJSONArray("study")
+        TodayRoutine(json.getString("label"), rows, (0 until sj.length()).map { sj.getString(it) })
+    } catch (e: Exception) {
+        null
+    }
+}
+
+@Composable
+fun TodayRoutineCard(weekday: Int, haircut: Boolean) {
+    var data by remember(weekday, haircut) { mutableStateOf<TodayRoutine?>(null) }
+
+    LaunchedEffect(weekday, haircut) {
+        val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchRoutineToday(weekday, haircut) }
+        if (fetched != null) data = fetched
+    }
+
+    val d = data ?: return
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = d.label.uppercase(),
+            fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            color = Color(0xFFB4B4FF), letterSpacing = 2.sp,
+            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF12122a), shape = RoundedCornerShape(12.dp))
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+        ) {
+            d.rows.forEachIndexed { idx, row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = row.time,
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Column {
+                        row.lines.forEach { line ->
+                            Text(text = line, fontSize = 14.sp, color = Color(0xFFe0e0f0))
+                        }
+                    }
+                }
+                if (idx < d.rows.size - 1) {
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                }
+            }
+            if (d.study.isNotEmpty()) {
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "STUDY",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Column {
+                        d.study.forEach { s ->
+                            Text(text = "Study Time ~ $s", fontSize = 14.sp, color = Color(0xFFe0e0f0))
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
