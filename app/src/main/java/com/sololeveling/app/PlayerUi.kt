@@ -1967,7 +1967,7 @@ fun HeldTheLineRow(quest: Quest, onCompleteToggle: () -> Unit) {
 }
 
 @Composable
-fun TodayRoutineCard(weekday: Int, haircut: Boolean, extra: @Composable () -> Unit = {}) {
+fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", extra: @Composable () -> Unit = {}) {
     var data by remember(weekday, haircut) { mutableStateOf<TodayRoutine?>(null) }
 
     LaunchedEffect(weekday, haircut) {
@@ -1979,7 +1979,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, extra: @Composable () -> Un
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = d.label.uppercase(),
+            text = titlePrefix + d.label.uppercase(),
             fontSize = 12.sp, fontWeight = FontWeight.Bold,
             color = Color(0xFFB4B4FF), letterSpacing = 2.sp,
             modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
@@ -2579,7 +2579,6 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
 
 @Composable
 fun MorningBriefOverlay(onDismiss: () -> Unit) {
-    var tasks by remember { mutableStateOf<List<Quest>>(emptyList()) }
     var streak by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
@@ -2589,12 +2588,6 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 val playerResponse = fetchFromApi("/api/player")
                 val playerData = com.google.gson.Gson().fromJson(playerResponse, Map::class.java)
                 streak = (playerData["nofapStreak"] as? Number)?.toInt() ?: 0
-            } catch (e: Exception) {}
-            try {
-                loadAllQuests(
-                    onQuestsLoaded = { daily, _, _, _, _ -> tasks = daily },
-                    onError = {}
-                )
             } catch (e: Exception) {}
         }
     }
@@ -2644,20 +2637,11 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 }
             }
             Spacer(Modifier.height(44.dp))
-            if (tasks.isNotEmpty()) {
-                Text("TODAY'S TASKS", fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                    color = Color(0xFF94a3b8), letterSpacing = 2.sp)
-                Spacer(Modifier.height(14.dp))
-                tasks.filter { !it.optional }.forEach { task ->
-                    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Box(modifier = Modifier.size(8.dp).background(Color(0xFF3b82f6),
-                            shape = androidx.compose.foundation.shape.CircleShape))
-                        Text(task.title, fontSize = 15.sp, color = Color(0xFFe2e8f0))
-                    }
-                }
-            }
+            TodayRoutineCard(
+                weekday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1,
+                haircut = false,
+                titlePrefix = "TODAY'S ROUTINE \u00b7 "
+            )
             Spacer(Modifier.height(52.dp))
             Button(
                 onClick = onDismiss,
