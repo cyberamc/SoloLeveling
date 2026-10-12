@@ -101,6 +101,11 @@ fun TasksScreen() {
     var showBirthdayScreen by remember { mutableStateOf(false) }
     var showTravelScreen by remember { mutableStateOf(false) }
     var showFinishedDelivering by remember { mutableStateOf(false) }
+    // Haircut mode: swaps the Fri/Sat Today list for the Hair Cut routine. Saved for today only.
+    val haircutContext = LocalContext.current
+    val haircutPrefs = remember { haircutContext.getSharedPreferences("haircut_mode", android.content.Context.MODE_PRIVATE) }
+    val haircutToday = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
+    var haircutMode by remember { mutableStateOf(haircutPrefs.getString("date", "") == haircutToday && haircutPrefs.getBoolean("on", false)) }
     var showTimerDialog by remember { mutableStateOf(false) }
     var showAlarmDialog by remember { mutableStateOf(false) }
 
@@ -307,6 +312,19 @@ fun TasksScreen() {
                         .clickable { showAlarmDialog = true }
                         .padding(horizontal = 2.dp)
                 )
+                if (todayWeekday == 5 || todayWeekday == 6) {
+                    Text(
+                        text = "\u2702\uFE0F",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .background(if (haircutMode) Color(0xFF3a3a6a) else Color.Transparent, shape = RoundedCornerShape(6.dp))
+                            .clickable {
+                                haircutMode = !haircutMode
+                                haircutPrefs.edit().putString("date", haircutToday).putBoolean("on", haircutMode).apply()
+                            }
+                            .padding(horizontal = 4.dp)
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -377,7 +395,14 @@ fun TasksScreen() {
                 item(key = "today-header") {
                     SectionHeader(label = "TODAY", subtitle = fullDayNames[todayWeekday], color = Color(0xFFFFD700))
                 }
-                items(combinedToday, key = { "${it.type}${it.id}" }) { quest ->
+                val haircutOn = haircutMode && (todayWeekday == 5 || todayWeekday == 6)
+                val shownToday = if (haircutOn) combinedToday.filter { it.title.contains("Held The Line", ignoreCase = true) } else combinedToday
+                if (haircutOn) {
+                    items(HAIRCUT_TASKS, key = { "haircut-${it.first}" }) { t ->
+                        HaircutTaskRow(time = t.first, title = t.second)
+                    }
+                }
+                items(shownToday, key = { "${it.type}${it.id}" }) { quest ->
                     QuestItem(
                         quest = quest,
                         onCompleteToggle = { refreshTrigger++ },
@@ -2041,6 +2066,34 @@ fun FinishedDeliveringScreen(onBack: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+// Hair Cut day routine, shown in place of the Fri/Sat quests when haircut mode is on.
+val HAIRCUT_TASKS = listOf(
+    "3:15 PM" to "Cook Rice & Order Panda Express",
+    "3:20 PM" to "Shower",
+    "3:55 PM" to "Head To Panda Express",
+    "4:05 PM" to "Head To Barber",
+    "5:00 PM" to "Haircut",
+    "6:00 PM" to "Head Home",
+    "6:45 PM" to "Wash & Vacuum Car",
+    "7:15 PM" to "Gaming Session With Friends",
+    "9:00 PM" to "Start Evening Routine"
+)
+
+@Composable
+fun HaircutTaskRow(time: String, title: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "$title @ $time",
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White
+        )
     }
 }
 
