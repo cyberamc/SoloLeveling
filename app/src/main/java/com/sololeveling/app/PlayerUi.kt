@@ -242,6 +242,42 @@ fun TasksScreen() {
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // weight(1f) so the quote takes the leftover space; the streak keeps its
+                // own width and never wraps.
+                Text(
+                    text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.White,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.pointerInput(Unit) {
+                        detectTapGestures(onLongPress = { showUrgeCard = true })
+                    }
+                ) {
+                    Text(text = "🔥", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "$nofapStreak Days",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
@@ -327,42 +363,6 @@ fun TasksScreen() {
                                 haircutPrefs.edit().putString("date", haircutToday).putBoolean("on", haircutMode).apply()
                             }
                             .padding(horizontal = 4.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // weight(1f) so the quote takes the leftover space; the streak keeps its
-                // own width and never wraps.
-                Text(
-                    text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.pointerInput(Unit) {
-                        detectTapGestures(onLongPress = { showUrgeCard = true })
-                    }
-                ) {
-                    Text(text = "🔥", fontSize = 13.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "$nofapStreak Days",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFD700),
-                        maxLines = 1,
-                        softWrap = false
                     )
                 }
             }
@@ -3632,7 +3632,7 @@ fun MainTabScreen() {
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             TabButton(
-                label = "Tasks",
+                label = "Routine",
                 isSelected = selectedTab == TabType.QUESTS,
                 onClick = { selectedTab = TabType.QUESTS },
                 modifier = Modifier.weight(1f)
