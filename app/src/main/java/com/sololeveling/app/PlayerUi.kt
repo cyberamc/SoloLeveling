@@ -100,7 +100,7 @@ fun TasksScreen() {
     var showMobilityScreen by remember { mutableStateOf(false) }
     var showBirthdayScreen by remember { mutableStateOf(false) }
     var showTravelScreen by remember { mutableStateOf(false) }
-    // Haircut mode: swaps the Fri/Sat Today list for the Hair Cut routine. Saved for today only.
+    // Haircut mode: swaps the Fri/Sat Today list for the Haircut routine. Saved for today only.
     val haircutContext = LocalContext.current
     val haircutPrefs = remember { haircutContext.getSharedPreferences("haircut_mode", android.content.Context.MODE_PRIVATE) }
     val haircutToday = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
@@ -1890,7 +1890,7 @@ fun TimerDialog(onDismiss: () -> Unit) {
 }
 
 // Today's routine card (Tasks screen). Static - not collapsible. Data comes from
-// /api/routine-today, which uses the same WFH GYM / WFM REST / Delivery / Hair Cut data
+// /api/routine-today, which uses the same WFH GYM / WFM REST / Delivery / Haircut data
 // as the /routine page, already filtered to today's weekday.
 data class TodayRoutineRow(val time: String, val lines: List<String>)
 data class TodayRoutine(val label: String, val rows: List<TodayRoutineRow>, val study: List<String>)
@@ -2146,7 +2146,7 @@ fun CcnaScheduleReference() {
     }
 }
 
-// Hair Cut day routine, shown in place of the Fri/Sat quests when haircut mode is on.
+// Haircut day routine, shown in place of the Fri/Sat quests when haircut mode is on.
 val HAIRCUT_TASKS = listOf(
     "3:15 PM" to "Cook Rice & Order Panda Express",
     "3:20 PM" to "Shower",

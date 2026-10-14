@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.sololeveling.app"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -59,9 +59,6 @@ dependencies {
 
     // Lifecycle & ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
-
-    // Health Connect (steps)
-    implementation("androidx.health.connect:connect-client:1.1.0-rc01")
     
     // Background polling for user-created reminders
     implementation("androidx.work:work-runtime-ktx:2.9.1")
