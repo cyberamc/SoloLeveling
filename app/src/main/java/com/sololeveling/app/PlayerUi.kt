@@ -392,6 +392,7 @@ fun TasksScreen() {
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "daily-routine-reference") {
+                    BirthdayBanners()
                     if (todayWeekday == 5 || todayWeekday == 6) {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(
@@ -2902,7 +2903,7 @@ fun fetchBirthdays(): List<Birthday> {
         val text = conn.inputStream.bufferedReader().readText()
         conn.disconnect()
         val arr = org.json.JSONArray(text)
-        (0 until arr.length()).map { val o = arr.getJSONObject(it); Birthday(o.getInt("id"), o.getString("name"), o.getString("birthday")) }
+        (0 until arr.length()).map { val o = arr.getJSONObject(it); Birthday(o.getInt("id"), o.getString("name"), o.getString("birthday"), if (o.has("birth_year") && !o.isNull("birth_year")) o.getInt("birth_year") else null) }
     } catch (e: Exception) { emptyList() }
 }
 
@@ -5567,3 +5568,77 @@ data class SupplementGroup(
     val category: String,
     val supplements: List<Pair<String, String>>
 )
+
+
+// ---- Birthday banners: visible from 7 days before a birthday until the end of the day itself ----
+fun birthdayNext(birthday: String): Pair<Int, java.util.Date>? {
+    val p = birthday.split("-")
+    val m = p.getOrNull(0)?.toIntOrNull() ?: return null
+    val d = p.getOrNull(1)?.toIntOrNull() ?: return null
+    val today = java.util.Calendar.getInstance().apply {
+        set(java.util.Calendar.HOUR_OF_DAY, 0)
+        set(java.util.Calendar.MINUTE, 0)
+        set(java.util.Calendar.SECOND, 0)
+        set(java.util.Calendar.MILLISECOND, 0)
+    }
+    val year = today.get(java.util.Calendar.YEAR)
+    for (y in year..year + 1) {
+        val target = java.util.Calendar.getInstance().apply {
+            clear()
+            set(y, m - 1, d, 0, 0, 0)
+        }
+        val days = Math.round((target.timeInMillis - today.timeInMillis) / 86400000.0).toInt()
+        if (days >= 0) return Pair(days, target.time)
+    }
+    return null
+}
+
+@Composable
+fun BirthdayBanners() {
+    var upcoming by remember { mutableStateOf<List<Triple<Birthday, Int, java.util.Date>>>(emptyList()) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        val all = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            try { fetchBirthdays() } catch (e: Exception) { emptyList<Birthday>() }
+        }
+        upcoming = all
+            .mapNotNull { b -> birthdayNext(b.birthday)?.let { (days, date) -> Triple(b, days, date) } }
+            .filter { it.second in 0..7 }
+            .sortedBy { it.second }
+    }
+    if (upcoming.isNotEmpty()) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            upcoming.forEach { (b, days, date) ->
+                val isToday = days == 0
+                val bg = if (isToday) Color(0xFF2b2210) else Color(0xFF1f1a33)
+                val nameColor = if (isToday) Color(0xFFffd36b) else Color(0xFFcdbfff)
+                val subColor = if (isToday) Color(0xFFc9a24a) else Color(0xFF9d90d6)
+                val chipBg = if (isToday) Color(0xFF4a3a10) else Color(0xFF2e2656)
+                val dateBase = java.text.SimpleDateFormat(if (isToday) "'Today,' MMM d" else "EEE, MMM d", java.util.Locale.US).format(date)
+                val turning = b.birthYear?.let { java.util.Calendar.getInstance().apply { time = date }.get(java.util.Calendar.YEAR) - it }
+                val dateText = if (turning != null && turning > 0) "$dateBase \u00b7 Turns $turning" else dateBase
+                val label = when (days) { 0 -> "TODAY"; 1 -> "Tomorrow"; else -> "In $days days" }
+                Row(
+                    modifier = Modifier.fillMaxWidth().background(bg, shape = RoundedCornerShape(10.dp)).padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.width(22.dp).height(22.dp)) {
+                        BirthdayIconCanvas(modifier = Modifier.width(22.dp).height(22.dp))
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("${b.name}'s Birthday", color = nameColor, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text(dateText, color = subColor, fontSize = 12.sp)
+                    }
+                    Text(
+                        label,
+                        color = nameColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.background(chipBg, shape = RoundedCornerShape(8.dp)).padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+    }
+}
