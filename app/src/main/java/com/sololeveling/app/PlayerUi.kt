@@ -2507,6 +2507,7 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
 @Composable
 fun MorningBriefOverlay(onDismiss: () -> Unit) {
     var streak by remember { mutableIntStateOf(0) }
+    var previousStreak by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -2515,6 +2516,7 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 val playerResponse = fetchFromApi("/api/player")
                 val playerData = com.google.gson.Gson().fromJson(playerResponse, Map::class.java)
                 streak = (playerData["nofapStreak"] as? Number)?.toInt() ?: 0
+                previousStreak = (playerData["previousStreak"] as? Number)?.toInt() ?: 0
             } catch (e: Exception) {}
         }
     }
@@ -2530,6 +2532,22 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
             Spacer(Modifier.height(48.dp))
             Text("🔥 $streak day streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
+            if (previousStreak > 0) {
+                Text(
+                    "Beat Previous Streak: $previousStreak Days",
+                    color = Color(0xFFfbbf24), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+                    modifier = Modifier.background(Color(0xFF2a2208), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 5.dp)
+                )
+                Spacer(Modifier.height(10.dp))
+            }
+            Text(
+                "Don\u2019t Look. You\u2019ll Edge. You\u2019ll Slip. And It Won\u2019t Even Feel As Good As You Convinced Yourself It Would. Stay The Course.",
+                color = Color(0xFFcbd5e1), fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+            )
+            Spacer(Modifier.height(10.dp))
+            Text("Remember why: Self-Improvement & It\u2019s Immoral.", color = Color(0xFFf87171), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(14.dp))
             val streakMsg = when {
                 streak == 0 -> "Today is day one. You don\u2019t need a perfect streak \u2014 you just need today. One day without. That\u2019s it."
                 streak == 1 -> "One day in. The hardest part is behind you. Keep it moving."
