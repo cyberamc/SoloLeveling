@@ -3888,34 +3888,30 @@ val BREAKFAST_MEALS = listOf(
 
 val LUNCH_MEALS = listOf(
     Meal(
-        name = "Turkey & Bacon Toast",
-        mealType = "Breakfast",
-        macros = Macros(calories = 700, protein = 60, fat = 31, netCarbs = "36"),
+        name = "Turkey & Bacon Sliders",
+        mealType = "Breakfast / Lunch",
+        macros = Macros(calories = 680, protein = 60, fat = 32, netCarbs = "30"),
         ingredients = listOf(
-            "3 slices Member's Mark Double Smoked Thick Cut Bacon",
-            "6 slices Member's Mark Oven Roasted Turkey Breast",
-            "2 Member's Mark brioche slider buns",
-            "1 oz (approx. 1/3 cup) Member's Mark Mexican Style Finely Shredded Cheese"
+            "3 slices Member’s Mark Double Smoked Thick Cut Bacon",
+            "6 slices Member’s Mark Oven Roasted Turkey Breast",
+            "2 King’s Hawaiian Original Dinner Rolls",
+            "1 oz (approx. 1/3 cup) Member’s Mark Mexican Style Finely Shredded Cheese"
         ),
         steps = listOf(
             MealStep(
-                "Air Fry the Bacon",
-                "Lay the 3 bacon slices in a single layer in the air fryer basket (cut in half if needed to fit). Air fry at 360F for 18 min until crispy. No need to flip. Drain on a paper towel."
+                "1. Air Fry the Bacon",
+                "Lay the 3 bacon slices in a single layer in the air fryer basket (cut in half if needed to fit, don't overlap). Air fry at 360°F for 18 min until crispy. No need to flip. Drain on a paper towel."
             ),
             MealStep(
-                "Warm the Turkey & Melt Cheese",
-                "Preheat oven to 300F. Lay the 6 turkey slices on a baking sheet (3 per slider). Warm 5 min until heated through. Sprinkle the cheese over the turkey for the last 1-2 min so it melts."
+                "2. Warm the Turkey, Cheese & Rolls (Oven)",
+                "Preheat oven to 200°F. Lay the 6 turkey slices on a baking sheet (3 per slider), sprinkle the cheese over the turkey, and add the split rolls cut-side up alongside. Warm everything for 18 min — turkey heated through, cheese melted, rolls lightly toasted."
             ),
             MealStep(
-                "Toast the Buns",
-                "Place the split buns cut-side up on the sheet alongside the turkey for the last 2-3 min until lightly toasted."
+                "3. Build",
+                "On each bottom roll, stack the cheesy turkey (3 slices, folded to fit), then the bacon. Cap with the top roll and press gently."
             ),
             MealStep(
-                "Build",
-                "On each bottom bun, stack the cheesy turkey (3 slices, folded to fit), then the bacon. Cap with the top bun and press gently."
-            ),
-            MealStep(
-                "Serve",
+                "4. Serve",
                 "Eat while the cheese is melty and the bacon is crisp."
             )
         )
