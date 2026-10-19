@@ -1674,7 +1674,7 @@ fun ConfidenceMeter(refreshKey: Int) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "CONFIDENCE",
+                text = "WILLPOWER",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF8A8A8A),
