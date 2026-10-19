@@ -3853,7 +3853,7 @@ val DELIVERY_SNACK_MEALS = listOf(
 val DELIVERY_LUNCH_MEALS = listOf(
     Meal(
         name = "Whataburger Breakfast Burger Combo",
-        mealType = "Lunch",
+        mealType = "Breakfast",
         macros = Macros(calories = 955, protein = 31, fat = 55, netCarbs = "83"),
         ingredients = listOf(
             "Breakfast Burger (670 cal · 28g P · 38g F · 51g C)",
@@ -3889,7 +3889,7 @@ val BREAKFAST_MEALS = listOf(
 val LUNCH_MEALS = listOf(
     Meal(
         name = "Turkey & Bacon Toast",
-        mealType = "Lunch",
+        mealType = "Breakfast",
         macros = Macros(calories = 700, protein = 60, fat = 31, netCarbs = "36"),
         ingredients = listOf(
             "3 slices Member's Mark Double Smoked Thick Cut Bacon",
@@ -4152,6 +4152,15 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            item {
+                Text(
+                    text = "Breakfast",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF999999),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
             items(if (deliveryDiet) DELIVERY_BREAKFAST_MEALS else BREAKFAST_MEALS, key = { it.name }) { meal ->
                 Button(
                     onClick = { onMealSelected(meal) },
@@ -4166,15 +4175,6 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                         color = Color.White
                     )
                 }
-            }
-            item {
-                Text(
-                    text = "Breakfast",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF999999),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
             }
             items(if (deliveryDiet) DELIVERY_LUNCH_MEALS else LUNCH_MEALS, key = { it.name }) { meal ->
                 Button(
