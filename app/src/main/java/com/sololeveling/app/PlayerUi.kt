@@ -4135,10 +4135,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,395" else if (deliveryDiet) "2,345" else if (backupDinner) "2,135" else "2,105", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,395" else if (deliveryDiet) "2,345" else if (backupDinner) "2,115" else "2,085", Modifier.weight(1f))
                     MacroBox("Protein", if (deliveryDiet && backupDinner) "163g" else if (deliveryDiet) "160g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet && backupDinner) "118g" else if (deliveryDiet) "117g" else if (backupDinner) "106g" else "109g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "162g" else if (deliveryDiet) "138g" else if (backupDinner) "117.5g" else "96.5g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet && backupDinner) "118g" else if (deliveryDiet) "117g" else if (backupDinner) "107g" else "110g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "162g" else if (deliveryDiet) "138g" else if (backupDinner) "111.5g" else "90.5g", Modifier.weight(1f))
                 }
             }
         }
