@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Text
@@ -242,42 +243,6 @@ fun TasksScreen() {
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // weight(1f) so the quote takes the leftover space; the streak keeps its
-                // own width and never wraps.
-                Text(
-                    text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White,
-                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.pointerInput(Unit) {
-                        detectTapGestures(onLongPress = { showUrgeCard = true })
-                    }
-                ) {
-                    Text(text = "🔥", fontSize = 13.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "$nofapStreak Days",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFFD700),
-                        maxLines = 1,
-                        softWrap = false
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Row(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
@@ -368,6 +333,42 @@ fun TasksScreen() {
             }
             Spacer(modifier = Modifier.height(8.dp))
             ConfidenceMeter(refreshKey = 0)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // weight(1f) so the quote takes the leftover space; the streak keeps its
+                // own width and never wraps.
+                Text(
+                    text = "\"Stop Letting Comfort And Emotions Ruin Your Potential.\"",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.White,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.pointerInput(Unit) {
+                        detectTapGestures(onLongPress = { showUrgeCard = true })
+                    }
+                ) {
+                    Text(text = "🔥", fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "$nofapStreak Days",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(10.dp))
             Box(
                 modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
@@ -1612,6 +1613,32 @@ suspend fun fetchConfidence(): ConfidenceState? {
     } catch (e: Exception) { null }
 }
 
+// Bumped after a long-press win so the Willpower meter reloads right away.
+var willpowerTick by mutableStateOf(0)
+
+// Which long-press wins (study / steps) are already logged today.
+suspend fun fetchWillpowerToday(): Set<String> {
+    return try {
+        val body = fetchFromApi("/api/confidence/today")
+        val o = Gson().fromJson(body, Map::class.java)
+        ((o["types"] as? List<*>) ?: emptyList<Any?>()).map { it.toString() }.toSet()
+    } catch (e: Exception) { emptySet() }
+}
+
+fun postWillpowerWin(type: String, undo: Boolean = false): Boolean {
+    val url = URL("https://mysololeveling.us/api/confidence")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    return try {
+        conn.outputStream.use { it.write(("{\"type\":\"$type\"" + (if (undo) ",\"undo\":true" else "") + "}").toByteArray()) }
+        conn.responseCode == 200
+    } catch (e: Exception) { false } finally { conn.disconnect() }
+}
+
 fun logConfidenceWin(type: String, points: Int? = null) {
     val url = URL("https://mysololeveling.us/api/confidence")
     val conn = url.openConnection() as HttpURLConnection
@@ -1656,7 +1683,7 @@ fun ShieldIconCanvas(modifier: Modifier = Modifier) {
 fun ConfidenceMeter(refreshKey: Int) {
     var state by remember { mutableStateOf<ConfidenceState?>(null) }
 
-    LaunchedEffect(refreshKey) {
+    LaunchedEffect(refreshKey, willpowerTick) {
         state = fetchConfidence()
     }
 
@@ -1675,9 +1702,9 @@ fun ConfidenceMeter(refreshKey: Int) {
         ) {
             Text(
                 text = "WILLPOWER",
-                fontSize = 10.sp,
+                fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF8A8A8A),
+                color = Color.White,
                 letterSpacing = 1.5.sp
             )
             Text(
@@ -2020,6 +2047,23 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
             }
             extra()
             if (d.study.isNotEmpty()) {
+                val wpScope = rememberCoroutineScope()
+                val wpContext = androidx.compose.ui.platform.LocalContext.current
+                var wpDone by remember { mutableStateOf<Set<String>>(emptySet()) }
+                LaunchedEffect(Unit) {
+                    wpDone = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerToday() }
+                }
+                fun wpMark(type: String) {
+                    val undo = wpDone.contains(type)
+                    wpScope.launch {
+                        val ok = kotlinx.coroutines.withContext(Dispatchers.IO) { postWillpowerWin(type, undo) }
+                        if (ok) {
+                            wpDone = if (undo) wpDone - type else wpDone + type
+                            willpowerTick++
+                            android.widget.Toast.makeText(wpContext, (if (undo) "Unmarked" else "Marked successful \u2713"), android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
                 Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
@@ -2033,9 +2077,35 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                     )
                     Column {
                         d.study.forEach { s ->
-                            Text(text = "Study Time ~ $s", fontSize = 14.sp, color = Color(0xFFe0e0f0))
+                            Text(
+                                text = (if (wpDone.contains("study")) "\u2713 " else "") + "Study Time ~ $s",
+                                fontSize = 14.sp,
+                                color = if (wpDone.contains("study")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
+                                modifier = Modifier.pointerInput(Unit) {
+                                    detectTapGestures(onLongPress = { wpMark("study") })
+                                }
+                            )
                         }
                     }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "PHYSICAL",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Text(
+                        text = (if (wpDone.contains("steps")) "\u2713 " else "") + "10,000 Steps",
+                        fontSize = 14.sp,
+                        color = if (wpDone.contains("steps")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = { wpMark("steps") })
+                        }
+                    )
                 }
             }
         }
