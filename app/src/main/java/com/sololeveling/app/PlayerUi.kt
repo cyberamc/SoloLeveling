@@ -1596,7 +1596,8 @@ data class ConfidenceState(
     val max: Int,
     val hunger: Int,
     val urge: Int,
-    val total: Int
+    val total: Int,
+    val recent: List<String> = emptyList()
 )
 
 suspend fun fetchConfidence(): ConfidenceState? {
@@ -1608,7 +1609,8 @@ suspend fun fetchConfidence(): ConfidenceState? {
             max = (o["max"] as? Number)?.toInt() ?: 100,
             hunger = (o["hunger"] as? Number)?.toInt() ?: 0,
             urge = (o["urge"] as? Number)?.toInt() ?: 0,
-            total = (o["total"] as? Number)?.toInt() ?: 0
+            total = (o["total"] as? Number)?.toInt() ?: 0,
+            recent = ((o["recent"] as? List<*>) ?: emptyList<Any?>()).mapNotNull { r -> (r as? Map<*, *>)?.let { m -> "${m["label"]}  \u00b7  ${m["when"]}" } }
         )
     } catch (e: Exception) { null }
 }
@@ -1731,11 +1733,11 @@ fun ConfidenceMeter(refreshKey: Int) {
             )
         }
         Spacer(Modifier.height(3.dp))
-        Text(
-            text = "Hunger ${s.hunger} · Urges ${s.urge}",
-            fontSize = 10.sp,
-            color = Color(0xFF6A6A6A)
-        )
+        if (s.recent.isEmpty()) {
+            Text(text = "No wins logged yet", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+        } else {
+            Text(text = s.recent.joinToString("  |  "), fontSize = 11.sp, color = Color(0xFF9A9A9A))
+        }
     }
 }
 
