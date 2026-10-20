@@ -441,7 +441,9 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
 
                     // Bill groups
                     val groupedBills = bills.groupBy { it.groupName }
-                    val orderedGroups = (GROUP_ORDER.filter { groupedBills.containsKey(it) || speedxByCheck.containsKey(it) || (it == "IT Check 5" && hasFifthFriday) } +
+                    // With an IT Check 5, People is listed right before Subscriptions.
+                    val groupOrder = if (hasFifthFriday) GROUP_ORDER.filter { it != "People" }.flatMap { if (it == "Subscriptions") listOf("People", it) else listOf(it) } else GROUP_ORDER
+                    val orderedGroups = (groupOrder.filter { groupedBills.containsKey(it) || speedxByCheck.containsKey(it) || (it == "IT Check 5" && hasFifthFriday) } +
                             groupedBills.keys.filter { !GROUP_ORDER.contains(it) }).filter { it != "Plasma" }
 
                     // People reimbursements fund the Subscriptions bucket
