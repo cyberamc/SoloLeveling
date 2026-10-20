@@ -2166,9 +2166,9 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         modifier = Modifier.width(76.dp)
                     )
                     Text(
-                        text = (if (wpDone.contains("diet")) "\u2713 " else "") + "Stayed On Plan",
+                        text = if (wpDone.contains("diet")) "Stayed On Plan" else "Stayed On Plan [FAILED]",
                         fontSize = 14.sp,
-                        color = if (wpDone.contains("diet")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
+                        color = if (wpDone.contains("diet")) Color(0xFFe0e0f0) else Color(0xFFFF6B6B),
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(onLongPress = { wpMark("diet") })
                         }
