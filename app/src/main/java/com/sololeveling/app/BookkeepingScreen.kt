@@ -62,13 +62,29 @@ val FIXED_INCOME = mapOf(
 )
 
 val GROUP_ORDER = listOf(
-    "IT Check 1", "IT Check 2", "IT Check 3", "IT Check 4", "People",
-    "SpeedX Check 1", "SpeedX Check 2", "SpeedX Check 3", "SpeedX Check 4",
+    "IT Check 1", "IT Check 2", "IT Check 3", "IT Check 4", "IT Check 5", "People",
+    "SpeedX Check 1", "SpeedX Check 2", "SpeedX Check 3", "SpeedX Check 4", "SpeedX Check 5",
     "Subscriptions"
 )
 
 // Groups that show no "income · bills" header line and no "Remaining" line
 val NO_REMAINING_GROUPS = setOf("People", "Subscriptions")
+
+// True when the month ("YYYY-MM") has five Fridays, i.e. an IT Check 5.
+fun monthHasFifthFriday(ym: String): Boolean {
+    val p = ym.split("-")
+    val y = p.getOrNull(0)?.toIntOrNull() ?: return false
+    val m = p.getOrNull(1)?.toIntOrNull() ?: return false
+    val cal = java.util.Calendar.getInstance()
+    cal.clear()
+    cal.set(y, m - 1, 1)
+    var fridays = 0
+    for (d in 1..cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)) {
+        cal.set(java.util.Calendar.DAY_OF_MONTH, d)
+        if (cal.get(java.util.Calendar.DAY_OF_WEEK) == java.util.Calendar.FRIDAY) fridays++
+    }
+    return fridays >= 5
+}
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
@@ -288,7 +304,9 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
         }
     }
 
-    val totalIncome = FIXED_INCOME.values.sum() + speedxTotal
+    // IT Check 5 (the 5th Friday) is extra income, counted only in months that have one.
+    val hasFifthFriday = selectedMonth?.month?.let { monthHasFifthFriday(it) } == true
+    val totalIncome = FIXED_INCOME.values.sum() + speedxTotal + (if (hasFifthFriday) 620.0 else 0.0)
     val monthlyFood = bills.filter { it.name.trim().startsWith("Weekly Food", ignoreCase = true) && it.status == "PAID" }.sumOf { it.amount }
     val totalExpenses = bills.filter { it.status != "ON HOLD" && it.groupName != "People" }.sumOf { it.amount }
 
@@ -423,7 +441,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
 
                     // Bill groups
                     val groupedBills = bills.groupBy { it.groupName }
-                    val orderedGroups = (GROUP_ORDER.filter { groupedBills.containsKey(it) } +
+                    val orderedGroups = (GROUP_ORDER.filter { groupedBills.containsKey(it) || speedxByCheck.containsKey(it) || (it == "IT Check 5" && hasFifthFriday) } +
                             groupedBills.keys.filter { !GROUP_ORDER.contains(it) }).filter { it != "Plasma" }
 
                     // People reimbursements fund the Subscriptions bucket
@@ -431,8 +449,8 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                         .filter { it.status != "ON HOLD" }.sumOf { it.amount }
 
                     items(orderedGroups) { groupName ->
-                        val groupBills = groupedBills[groupName] ?: return@items
-                        val income = speedxByCheck[groupName] ?: incomeLabels[groupName]
+                        val groupBills = groupedBills[groupName] ?: emptyList()
+                        val income = speedxByCheck[groupName] ?: incomeLabels[groupName] ?: (if (groupName == "IT Check 5") 620.0 else null)
                         val groupTotal = groupBills.filter { it.status != "ON HOLD" }.sumOf { it.amount }
                         val showIncomeLine = income != null && groupName !in NO_REMAINING_GROUPS
                         // Show the "remaining bills" line on the same cards as before
