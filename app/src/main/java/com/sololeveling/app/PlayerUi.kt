@@ -1753,12 +1753,14 @@ fun ConfidenceMeter(refreshKey: Int) {
                     "Hunger / urge win logged" to "+5",
                     "Study marked successful" to "+3",
                     "10,000 Steps marked successful" to "+3",
+                    "Diet marked successful (Stayed On Plan)" to "+3",
                     "New gym PR (once per lift per day)" to "+5"
                 )
                 val cuts = listOf(
                     "Held The Line streak resets" to "-10",
                     "Day ends with no Study success" to "-3",
                     "Day ends with no 10,000 Steps" to "-3",
+                    "Day ends with no Diet success" to "-3",
                     "Every day that passes" to "-1"
                 )
                 Column {
@@ -1778,7 +1780,7 @@ fun ConfidenceMeter(refreshKey: Int) {
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("Capped at 100, never below 0. Missed Study / Steps and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                    Text("Capped at 100, never below 0. Missed Study / Steps / Diet and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
                 }
             }
         )
@@ -2164,9 +2166,12 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         modifier = Modifier.width(76.dp)
                     )
                     Text(
-                        text = "Stayed On Plan",
+                        text = (if (wpDone.contains("diet")) "\u2713 " else "") + "Stayed On Plan",
                         fontSize = 14.sp,
-                        color = Color(0xFFe0e0f0)
+                        color = if (wpDone.contains("diet")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = { wpMark("diet") })
+                        }
                     )
                 }
             }
