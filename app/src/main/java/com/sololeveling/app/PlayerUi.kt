@@ -1684,6 +1684,7 @@ fun ShieldIconCanvas(modifier: Modifier = Modifier) {
 @Composable
 fun ConfidenceMeter(refreshKey: Int) {
     var state by remember { mutableStateOf<ConfidenceState?>(null) }
+    var showWillpowerInfo by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshKey, willpowerTick) {
         state = fetchConfidence()
@@ -1697,7 +1698,7 @@ fun ConfidenceMeter(refreshKey: Int) {
         else -> Color(0xFFF59E0B)
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth().pointerInput(Unit) { detectTapGestures(onLongPress = { showWillpowerInfo = true }) }) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -1738,6 +1739,49 @@ fun ConfidenceMeter(refreshKey: Int) {
         } else {
             Text(text = s.recent.joinToString("  |  "), fontSize = 11.sp, color = Color(0xFF9A9A9A))
         }
+    }
+
+    if (showWillpowerInfo) {
+        AlertDialog(
+            onDismissRequest = { showWillpowerInfo = false },
+            containerColor = Color(0xFF1A1A1A),
+            confirmButton = { TextButton(onClick = { showWillpowerInfo = false }) { Text("Close") } },
+            title = { Text("Willpower", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                val adds = listOf(
+                    "Each day you hold the line" to "+5",
+                    "Hunger / urge win logged" to "+5",
+                    "Study marked successful" to "+3",
+                    "10,000 Steps marked successful" to "+3",
+                    "New gym PR (once per lift per day)" to "+5"
+                )
+                val cuts = listOf(
+                    "Held The Line streak resets" to "-10",
+                    "Day ends with no Study success" to "-3",
+                    "Day ends with no 10,000 Steps" to "-3",
+                    "Every day that passes" to "-1"
+                )
+                Column {
+                    Text("ADDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80), letterSpacing = 1.5.sp)
+                    adds.forEach { (what, pts) ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(what, fontSize = 13.sp, color = Color(0xFFD0D0D0), modifier = Modifier.weight(1f))
+                            Text(pts, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80))
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text("TAKES AWAY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF87171), letterSpacing = 1.5.sp)
+                    cuts.forEach { (what, pts) ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(what, fontSize = 13.sp, color = Color(0xFFD0D0D0), modifier = Modifier.weight(1f))
+                            Text(pts, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFFF87171))
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Text("Capped at 100, never below 0. Missed Study / Steps and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                }
+            }
+        )
     }
 }
 
