@@ -289,6 +289,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
     }
 
     val totalIncome = FIXED_INCOME.values.sum() + speedxTotal
+    val monthlyFood = bills.filter { it.name.trim().startsWith("Weekly Food", ignoreCase = true) && it.status == "PAID" }.sumOf { it.amount }
     val totalExpenses = bills.filter { it.status != "ON HOLD" && it.groupName != "People" }.sumOf { it.amount }
 
     // Debounced autosave for month notes (only when text differs from the loaded month's notes)
@@ -392,6 +393,7 @@ fun BookkeepingScreen(baseUrl: String, onBack: () -> Unit) {
                                 SummaryBox("Expenses", "$${String.format("%.0f", totalExpenses)}", Color(0xFFCF6679), Modifier.weight(1f))
                             }
                             SummaryBox("Plasma", "$520", Color(0xFF4CAF50), Modifier.fillMaxWidth())
+                            SummaryBox("Monthly Food Expense", "$${String.format("%.0f", monthlyFood)}", Color(0xFFCF6679), Modifier.fillMaxWidth())
 
                             Column(modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
                                 .background(Color(0xFF12122A)).padding(12.dp)) {
