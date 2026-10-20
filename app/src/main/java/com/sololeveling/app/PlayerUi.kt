@@ -2033,7 +2033,7 @@ fun HeldTheLineRow(quest: Quest, onCompleteToggle: () -> Unit) {
         verticalAlignment = Alignment.Top
     ) {
         Text(
-            text = "9:30 PM",
+            text = "MENTAL",
             fontSize = 12.sp, fontWeight = FontWeight.Bold,
             color = Color(0xFF6b7bd6),
             modifier = Modifier.width(76.dp)
@@ -2151,6 +2151,22 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(onLongPress = { wpMark("steps") })
                         }
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "DIET",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Text(
+                        text = "Stayed On Plan",
+                        fontSize = 14.sp,
+                        color = Color(0xFFe0e0f0)
                     )
                 }
             }
