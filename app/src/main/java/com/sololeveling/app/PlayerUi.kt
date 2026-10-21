@@ -1753,14 +1753,14 @@ fun ConfidenceMeter(refreshKey: Int) {
                     "Hunger / urge win logged" to "+5",
                     "Study marked successful" to "+3",
                     "10,000 Steps marked successful" to "+3",
-                    "Diet marked successful (Stayed On Plan)" to "+3",
+                    "Diet on plan all day (checked at midnight)" to "+3",
                     "New gym PR (once per lift per day)" to "+5"
                 )
                 val cuts = listOf(
                     "Held The Line streak resets" to "-10",
                     "Day ends with no Study success" to "-3",
                     "Day ends with no 10,000 Steps" to "-3",
-                    "Day ends with no Diet success" to "-3",
+                    "Diet marked failed (checked at midnight)" to "-3",
                     "Every day that passes" to "-1"
                 )
                 Column {
@@ -2108,7 +2108,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         if (ok) {
                             wpDone = if (undo) wpDone - type else wpDone + type
                             willpowerTick++
-                            android.widget.Toast.makeText(wpContext, (if (undo) "Unmarked" else "Marked successful \u2713"), android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(wpContext, (if (undo) "Unmarked" else if (type == "dietfail") "Marked as failed" else "Marked successful \u2713"), android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
@@ -2166,11 +2166,11 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         modifier = Modifier.width(76.dp)
                     )
                     Text(
-                        text = if (wpDone.contains("diet")) "Stayed On Plan" else "Stayed On Plan [FAILED]",
+                        text = if (wpDone.contains("dietfail")) "Stayed On Plan [FAILED]" else "Stayed On Plan",
                         fontSize = 14.sp,
-                        color = if (wpDone.contains("diet")) Color(0xFFe0e0f0) else Color(0xFFFF6B6B),
+                        color = if (wpDone.contains("dietfail")) Color(0xFFFF6B6B) else Color(0xFFe0e0f0),
                         modifier = Modifier.pointerInput(Unit) {
-                            detectTapGestures(onLongPress = { wpMark("diet") })
+                            detectTapGestures(onLongPress = { wpMark("dietfail") })
                         }
                     )
                 }
