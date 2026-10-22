@@ -512,41 +512,6 @@ fun RoutineScreen(onBack: () -> Unit) {
     val todayWeekday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1
 
     var selectedDay by remember { mutableIntStateOf(todayWeekday) }
-    var quests by remember { mutableStateOf<List<RoutineQuest>>(emptyList()) }
-    var dailyCount by remember { mutableIntStateOf(0) }
-    var requiredCount by remember { mutableIntStateOf(0) }
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(selectedDay) {
-        loading = true
-        error = null
-        try {
-            val response = fetchFromApi("/api/routine/$selectedDay")
-            val obj = Gson().fromJson(response, Map::class.java)
-            dailyCount = (obj["dailyCount"] as? Number)?.toInt() ?: 0
-            requiredCount = (obj["requiredCount"] as? Number)?.toInt() ?: 0
-            @Suppress("UNCHECKED_CAST")
-            val list = (obj["quests"] as? List<Map<String, Any?>>) ?: emptyList()
-            quests = list.map { q ->
-                RoutineQuest(
-                    id = (q["id"] as? Number)?.toInt() ?: 0,
-                    title = q["title"] as? String ?: "",
-                    time = q["time"] as? String,
-                    category = q["category"] as? String ?: "STR",
-                    xpReward = (q["xp_reward"] as? Number)?.toInt() ?: 0,
-                    optional = ((q["optional"] as? Number)?.toInt() ?: 0) == 1,
-                    kind = q["kind"] as? String ?: "daily",
-                    important = ((q["important"] as? Number)?.toInt() ?: 0) == 1,
-                    monthly = ((q["monthly"] as? Number)?.toInt() ?: 0) == 1
-                )
-            }
-            loading = false
-        } catch (e: Exception) {
-            error = e.message
-            loading = false
-        }
-    }
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
         // Header
@@ -568,12 +533,6 @@ fun RoutineScreen(onBack: () -> Unit) {
                     modifier = Modifier.clickable { onBack() }
                 )
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "$dailyCount Daily · $requiredCount Required",
-                fontSize = 13.sp,
-                color = Color(0xFFFFD700)
-            )
         }
 
         // Day picker
@@ -600,30 +559,32 @@ fun RoutineScreen(onBack: () -> Unit) {
             }
         }
 
-        when {
-            loading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFFD700))
+        // The selected day's routine: the same card the Routine tab shows, read-only.
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item(key = "day-header") {
+                SectionHeader(label = fullDayNames[selectedDay].uppercase(), color = Color(0xFFFFD700))
             }
-            error != null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Error: $error", color = Color.Red)
-            }
-            else -> {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    item(key = "core-reference") {
-                        RoutineCoreReference(weekday = selectedDay)
+            item(key = "routine-card") {
+                TodayRoutineCard(weekday = selectedDay, haircut = false, readOnly = true) {
+                    Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text(
+                            text = "MENTAL",
+                            fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            color = Color(0xFF6b7bd6),
+                            modifier = Modifier.width(76.dp)
+                        )
+                        Text(text = "Held The Line", fontSize = 14.sp, color = Color(0xFFe0e0f0))
                     }
-                    item(key = "day-header") {
-                        SectionHeader(label = fullDayNames[selectedDay].uppercase(), color = Color(0xFFFFD700))
-                    }
-                    items(quests, key = { "${it.kind}${it.id}" }) { q ->
-                        RoutineQuestItem(q)
-                    }
-                    item { Spacer(modifier = Modifier.height(8.dp)) }
                 }
             }
+            item { Spacer(modifier = Modifier.height(8.dp)) }
         }
     }
 }
@@ -2051,7 +2012,7 @@ fun HeldTheLineRow(quest: Quest, onCompleteToggle: () -> Unit) {
 }
 
 @Composable
-fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", extra: @Composable () -> Unit = {}) {
+fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", readOnly: Boolean = false, extra: @Composable () -> Unit = {}) {
     var data by remember(weekday, haircut) { mutableStateOf<TodayRoutine?>(null) }
 
     LaunchedEffect(weekday, haircut) {
@@ -2100,9 +2061,10 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                 val wpContext = androidx.compose.ui.platform.LocalContext.current
                 var wpDone by remember { mutableStateOf<Set<String>>(emptySet()) }
                 LaunchedEffect(Unit) {
-                    wpDone = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerToday() }
+                    if (!readOnly) wpDone = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerToday() }
                 }
                 fun wpMark(type: String) {
+                    if (readOnly) return
                     val undo = wpDone.contains(type)
                     wpScope.launch {
                         val ok = kotlinx.coroutines.withContext(Dispatchers.IO) { postWillpowerWin(type, undo) }
