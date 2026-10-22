@@ -2690,10 +2690,10 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
     ) {
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(48.dp))
-            Text("🔥 $streak day streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
+            Text("🔥 $streak Day Streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
             if (previousStreak > 0) {
                 Text(
@@ -2704,22 +2704,22 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 Spacer(Modifier.height(10.dp))
             }
             Text(
-                "Don\u2019t Look. You\u2019ll Edge. You\u2019ll Slip. And It Won\u2019t Even Feel As Good As You Convinced Yourself It Would. Stay The Course.",
+                "Don\u2019t Look. You\u2019ll Edge. You\u2019ll Slip.",
                 color = Color(0xFFcbd5e1), fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center,
                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
             )
             Spacer(Modifier.height(10.dp))
-            Text("Remember why: Self-Improvement & It\u2019s Immoral.", color = Color(0xFFf87171), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text("Remember Why: Self-Improvement & It\u2019s Immoral.", color = Color(0xFFf87171), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(14.dp))
             val streakMsg = when {
-                streak == 0 -> "Today is day one. You don\u2019t need a perfect streak \u2014 you just need today. One day without. That\u2019s it."
-                streak == 1 -> "One day in. The hardest part is behind you. Keep it moving."
-                streak < 7 -> "Day $streak. You\u2019re building something real. Don\u2019t give it up for five minutes of nothing."
-                streak < 14 -> "$streak days. A week-plus of discipline. You\u2019re rewiring your brain \u2014 that\u2019s not small."
-                streak < 30 -> "$streak days strong. The urges are quieter now. That\u2019s you taking your power back."
-                streak < 60 -> "$streak days. A month of clarity. The version of you from day 0 would be proud."
-                streak < 90 -> "$streak days. Two months in. You\u2019re not the same person who started this."
-                else -> "$streak days. This is who you are now. Protect it."
+                streak == 0 -> "Today Is Day One. You Don\u2019t Need A Perfect Streak \u2014 You Just Need Today. One Day Without. That\u2019s It."
+                streak == 1 -> "One Day In. The Hardest Part Is Behind You. Keep It Moving."
+                streak < 7 -> "Day $streak. You\u2019re Building Something Real. Don\u2019t Give It Up For Five Minutes Of Nothing."
+                streak < 14 -> "$streak Days. A Week-Plus Of Discipline. You\u2019re Rewiring Your Brain \u2014 That\u2019s Not Small."
+                streak < 30 -> "$streak Days Strong. The Urges Are Quieter Now. That\u2019s You Taking Your Power Back."
+                streak < 60 -> "$streak Days. A Month Of Clarity. The Version Of You From Day 0 Would Be Proud."
+                streak < 90 -> "$streak Days. Two Months In. You\u2019re Not The Same Person Who Started This."
+                else -> "$streak Days. This Is Who You Are Now. Protect It."
             }
             Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a0a), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)) {
                 Text(streakMsg, color = Color(0xFFF59E0B), fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center)
@@ -2729,26 +2729,9 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)))
             Spacer(Modifier.height(20.dp))
             Text(
-                text = "Break the pattern today\nor the loop will repeat tomorrow.",
+                text = "Break The Pattern Today\nOr The Loop Will Repeat Tomorrow.",
                 fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
                 textAlign = TextAlign.Center, lineHeight = 32.sp
-            )
-            Spacer(Modifier.height(16.dp))
-            Box(
-                modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
-            ) {
-                Column {
-                    Text("I am getting my CCNA so I can:", color = Color(0xFF4ade80), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
-                    Text("\u2022 Stop working two jobs", color = Color(0xFF86efac), fontSize = 13.sp)
-                    Text("\u2022 Get my own place", color = Color(0xFF86efac), fontSize = 13.sp)
-                    Text("\u2022 Leave Level 1 support behind", color = Color(0xFF86efac), fontSize = 13.sp)
-                }
-            }
-            Spacer(Modifier.height(44.dp))
-            TodayRoutineCard(
-                weekday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1,
-                haircut = false,
-                titlePrefix = "TODAY'S ROUTINE \u00b7 "
             )
             Spacer(Modifier.height(52.dp))
             Button(
@@ -2757,9 +2740,8 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6)),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
             ) {
-                Text("Let's go →", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Let's Go →", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
-            Spacer(Modifier.height(36.dp))
         }
     }
 }
