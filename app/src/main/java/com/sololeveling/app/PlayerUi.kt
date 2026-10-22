@@ -1754,6 +1754,7 @@ fun ConfidenceMeter(refreshKey: Int) {
                     "Study marked successful" to "+3",
                     "10,000 Steps marked successful" to "+3",
                     "Diet on plan all day (checked at midnight)" to "+3",
+                    "Finished Water Flask marked successful" to "+3",
                     "New gym PR (once per lift per day)" to "+5"
                 )
                 val cuts = listOf(
@@ -1761,6 +1762,7 @@ fun ConfidenceMeter(refreshKey: Int) {
                     "Day ends with no Study success" to "-3",
                     "Day ends with no 10,000 Steps" to "-3",
                     "Diet marked failed (checked at midnight)" to "-3",
+                    "Day ends with no Water flask" to "-3",
                     "Every day that passes" to "-1"
                 )
                 Column {
@@ -1780,7 +1782,7 @@ fun ConfidenceMeter(refreshKey: Int) {
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("Capped at 100, never below 0. Missed Study / Steps / Diet and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                    Text("Capped at 100, never below 0. Missed Study / Steps / Diet / Water and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
                 }
             }
         )
@@ -2136,6 +2138,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         }
                     }
                 }
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.Top
@@ -2155,6 +2158,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         }
                     )
                 }
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                     verticalAlignment = Alignment.Top
@@ -2171,6 +2175,26 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         color = if (wpDone.contains("dietfail")) Color(0xFFFF6B6B) else Color(0xFFe0e0f0),
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(onLongPress = { wpMark("dietfail") })
+                        }
+                    )
+                }
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "HYDRATE",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Text(
+                        text = (if (wpDone.contains("water")) "\u2713 " else "") + "Finished Water Flask",
+                        fontSize = 14.sp,
+                        color = if (wpDone.contains("water")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = { wpMark("water") })
                         }
                     )
                 }
