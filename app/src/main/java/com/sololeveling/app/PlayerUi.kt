@@ -2095,7 +2095,6 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                     Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
                 }
             }
-            extra()
             if (d.study.isNotEmpty()) {
                 val wpScope = rememberCoroutineScope()
                 val wpContext = androidx.compose.ui.platform.LocalContext.current
@@ -2164,26 +2163,6 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
-                        text = "DIET",
-                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                        color = Color(0xFF6b7bd6),
-                        modifier = Modifier.width(76.dp)
-                    )
-                    Text(
-                        text = if (wpDone.contains("dietfail")) "Stayed On Plan [FAILED]" else "Stayed On Plan",
-                        fontSize = 14.sp,
-                        color = if (wpDone.contains("dietfail")) Color(0xFFFF6B6B) else Color(0xFFe0e0f0),
-                        modifier = Modifier.pointerInput(Unit) {
-                            detectTapGestures(onLongPress = { wpMark("dietfail") })
-                        }
-                    )
-                }
-                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Text(
                         text = "HYDRATE",
                         fontSize = 12.sp, fontWeight = FontWeight.Bold,
                         color = Color(0xFF6b7bd6),
@@ -2198,6 +2177,29 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", e
                         }
                     )
                 }
+                extra()
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "DIET",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Text(
+                        text = if (wpDone.contains("dietfail")) "Stayed On Plan [FAILED]" else "Stayed On Plan",
+                        fontSize = 14.sp,
+                        color = if (wpDone.contains("dietfail")) Color(0xFFFF6B6B) else Color(0xFFe0e0f0),
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = { wpMark("dietfail") })
+                        }
+                    )
+                }
+            } else {
+                extra()
             }
         }
     }
