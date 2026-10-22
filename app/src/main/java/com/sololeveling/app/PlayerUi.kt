@@ -2673,6 +2673,17 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
             Spacer(Modifier.height(10.dp))
             Text("Remember Why: Self-Improvement & It\u2019s Immoral.", color = Color(0xFFf87171), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
             Spacer(Modifier.height(14.dp))
+            val riskWeekday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1
+            val riskNotes = when (riskWeekday) {
+                0 -> listOf("High Urge Risk. Stay Alert Today" to Color(0xFFc084fc), "High Overeating Risk. Stick To The Plan" to Color(0xFF22d3ee))
+                1, 2, 3 -> listOf("High Urge Risk. Stay Alert Today" to Color(0xFFc084fc))
+                4 -> listOf("Low Risk Day. Final WFH Weekday" to Color(0xFF4ade80))
+                else -> listOf("High Overeating Risk. Stick To The Plan" to Color(0xFF22d3ee))
+            }
+            riskNotes.forEach { (riskMsg, riskColor) ->
+                Text(riskMsg, color = riskColor, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            }
+            Spacer(Modifier.height(14.dp))
             val streakMsg = when {
                 streak == 0 -> "Today Is Day One. You Don\u2019t Need A Perfect Streak \u2014 You Just Need Today. One Day Without. That\u2019s It."
                 streak == 1 -> "One Day In. The Hardest Part Is Behind You. Keep It Moving."
