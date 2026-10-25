@@ -248,6 +248,13 @@ fun TasksScreen() {
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
                 Text(
+                    text = "📝",
+                    fontSize = 18.sp,
+                    modifier = Modifier
+                        .clickable { showNotepad = true }
+                        .padding(horizontal = 2.dp)
+                )
+                Text(
                     text = "📅",
                     fontSize = 18.sp,
                     modifier = Modifier
@@ -255,13 +262,6 @@ fun TasksScreen() {
                         .padding(horizontal = 2.dp)
                 )
                 OathLanternButton()
-                Text(
-                    text = "📝",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showNotepad = true }
-                        .padding(horizontal = 2.dp)
-                )
                 Text(
                     text = "🐶",
                     fontSize = 18.sp,
