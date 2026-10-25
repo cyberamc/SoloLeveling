@@ -247,6 +247,7 @@ fun TasksScreen() {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
             ) {
+                OathLanternButton()
                 Text(
                     text = "📝",
                     fontSize = 18.sp,
@@ -261,14 +262,6 @@ fun TasksScreen() {
                         .clickable { showRoutine = true }
                         .padding(horizontal = 2.dp)
                 )
-                OathLanternButton()
-                Text(
-                    text = "🐶",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showLuna = true }
-                        .padding(horizontal = 2.dp)
-                )
                 Text(
                     text = "📊",
                     fontSize = 18.sp,
@@ -277,38 +270,10 @@ fun TasksScreen() {
                         .padding(horizontal = 2.dp)
                 )
                 Text(
-                    text = "🌙",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showPreSleep = true }
-                        .padding(horizontal = 2.dp)
-                )
-                Text(
                     text = "⏱️",
                     fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showTimerDialog = true }
-                        .padding(horizontal = 2.dp)
-                )
-                Text(
-                    text = "🤸",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showMobilityScreen = true }
-                        .padding(horizontal = 2.dp)
-                )
-                Text(
-                    text = "🧳",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showTravelScreen = true }
-                        .padding(horizontal = 2.dp)
-                )
-                Text(
-                    text = "🎂",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showBirthdayScreen = true }
                         .padding(horizontal = 2.dp)
                 )
                 Text(
@@ -329,6 +294,52 @@ fun TasksScreen() {
                                 haircutPrefs.edit().putString("date", haircutToday).putBoolean("on", haircutMode).apply()
                             }
                             .padding(horizontal = 4.dp)
+                    )
+                }
+                var showMoreIcons by remember { mutableStateOf(false) }
+                Text(
+                    text = if (showMoreIcons) "\u25C2" else "\u25B8",
+                    fontSize = 18.sp,
+                    color = Color(0xFF8A8A8A),
+                    modifier = Modifier
+                        .clickable { showMoreIcons = !showMoreIcons }
+                        .padding(horizontal = 6.dp)
+                )
+                if (showMoreIcons) {
+                    Text(
+                        text = "🐶",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showLuna = true }
+                            .padding(horizontal = 2.dp)
+                    )
+                    Text(
+                        text = "🌙",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showPreSleep = true }
+                            .padding(horizontal = 2.dp)
+                    )
+                    Text(
+                        text = "🤸",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showMobilityScreen = true }
+                            .padding(horizontal = 2.dp)
+                    )
+                    Text(
+                        text = "🧳",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showTravelScreen = true }
+                            .padding(horizontal = 2.dp)
+                    )
+                    Text(
+                        text = "🎂",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showBirthdayScreen = true }
+                            .padding(horizontal = 2.dp)
                     )
                 }
             }
