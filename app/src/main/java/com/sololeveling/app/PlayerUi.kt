@@ -2692,7 +2692,7 @@ fun OathLanternButton() {
             onDismissRequest = { showOath = false },
             containerColor = Color(0xFF0c1a12),
             title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
                     OathLanternIcon(iconSize = 26.dp)
                     Spacer(Modifier.width(10.dp))
                     Text("The Oath", color = Color(0xFF22e07a), fontWeight = FontWeight.Bold)
