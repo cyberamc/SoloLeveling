@@ -276,13 +276,6 @@ fun TasksScreen() {
                         .clickable { showTimerDialog = true }
                         .padding(horizontal = 2.dp)
                 )
-                Text(
-                    text = "🔔",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showAlarmDialog = true }
-                        .padding(horizontal = 2.dp)
-                )
                 if (todayWeekday == 5 || todayWeekday == 6) {
                     Text(
                         text = "\u2702\uFE0F",
@@ -339,6 +332,13 @@ fun TasksScreen() {
                         fontSize = 18.sp,
                         modifier = Modifier
                             .clickable { showBirthdayScreen = true }
+                            .padding(horizontal = 2.dp)
+                    )
+                    Text(
+                        text = "🔔",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showAlarmDialog = true }
                             .padding(horizontal = 2.dp)
                     )
                 }
