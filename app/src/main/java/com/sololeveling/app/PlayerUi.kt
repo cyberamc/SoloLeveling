@@ -2805,7 +2805,7 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
             val streakMsg = when {
                 streak == 0 -> "Today Is Day One. You Don\u2019t Need A Perfect Streak \u2014 You Just Need Today. One Day Without. That\u2019s It."
                 streak == 1 -> "One Day In. The Hardest Part Is Behind You. Keep It Moving."
-                streak < 7 -> "Day $streak. You\u2019re Building Something Real. Don\u2019t Give It Up For Five Minutes Of Nothing."
+                streak < 7 -> "Day ${streak + 1}. You\u2019re Building Something Real. Don\u2019t Give It Up For Five Minutes Of Nothing."
                 streak < 14 -> "$streak Days. A Week-Plus Of Discipline. You\u2019re Rewiring Your Brain \u2014 That\u2019s Not Small."
                 streak < 30 -> "$streak Days Strong. The Urges Are Quieter Now. That\u2019s You Taking Your Power Back."
                 streak < 60 -> "$streak Days. A Month Of Clarity. The Version Of You From Day 0 Would Be Proud."
