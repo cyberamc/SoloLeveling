@@ -254,6 +254,7 @@ fun TasksScreen() {
                         .clickable { showRoutine = true }
                         .padding(horizontal = 2.dp)
                 )
+                OathLanternButton()
                 Text(
                     text = "📝",
                     fontSize = 18.sp,
@@ -2629,6 +2630,112 @@ fun AlarmTimeDialog(onDismiss: () -> Unit) {
     )
 }
 
+// ---- The Oath ----
+val OATH_LINES = listOf(
+    "This urge is a wave, and waves pass.",
+    "I do not obey it. I outlast it.",
+    "One job. My own place. A partner by my side.",
+    "That's the life I'm building. I will not trade it."
+)
+
+// A generic green lantern drawn in code (hanging ring, cap, glass body with a glow, base).
+@Composable
+fun OathLanternIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui.unit.Dp = 22.dp) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(iconSize)) {
+        val w = this.size.width
+        val h = this.size.height
+        val green = Color(0xFF22e07a)
+        val deep = Color(0xFF0c5c30)
+        val glow = Color(0xFFc8ffe0)
+        drawArc(
+            color = green, startAngle = 180f, sweepAngle = 180f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.37f, h * 0.03f),
+            size = androidx.compose.ui.geometry.Size(w * 0.26f, h * 0.22f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.07f)
+        )
+        val cap = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.30f, h * 0.24f); lineTo(w * 0.70f, h * 0.24f)
+            lineTo(w * 0.82f, h * 0.37f); lineTo(w * 0.18f, h * 0.37f); close()
+        }
+        drawPath(cap, green)
+        drawRoundRect(
+            color = deep,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.20f, h * 0.37f),
+            size = androidx.compose.ui.geometry.Size(w * 0.60f, h * 0.45f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.10f, w * 0.10f)
+        )
+        drawRoundRect(
+            color = green,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.20f, h * 0.37f),
+            size = androidx.compose.ui.geometry.Size(w * 0.60f, h * 0.45f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.10f, w * 0.10f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.06f)
+        )
+        drawCircle(color = green, radius = w * 0.17f, center = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.595f))
+        drawCircle(color = glow, radius = w * 0.10f, center = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.595f))
+        drawRoundRect(
+            color = green,
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.22f, h * 0.82f),
+            size = androidx.compose.ui.geometry.Size(w * 0.56f, h * 0.12f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.04f, w * 0.04f)
+        )
+    }
+}
+
+// The lantern button for the Routine screen's icon row: tap to read the oath.
+@Composable
+fun OathLanternButton() {
+    var showOath by remember { mutableStateOf(false) }
+    OathLanternIcon(modifier = Modifier.clickable { showOath = true }.padding(horizontal = 2.dp))
+    if (showOath) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showOath = false },
+            containerColor = Color(0xFF0c1a12),
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OathLanternIcon(iconSize = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("The Oath", color = Color(0xFF22e07a), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    OATH_LINES.forEach { line ->
+                        Text(line, color = Color(0xFFe2e8f0), fontSize = 15.sp, lineHeight = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 3.dp))
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showOath = false }) {
+                    Text("Close", color = Color(0xFF22e07a))
+                }
+            }
+        )
+    }
+}
+
+// The oath as a card (morning brief).
+@Composable
+fun OathCard() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF0c1a12), shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OathLanternIcon(iconSize = 20.dp)
+            Spacer(Modifier.width(8.dp))
+            Text("The Oath", color = Color(0xFF22e07a), fontSize = 13.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        }
+        Spacer(Modifier.height(10.dp))
+        OATH_LINES.forEach { line ->
+            Text(line, color = Color(0xFFe2e8f0), fontSize = 14.sp, lineHeight = 22.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 2.dp))
+        }
+    }
+}
+
 @Composable
 fun MorningBriefOverlay(onDismiss: () -> Unit) {
     var streak by remember { mutableIntStateOf(0) }
@@ -2706,6 +2813,8 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
                 fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
                 textAlign = TextAlign.Center, lineHeight = 32.sp
             )
+            Spacer(Modifier.height(20.dp))
+            OathCard()
             Spacer(Modifier.height(52.dp))
             Button(
                 onClick = onDismiss,
