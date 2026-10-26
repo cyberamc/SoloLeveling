@@ -23,6 +23,7 @@ class MorningAlarmService : Service() {
     companion object {
         const val ACTION_START = "com.sololeveling.app.ALARM_START"
         const val ACTION_DISMISS = "com.sololeveling.app.ALARM_DISMISS"
+        const val ACTION_REPOST = "com.sololeveling.app.ALARM_REPOST"
         private const val NOTIF_ID = 9002
         private const val CHANNEL_ID = "morning_alarm_service"
 
@@ -61,6 +62,7 @@ class MorningAlarmService : Service() {
         when (intent?.action) {
             ACTION_START -> startAlarm(intent?.getStringExtra(EXTRA_TYPE) ?: TYPE_MORNING)
             ACTION_DISMISS -> stopAlarm()
+            ACTION_REPOST -> repostNotification()
         }
         return START_NOT_STICKY
     }
@@ -79,6 +81,7 @@ class MorningAlarmService : Service() {
     }
 
     private var alarmType: String = TYPE_MORNING
+    private var notifBuilder: NotificationCompat.Builder? = null
 
     private fun startAlarm(type: String = TYPE_MORNING) {
         alarmType = type
@@ -112,6 +115,12 @@ class MorningAlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Swiping the notification away re-posts it (see repostNotification) instead of leaving the sound running with no way to stop it.
+        val repostIntent = Intent(this, MorningAlarmService::class.java).apply { action = ACTION_REPOST }
+        val repostPi = PendingIntent.getService(
+            this, 3, repostIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("🌅 Break the pattern today")
@@ -119,10 +128,12 @@ class MorningAlarmService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setOngoing(true)
+            .setDeleteIntent(repostPi)
             .setAutoCancel(false)
             .setContentIntent(openPi)
             .setFullScreenIntent(fullScreenPi, true)
             .addAction(android.R.drawable.ic_delete, "Dismiss", dismissPi)
+            .also { notifBuilder = it }
             .build()
 
         startForeground(NOTIF_ID, notification)
@@ -150,6 +161,13 @@ class MorningAlarmService : Service() {
         } catch (e: Exception) {
             stopSelf()
         }
+    }
+
+    // The user swiped the alarm notification away while the alarm is still sounding: put it back so it can be dismissed.
+    private fun repostNotification() {
+        if (mediaPlayer == null) { stopSelf(); return }
+        val b = notifBuilder ?: return
+        startForeground(NOTIF_ID, b.setOnlyAlertOnce(true).build())
     }
 
     private fun stopAlarm() {
