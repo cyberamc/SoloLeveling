@@ -1831,7 +1831,7 @@ fun ConfidenceMeter(refreshKey: Int) {
                     "Day ends with no 10,000 Steps" to "-3",
                     "Diet marked failed (checked at midnight)" to "-3",
                     "Day ends with no Water flask" to "-3",
-                    "Every day that passes" to "-1"
+                    "Every day that passes" to "-3"
                 )
                 Column {
                     Text("ADDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80), letterSpacing = 1.5.sp)
