@@ -1653,11 +1653,48 @@ fun ShieldIconCanvas(modifier: Modifier = Modifier) {
     }
 }
 
+/*WP_FLIP_UI*/
+// One earlier day's result that can be changed. flip = "success" or "failed" (what it would become).
+data class WpHistoryItem(val id: Int, val label: String, val whenText: String, val flip: String)
+
+suspend fun fetchWillpowerHistory(): List<WpHistoryItem> {
+    return try {
+        val body = fetchFromApi("/api/confidence/history?n=40")
+        val o = Gson().fromJson(body, Map::class.java)
+        ((o["items"] as? List<*>) ?: emptyList<Any?>()).mapNotNull { r ->
+            val m = r as? Map<*, *> ?: return@mapNotNull null
+            val flip = m["flip"] as? String ?: return@mapNotNull null
+            val id = (m["id"] as? Number)?.toInt() ?: return@mapNotNull null
+            WpHistoryItem(id, m["label"].toString(), m["when"].toString(), flip)
+        }
+    } catch (e: Exception) { emptyList() }
+}
+
+fun postWillpowerFlip(id: Int): Boolean {
+    val url = URL("https://mysololeveling.us/api/confidence/flip")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    return try {
+        conn.outputStream.use { it.write("{\"id\":$id}".toByteArray()) }
+        conn.responseCode == 200
+    } catch (e: Exception) { false } finally { conn.disconnect() }
+}
+
 // 0-100 meter of recent wins over urges. Rises when logged, decays slowly.
 @Composable
 fun ConfidenceMeter(refreshKey: Int) {
     var state by remember { mutableStateOf<ConfidenceState?>(null) }
     var showWillpowerInfo by remember { mutableStateOf(false) }
+    var showWpHistory by remember { mutableStateOf(false) }
+    var wpHistory by remember { mutableStateOf<List<WpHistoryItem>>(emptyList()) }
+    var wpPendingId by remember { mutableStateOf<Int?>(null) }
+    var wpBusy by remember { mutableStateOf(false) }
+    var wpMsg by remember { mutableStateOf<String?>(null) }
+    val wpScope = rememberCoroutineScope()
 
     LaunchedEffect(refreshKey, willpowerTick) {
         state = fetchConfidence()
@@ -1716,11 +1753,69 @@ fun ConfidenceMeter(refreshKey: Int) {
 
     if (showWillpowerInfo) {
         AlertDialog(
-            onDismissRequest = { showWillpowerInfo = false },
+            onDismissRequest = { showWillpowerInfo = false; showWpHistory = false; wpPendingId = null; wpMsg = null },
             containerColor = Color(0xFF1A1A1A),
-            confirmButton = { TextButton(onClick = { showWillpowerInfo = false }) { Text("Close") } },
-            title = { Text("Willpower", color = Color.White, fontWeight = FontWeight.Bold) },
+            confirmButton = { TextButton(onClick = { showWillpowerInfo = false; showWpHistory = false; wpPendingId = null; wpMsg = null }) { Text("Close") } },
+            dismissButton = {
+                TextButton(onClick = {
+                    wpPendingId = null; wpMsg = null
+                    showWpHistory = !showWpHistory
+                    if (showWpHistory) wpScope.launch {
+                        wpHistory = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerHistory() }
+                    }
+                }) { Text(if (showWpHistory) "Back" else "Change previous status") }
+            },
+            title = { Text(if (showWpHistory) "Change previous status" else "Willpower", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
+              if (showWpHistory) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text("Tap a button to flip an earlier day. Today's results change with a long-press.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                    if (wpMsg != null) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(wpMsg!!, fontSize = 12.sp, color = Color(0xFFFFD700))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (wpHistory.isEmpty()) {
+                        Text("Nothing from earlier days to change.", fontSize = 13.sp, color = Color(0xFFD0D0D0))
+                    }
+                    wpHistory.forEach { item ->
+                        val toSuccess = item.flip == "success"
+                        val accent = if (toSuccess) Color(0xFF4ADE80) else Color(0xFFF87171)
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.label, fontSize = 13.sp, color = Color(0xFFD0D0D0))
+                                Text(item.whenText, fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                            }
+                            Text(
+                                text = if (wpPendingId == item.id) "Confirm" else if (toSuccess) "Mark success" else "Mark failed",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = accent,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(accent.copy(alpha = if (wpPendingId == item.id) 0.30f else 0.12f))
+                                    .clickable(enabled = !wpBusy) {
+                                        if (wpPendingId != item.id) { wpPendingId = item.id }
+                                        else {
+                                            wpBusy = true
+                                            wpScope.launch {
+                                                val ok = kotlinx.coroutines.withContext(Dispatchers.IO) { postWillpowerFlip(item.id) }
+                                                wpPendingId = null
+                                                wpMsg = if (ok) "Changed." else "Could not change it. Check your connection."
+                                                if (ok) {
+                                                    wpHistory = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerHistory() }
+                                                    willpowerTick++
+                                                }
+                                                wpBusy = false
+                                            }
+                                        }
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+              } else {
                 val adds = listOf(
                     "Each day you hold the line" to "+5",
                     "Hunger / urge win logged" to "+5",
@@ -1757,6 +1852,7 @@ fun ConfidenceMeter(refreshKey: Int) {
                     Spacer(Modifier.height(12.dp))
                     Text("Capped at 100, never below 0. Missed Study / Steps / Diet / Water and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
                 }
+              }
             }
         )
     }
