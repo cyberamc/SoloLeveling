@@ -1564,6 +1564,22 @@ fun HydrationScreen(onBack: () -> Unit) {
     }
 }
 
+/*WP_STREAKS_UI*/
+// Current and best day-streak for one habit.
+data class WpStreakRow(val name: String, val current: Int, val best: Int)
+
+suspend fun fetchWillpowerStreaks(): List<WpStreakRow> {
+    return try {
+        val body = fetchFromApi("/api/confidence/streaks")
+        val o = Gson().fromJson(body, Map::class.java)
+        fun row(label: String, key: String): WpStreakRow {
+            val m = o[key] as? Map<*, *>
+            return WpStreakRow(label, (m?.get("current") as? Number)?.toInt() ?: 0, (m?.get("best") as? Number)?.toInt() ?: 0)
+        }
+        listOf(row("Study", "study"), row("Hydrate", "water"), row("Physical", "steps"), row("Diet", "diet"))
+    } catch (e: Exception) { emptyList() }
+}
+
 data class ConfidenceState(
     val value: Int,
     val max: Int,
@@ -1689,6 +1705,9 @@ fun postWillpowerFlip(id: Int): Boolean {
 fun ConfidenceMeter(refreshKey: Int) {
     var state by remember { mutableStateOf<ConfidenceState?>(null) }
     var showWillpowerInfo by remember { mutableStateOf(false) }
+    var showWpStreaks by remember { mutableStateOf(false) }
+    var wpStreaks by remember { mutableStateOf<List<WpStreakRow>?>(null) }
+    val wpStreakScope = rememberCoroutineScope()
     var showWpHistory by remember { mutableStateOf(false) }
     var wpHistory by remember { mutableStateOf<List<WpHistoryItem>>(emptyList()) }
     var wpPendingId by remember { mutableStateOf<Int?>(null) }
@@ -1749,6 +1768,45 @@ fun ConfidenceMeter(refreshKey: Int) {
         } else {
             Text(text = s.recent.joinToString("  |  "), fontSize = 11.sp, color = Color(0xFF9A9A9A))
         }
+    }
+
+    if (showWpStreaks) {
+        AlertDialog(
+            onDismissRequest = { showWpStreaks = false },
+            containerColor = Color(0xFF1A1A1A),
+            confirmButton = { TextButton(onClick = { showWpStreaks = false }) { Text("Close") } },
+            title = { Text("Streaks", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                val rows = wpStreaks
+                Column {
+                    if (rows == null) {
+                        Text("Loading...", fontSize = 13.sp, color = Color(0xFF8A8A8A))
+                    } else if (rows.isEmpty()) {
+                        Text("Could not load streaks. Check your connection.", fontSize = 13.sp, color = Color(0xFFF87171))
+                    } else {
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+                            Text("", modifier = Modifier.weight(1f))
+                            Text("NOW", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4FD1C5), letterSpacing = 1.5.sp, modifier = Modifier.width(64.dp))
+                            Text("BEST", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8A8A8A), letterSpacing = 1.5.sp, modifier = Modifier.width(56.dp))
+                        }
+                        rows.forEach { r ->
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(r.name, fontSize = 15.sp, color = Color(0xFFD0D0D0), modifier = Modifier.weight(1f))
+                                Text(
+                                    (if (r.current > 0) "\uD83D\uDD25 " else "") + r.current,
+                                    fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                                    color = if (r.current > 0) Color(0xFF4FD1C5) else Color(0xFF8A8A8A),
+                                    modifier = Modifier.width(64.dp)
+                                )
+                                Text("${r.best}", fontSize = 15.sp, color = Color(0xFFD0D0D0), modifier = Modifier.width(56.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text("Days in a row with the win logged. Study skips Friday and Saturday (delivery days).", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                    }
+                }
+            }
+        )
     }
 
     if (showWillpowerInfo) {
@@ -1818,7 +1876,7 @@ fun ConfidenceMeter(refreshKey: Int) {
               } else {
                 val adds = listOf(
                     "Each day you hold the line" to "+5",
-                    "Hunger / urge win logged" to "+5",
+                    "Weight loss logged (10 per lb lost)" to "+5 min",
                     "Study marked successful" to "+3",
                     "10,000 Steps marked successful" to "+3",
                     "Diet on plan all day (checked at midnight)" to "+3",
@@ -1834,6 +1892,22 @@ fun ConfidenceMeter(refreshKey: Int) {
                     "Every day that passes" to "-3"
                 )
                 Column {
+                    Text(
+                        text = "View streaks  \u203A",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4FD1C5),
+                        modifier = Modifier
+                            .padding(bottom = 12.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF4FD1C5).copy(alpha = 0.12f))
+                            .clickable {
+                                wpStreaks = null
+                                showWpStreaks = true
+                                wpStreakScope.launch { wpStreaks = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerStreaks() } }
+                            }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
                     Text("ADDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80), letterSpacing = 1.5.sp)
                     adds.forEach { (what, pts) ->
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
