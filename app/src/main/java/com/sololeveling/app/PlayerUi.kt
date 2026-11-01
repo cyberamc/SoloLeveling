@@ -1616,6 +1616,32 @@ suspend fun fetchWillpowerToday(): Set<String> {
     } catch (e: Exception) { emptySet() }
 }
 
+suspend fun fetchFootSoakCount(): Int {
+    return try {
+        val body = fetchFromApi("/api/foot-soak")
+        val o = Gson().fromJson(body, Map::class.java)
+        (o["count"] as? Number)?.toInt() ?: 0
+    } catch (e: Exception) { 0 }
+}
+
+// Logs today's foot soak (server allows one per day, max 21). Returns the new count, or -1 on failure.
+fun postFootSoak(): Int {
+    val url = URL("https://mysololeveling.us/api/foot-soak")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    return try {
+        conn.outputStream.use { it.write("{}".toByteArray()) }
+        if (conn.responseCode == 200) {
+            val o = Gson().fromJson(conn.inputStream.bufferedReader().readText(), Map::class.java)
+            (o["count"] as? Number)?.toInt() ?: -1
+        } else -1
+    } catch (e: Exception) { -1 } finally { conn.disconnect() }
+}
+
 fun postWillpowerWin(type: String, undo: Boolean = false): Boolean {
     val url = URL("https://mysololeveling.us/api/confidence")
     val conn = url.openConnection() as HttpURLConnection
@@ -2245,6 +2271,10 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                 LaunchedEffect(Unit) {
                     if (!readOnly) wpDone = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerToday() }
                 }
+                var soakCount by remember { mutableStateOf(0) }
+                LaunchedEffect(Unit) {
+                    soakCount = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchFootSoakCount() }
+                }
                 fun wpMark(type: String) {
                     if (readOnly) return
                     val undo = wpDone.contains(type)
@@ -2339,6 +2369,35 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                         color = if (wpDone.contains("dietfail")) Color(0xFFFF6B6B) else Color(0xFFe0e0f0),
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(onLongPress = { wpMark("dietfail") })
+                        }
+                    )
+                }
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "FOOT SOAK",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Text(
+                        text = "Foot Soak  $soakCount/21",
+                        fontSize = 14.sp,
+                        color = Color(0xFFe0e0f0),
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = {
+                                if (!readOnly) wpScope.launch {
+                                    val n = kotlinx.coroutines.withContext(Dispatchers.IO) { postFootSoak() }
+                                    if (n >= 0) {
+                                        val msg = if (n > soakCount) "Foot soak logged \u2713" else if (n < soakCount) "Foot soak undone" else "Plan complete"
+                                        soakCount = n
+                                        android.widget.Toast.makeText(wpContext, msg, android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            })
                         }
                     )
                 }
