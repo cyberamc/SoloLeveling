@@ -4153,20 +4153,20 @@ val DELIVERY_BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake (Double)",
         mealType = "Breakfast",
-        macros = Macros(calories = 450, protein = 70, fat = 11, netCarbs = "21"),
+        macros = Macros(calories = 515, protein = 65, fat = 14, netCarbs = "31"),
         ingredients = listOf(
-            "4.5 scoops (approx. 88g) Premier Protein Vanilla Milkshake powder",
-            "1/2 banana (~60g), frozen",
+            "2.5 scoops (approx. 93g) RYSE Loaded Protein powder",
+            "1 whole banana (~120g peeled), frozen",
             "1 tbsp cocoa powder",
             "7g pecans (about 1 tbsp chopped, ~10 halves)",
             "Swerve sweetener, to taste (start with 1-2 tsp)",
             "8 to 12 oz cold water"
         ),
         steps = listOf(
-            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar. Thicker shake: 8 oz. More fluid: up to 12 oz."),
-            MealStep("Add Everything", "Add the frozen banana, 4.5 scoops Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
+            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar."),
+            MealStep("Add Everything", "Add the frozen banana, 2.5 scoops RYSE powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
             MealStep("Blend", "Blend 20-30 seconds until smooth."),
-            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink. The half scoop is approximate -- eyeball half a heaping scoop. Shake will be thicker than usual from the extra powder -- add a splash more water if needed.")
+            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink.\n\nWeigh the powder (93g) instead of eyeballing a half scoop. The shake will be thick from the extra powder and full banana, so add a splash more water if needed. RYSE already has cocoa in it, so taste first and cut back the added cocoa if it's rich enough.")
         )
     )
 )
@@ -4204,20 +4204,20 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake",
         mealType = "Breakfast",
-        macros = Macros(calories = 375, protein = 40, fat = 9, netCarbs = "24"),
+        macros = Macros(calories = 325, protein = 40, fat = 10, netCarbs = "17"),
         ingredients = listOf(
-            "2.5 scoops (approx. 49g) Premier Protein Vanilla Milkshake powder",
-            "1/2 banana (~60g), frozen",
+            "1.5 scoops (approx. 56g) RYSE Loaded Protein powder",
+            "1/2 banana (~60g peeled), frozen",
             "1 tbsp cocoa powder",
             "7g pecans (about 1 tbsp chopped, ~10 halves)",
             "Swerve sweetener, to taste (start with 1-2 tsp)",
             "8 to 12 oz cold water"
         ),
         steps = listOf(
-            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar. Thicker shake: 8 oz. More fluid: up to 12 oz."),
-            MealStep("Add Everything", "Add the frozen banana, 2.5 scoops Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
-            MealStep("Blend", "Secure the lid and blend 20-30 seconds until smooth."),
-            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink. The half scoop is approximate -- eyeball half a heaping scoop.")
+            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar."),
+            MealStep("Add Everything", "Add the frozen banana, 1.5 scoops RYSE powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
+            MealStep("Blend", "Blend 20-30 seconds until smooth."),
+            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink.\n\nWeigh the powder (56g) instead of eyeballing a half scoop. RYSE already has cocoa in it, so taste first and cut back the added cocoa if it's rich enough.")
         )
     )
 )
@@ -4471,10 +4471,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,395" else if (deliveryDiet) "2,345" else if (backupDinner) "2,115" else "2,085", Modifier.weight(1f))
-                    MacroBox("Protein", if (deliveryDiet && backupDinner) "163g" else if (deliveryDiet) "160g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet && backupDinner) "118g" else if (deliveryDiet) "117g" else if (backupDinner) "107g" else "110g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "162g" else if (deliveryDiet) "138g" else if (backupDinner) "111.5g" else "90.5g", Modifier.weight(1f))
+                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,385" else if (deliveryDiet) "2,355" else if (backupDinner) "2,065" else "2,035", Modifier.weight(1f))
+                    MacroBox("Protein", if (deliveryDiet && backupDinner) "150g" else if (deliveryDiet) "150g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
+                    MacroBox("Fat", if (deliveryDiet && backupDinner) "120g" else if (deliveryDiet) "123g" else if (backupDinner) "108g" else "111g", Modifier.weight(1f))
+                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "170g" else if (deliveryDiet) "149g" else if (backupDinner) "104.5g" else "83.5g", Modifier.weight(1f))
                 }
             }
         }
