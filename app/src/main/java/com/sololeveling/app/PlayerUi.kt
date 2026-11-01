@@ -1404,93 +1404,78 @@ fun UrgeCardScreen(onBack: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
             Text(
-                text = "←",
+                text = "\u2190",
                 color = Color(0xFFFFD700),
                 fontSize = 24.sp,
                 modifier = Modifier.clickable { onBack() }
             )
             Spacer(Modifier.width(16.dp))
             Text(
-                "When The Urge Hits",
+                "Two Strict Rules",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
             )
         }
         Text(
-            text = "STAND UP → PAD",
+            text = "NO EXCEPTIONS",
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFFFD700),
             letterSpacing = 2.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            itemsIndexed(URGE_STEPS) { index, step ->
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf("No Fapping", "No Peeping!").forEachIndexed { index, rule ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
-                        .padding(14.dp)
+                        .padding(vertical = 20.dp, horizontal = 16.dp)
                 ) {
                     Text(
                         text = "${index + 1}",
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700),
-                        modifier = Modifier.padding(end = 12.dp)
+                        modifier = Modifier.padding(end = 14.dp)
                     )
-                    Text(
-                        text = step,
-                        fontSize = 15.sp,
-                        color = Color(0xFFDDDDDD),
-                        lineHeight = 22.sp
-                    )
+                    Text(text = rule, fontSize = 18.sp, color = Color(0xFFDDDDDD))
                 }
             }
-            item {
-                Text(
-                    text = "If you're not near the pad: leave the room. Change what you're looking at. Then come back to the pad.",
-                    fontSize = 14.sp,
-                    color = Color(0xFF999999),
-                    lineHeight = 21.sp,
+            Text(
+                text = "FAILED",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFFD700),
+                letterSpacing = 2.sp,
+                modifier = Modifier.padding(top = 18.dp, bottom = 2.dp)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
+                    .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+            ) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp)
-                        .background(Color(0xFF141414), shape = RoundedCornerShape(10.dp))
-                        .padding(14.dp)
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(Color(0xFFF87171), shape = RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
                 )
-            }
-            item {
-                Text(
-                    text = "REASONS TO PULL UP",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFD700),
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.padding(top = 18.dp, bottom = 2.dp)
-                )
-            }
-            items(URGE_REASONS, key = { it.headline }) { reason ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
-                        .padding(14.dp)
-                ) {
+                Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = reason.headline,
+                        text = "10/29",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFDDDDDD),
-                        lineHeight = 20.sp
+                        color = Color(0xFFF87171)
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = reason.body,
-                        fontSize = 13.sp,
-                        color = Color(0xFF999999),
-                        lineHeight = 19.sp
+                        text = "Spent hours & money before work. Edged so much your balls were sore.",
+                        fontSize = 15.sp,
+                        color = Color(0xFFCFCFCF),
+                        lineHeight = 22.sp
                     )
                 }
             }
