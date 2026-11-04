@@ -4805,33 +4805,30 @@ fun SupplementsScreen() {
 @Composable
 private fun PsylliumRampSection() {
     val weeks = listOf(
-        Triple("Week 1", "2 scoops/day" to "~2g fiber", listOf("2 scoops in 12 oz water, once a day", "Take at ~6 PM")),
-        Triple("Week 2", "4 scoops/day" to "~4g fiber", listOf("2 scoops midday + 2 scoops at ~6 PM", "12 oz water each dose")),
-        Triple("Week 3", "6 scoops/day" to "~6g fiber", listOf("3 scoops midday + 3 scoops at ~6 PM", "12 oz water each dose")),
-        Triple("Week 4", "8 scoops/day" to "~8g fiber", listOf("4 scoops midday + 4 scoops at ~6 PM", "12 oz water each dose")),
-        Triple("Week 5 and on", "Hold at 8 scoops/day" to "", listOf("Stay here unless your digestion says otherwise"))
+        Triple("Week 1", "1 scoop/day" to "~2g fiber", listOf("1 level scoop in 12 oz water at ~6 PM")),
+        Triple("Week 2", "2 scoops/day" to "~4g fiber", listOf("1 scoop midday + 1 scoop at ~6 PM")),
+        Triple("Week 3", "3 scoops/day" to "~6g fiber", listOf("1 scoop midday + 2 scoops at ~6 PM (or the other way around)")),
+        Triple("Week 4 and on", "4 scoops/day" to "~8g fiber", listOf("2 scoops midday + 2 scoops at ~6 PM", "Hold here"))
     )
     val rules = listOf(
-        "Level scoops, not heaped",
-        "Stir into water and drink right away (it gels in 1-2 min)",
-        "Keep it 1-2 hrs away from your supplements and the Allergy Relief tablet",
-        "Still drink your full half gallon of water every day",
-        "Move up only if the week felt normal. If you get gas, bloating, or cramping, stay at the current step, or drop back one step for a week",
-        "Hard stools or constipation = more water per dose"
-    )
-    val deliveryDays = listOf(
-        "Your evening supplements are earlier (~6:40 PM), so take the midday dose on the route and the second dose by ~4:30 PM, or move the full amount to the afternoon"
+        "Level each scoop off, don't heap it",
+        "Water first, then the scoop, shake 20-30 seconds, drink right away",
+        "12 oz of water per dose, and go up to 16 oz if it's thick",
+        "Keep it 1-2 hours away from your supplements and the Allergy Relief tablet",
+        "Keep drinking your full half gallon a day",
+        "Move up only after a week that felt normal. If you get gas, bloating, or cramping, stay at that step or go back one",
+        "Hard stools or constipation means more water per dose"
     )
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "Psyllium Ramp \u2014 Nutricost",
+            text = "Psyllium Ramp: Nutricost",
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium,
             color = Color.White,
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
-            text = "1 scoop = 1g powder \u2248 1g fiber",
+            text = "Using the 1/2 tsp (~2g) matcha scoop",
             fontSize = 13.sp,
             color = Color(0xFF999999),
             modifier = Modifier.padding(bottom = 10.dp)
@@ -4841,8 +4838,6 @@ private fun PsylliumRampSection() {
             Spacer(modifier = Modifier.height(12.dp))
         }
         PsylliumCard("Rules", "", "", rules)
-        Spacer(modifier = Modifier.height(12.dp))
-        PsylliumCard("Delivery days", "", "", deliveryDays)
     }
 }
 
