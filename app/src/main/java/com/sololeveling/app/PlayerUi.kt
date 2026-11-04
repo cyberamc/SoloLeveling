@@ -1451,32 +1451,37 @@ fun UrgeCardScreen(onBack: () -> Unit) {
                 letterSpacing = 2.sp,
                 modifier = Modifier.padding(top = 18.dp, bottom = 2.dp)
             )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
-                    .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
-            ) {
-                Box(
+            listOf(
+                "11/02" to "Come on, Aaron. You know as soon as you start looking, you have failed.",
+                "10/29" to "Spent hours & money before work. Edged so much your balls were sore."
+            ).forEach { (failDate, failText) ->
+                Row(
                     modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .background(Color(0xFFF87171), shape = RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
-                )
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = "10/29",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF87171)
+                        .fillMaxWidth()
+                        .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .fillMaxHeight()
+                            .background(Color(0xFFF87171), shape = RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "Spent hours & money before work. Edged so much your balls were sore.",
-                        fontSize = 15.sp,
-                        color = Color(0xFFCFCFCF),
-                        lineHeight = 22.sp
-                    )
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Text(
+                            text = failDate,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFF87171)
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = failText,
+                            fontSize = 15.sp,
+                            color = Color(0xFFCFCFCF),
+                            lineHeight = 22.sp
+                        )
+                    }
                 }
             }
         }
@@ -4788,6 +4793,110 @@ fun SupplementsScreen() {
                         )
                     )
                 )
+            }
+
+            item {
+                PsylliumRampSection()
+            }
+        }
+    }
+}
+
+@Composable
+private fun PsylliumRampSection() {
+    val weeks = listOf(
+        Triple("Week 1", "2 scoops/day" to "~2g fiber", listOf("2 scoops in 12 oz water, once a day", "Take at ~6 PM")),
+        Triple("Week 2", "4 scoops/day" to "~4g fiber", listOf("2 scoops midday + 2 scoops at ~6 PM", "12 oz water each dose")),
+        Triple("Week 3", "6 scoops/day" to "~6g fiber", listOf("3 scoops midday + 3 scoops at ~6 PM", "12 oz water each dose")),
+        Triple("Week 4", "8 scoops/day" to "~8g fiber", listOf("4 scoops midday + 4 scoops at ~6 PM", "12 oz water each dose")),
+        Triple("Week 5 and on", "Hold at 8 scoops/day" to "", listOf("Stay here unless your digestion says otherwise"))
+    )
+    val rules = listOf(
+        "Level scoops, not heaped",
+        "Stir into water and drink right away (it gels in 1-2 min)",
+        "Keep it 1-2 hrs away from your supplements and the Allergy Relief tablet",
+        "Still drink your full half gallon of water every day",
+        "Move up only if the week felt normal. If you get gas, bloating, or cramping, stay at the current step, or drop back one step for a week",
+        "Hard stools or constipation = more water per dose"
+    )
+    val deliveryDays = listOf(
+        "Your evening supplements are earlier (~6:40 PM), so take the midday dose on the route and the second dose by ~4:30 PM, or move the full amount to the afternoon"
+    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Psyllium Ramp \u2014 Nutricost",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "1 scoop = 1g powder \u2248 1g fiber",
+            fontSize = 13.sp,
+            color = Color(0xFF999999),
+            modifier = Modifier.padding(bottom = 10.dp)
+        )
+        weeks.forEach { (label, head, bullets) ->
+            PsylliumCard(label, head.first, head.second, bullets)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+        PsylliumCard("Rules", "", "", rules)
+        Spacer(modifier = Modifier.height(12.dp))
+        PsylliumCard("Delivery days", "", "", deliveryDays)
+    }
+}
+
+@Composable
+private fun PsylliumCard(label: String, headline: String, value: String, bullets: List<String>) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+            .padding(12.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF999999),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            if (headline.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = headline,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = value,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF999999)
+                    )
+                }
+            }
+            bullets.forEach { line ->
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                    Text(
+                        text = "\u2022",
+                        fontSize = 14.sp,
+                        color = Color(0xFF999999),
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = line,
+                        fontSize = 14.sp,
+                        color = Color(0xFFDDDDDD),
+                        lineHeight = 20.sp
+                    )
+                }
             }
         }
     }
