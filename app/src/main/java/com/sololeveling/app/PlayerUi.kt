@@ -516,8 +516,189 @@ data class RoutineQuest(
     val monthly: Boolean = false
 )
 
+// ─── CO2 tank tracker (SodaStream) ───────────────────────────────────────────
+@Composable
+fun Co2IconCanvas(modifier: Modifier = Modifier) {
+    val color = Color(0xFF7dd3fc)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(20.dp)) {
+        val w = size.width; val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f)
+        drawRoundRect(color = color, topLeft = Offset(w * 0.25f, h * 0.28f), size = androidx.compose.ui.geometry.Size(w * 0.5f, h * 0.68f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.18f, w * 0.18f), style = stroke)
+        drawLine(color = color, start = Offset(w * 0.42f, h * 0.28f), end = Offset(w * 0.42f, h * 0.10f), strokeWidth = w * 0.09f, cap = StrokeCap.Round)
+        drawLine(color = color, start = Offset(w * 0.58f, h * 0.28f), end = Offset(w * 0.58f, h * 0.10f), strokeWidth = w * 0.09f, cap = StrokeCap.Round)
+        drawLine(color = color, start = Offset(w * 0.34f, h * 0.10f), end = Offset(w * 0.66f, h * 0.10f), strokeWidth = w * 0.09f, cap = StrokeCap.Round)
+        drawLine(color = color, start = Offset(w * 0.32f, h * 0.62f), end = Offset(w * 0.68f, h * 0.62f), strokeWidth = w * 0.07f)
+    }
+}
+
+data class Co2Reading(val id: Int, val date: String, val weight: Double, val lbsLeft: Double, val note: String)
+data class Co2State(
+    val tare: Double, val full: Double, val capacity: Double, val readings: List<Co2Reading>,
+    val lbsLeft: Double?, val pctLeft: Int?, val lastDate: String?,
+    val lbsPerWeek: Double?, val daysLeft: Int?, val emptyDate: String?, val since: String?
+)
+
+fun parseCo2(text: String): Co2State? {
+    return try {
+        val o = org.json.JSONObject(text)
+        val arr = o.optJSONArray("readings")
+        val readings = if (arr == null) emptyList() else (0 until arr.length()).map {
+            val r = arr.getJSONObject(it)
+            Co2Reading(r.getInt("id"), r.getString("logged_date"), r.getDouble("weight_lbs"), r.getDouble("lbs_left"), r.optString("note", ""))
+        }
+        val cur = o.optJSONObject("current")
+        val est = o.optJSONObject("estimate")
+        Co2State(
+            o.getDouble("tare"), o.getDouble("full"), o.getDouble("capacity"), readings,
+            cur?.getDouble("lbs_left"), cur?.getInt("pct_left"), cur?.getString("date"),
+            est?.getDouble("lbs_per_week"), est?.getInt("days_left"), est?.getString("empty_date"), est?.getString("since")
+        )
+    } catch (e: Exception) { null }
+}
+
+fun co2Request(method: String, path: String, body: String? = null): Co2State? {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us$path")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = method; conn.connectTimeout = 5000; conn.readTimeout = 5000
+        if (body != null) {
+            conn.doOutput = true; conn.setRequestProperty("Content-Type", "application/json")
+            conn.outputStream.use { it.write(body.toByteArray()) }
+        }
+        val text = conn.inputStream.bufferedReader().readText()
+        conn.disconnect()
+        parseCo2(text)
+    } catch (e: Exception) { null }
+}
+
+@Composable
+fun Co2Screen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    var state by remember { mutableStateOf<Co2State?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var showLogDialog by remember { mutableStateOf(false) }
+    var weightInput by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    fun reload() { scope.launch(Dispatchers.IO) { val r = co2Request("GET", "/api/co2"); if (r != null) state = r; loading = false } }
+    LaunchedEffect(Unit) { reload() }
+
+    if (showLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            containerColor = Color(0xFF1a1a2e),
+            title = { Text("Weigh CO2 Tank", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Put the tank on the scale and enter the total weight in lbs (empty = 8.12, full = 13.12).", color = Color(0xFF94a3b8), fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(value = weightInput, onValueChange = { weightInput = it },
+                        label = { Text("Weight (lbs)") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFF7dd3fc), unfocusedBorderColor = Color(0xFF2a2a3a), focusedLabelColor = Color(0xFF7dd3fc), unfocusedLabelColor = Color(0xFF94a3b8)))
+                    if (errorMsg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(errorMsg, color = Color(0xFFf87171), fontSize = 12.sp) }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val w = weightInput.trim().toDoubleOrNull()
+                    if (w == null || w < 5.0 || w > 25.0) { errorMsg = "Enter a valid weight (5 to 25 lbs)"; return@Button }
+                    saving = true
+                    scope.launch(Dispatchers.IO) {
+                        val r = co2Request("POST", "/api/co2", """{"weight_lbs":$w}""")
+                        if (r != null) { state = r; showLogDialog = false; weightInput = ""; errorMsg = "" } else { errorMsg = "Failed to save" }
+                        saving = false
+                    }
+                }, enabled = !saving, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0ea5e9))) {
+                    Text(if (saving) "Saving..." else "Save", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton(onClick = { showLogDialog = false; weightInput = ""; errorMsg = "" }) { Text("Cancel", color = Color(0xFF94a3b8)) } }
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a)).systemBarsPadding()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onBack) { Text("← Back", color = Color(0xFF7dd3fc), fontSize = 14.sp) }
+            Spacer(Modifier.weight(1f))
+            Text("CO2 Tank", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Button(onClick = { showLogDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0ea5e9)), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 6.dp)) {
+                Text("+ Weigh", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        val st = state
+        if (loading && st == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color(0xFF7dd3fc)) }
+        } else if (st == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Could not load the CO2 tracker.", color = Color(0xFFf87171)) }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                val pct = st.pctLeft ?: 0
+                val barColor = if (pct > 40) Color(0xFF10b981) else if (pct > 15) Color(0xFFf59e0b) else Color(0xFFf87171)
+                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(12.dp)).padding(16.dp)) {
+                    Text("CO2 LEFT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text(if (st.lbsLeft != null) String.format("%.2f lbs", st.lbsLeft) else "No readings yet", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("$pct% of a ${st.capacity.toInt()} lb tank" + (if (st.lastDate != null) " · weighed " + st.lastDate else ""), fontSize = 13.sp, color = Color(0xFF94a3b8))
+                    Spacer(Modifier.height(12.dp))
+                    Box(modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xFF1f2937))) {
+                        Box(modifier = Modifier.fillMaxWidth(pct / 100f).fillMaxHeight().background(barColor))
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(12.dp)).padding(16.dp)) {
+                    Text("ESTIMATE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                    Spacer(Modifier.height(6.dp))
+                    if (st.daysLeft != null && st.emptyDate != null && st.lbsPerWeek != null) {
+                        val timeLeft = if (st.daysLeft >= 14) "about " + (st.daysLeft / 7) + " weeks" else if (st.daysLeft == 1) "about 1 day" else "about " + st.daysLeft + " days"
+                        Text(timeLeft + " left", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = barColor)
+                        Text("Empty around " + st.emptyDate, fontSize = 14.sp, color = Color.White)
+                        Spacer(Modifier.height(6.dp))
+                        Text(String.format("Using %.2f lbs/week (since %s)", st.lbsPerWeek, st.since ?: ""), fontSize = 12.sp, color = Color(0xFF94a3b8))
+                    } else {
+                        Text("Weigh it again in a few days to get an estimate.", fontSize = 14.sp, color = Color(0xFF94a3b8))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Empty = " + st.tare + " lbs · Full = " + String.format("%.2f", st.full) + " lbs. Refill when it gets close to empty. A reading well above the last one counts as a refill.", fontSize = 11.sp, color = Color(0xFF64748b))
+                }
+                Spacer(Modifier.height(20.dp))
+                Text("READINGS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                Spacer(Modifier.height(10.dp))
+                if (st.readings.isEmpty()) {
+                    Text("No readings yet. Tap + Weigh.", color = Color(0xFF94a3b8), fontSize = 14.sp)
+                } else {
+                    st.readings.reversed().forEach { r ->
+                        Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(8.dp)).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(r.date, color = Color(0xFF94a3b8), fontSize = 13.sp)
+                                if (r.note.isNotEmpty()) Text(r.note, color = Color(0xFF64748b), fontSize = 11.sp)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("${r.weight} lbs", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                Text(String.format("%.2f lbs CO2", r.lbsLeft), color = Color(0xFF7dd3fc), fontSize = 11.sp)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = { scope.launch(Dispatchers.IO) { val x = co2Request("DELETE", "/api/co2/${r.id}"); if (x != null) state = x } }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                                Text("✕", color = Color(0xFFa55555), fontSize = 16.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun RoutineScreen(onBack: () -> Unit) {
+    var showCo2 by remember { mutableStateOf(false) }
+    if (showCo2) { Co2Screen(onBack = { showCo2 = false }); return }
     BackHandler { onBack() }
     val fullDayNames = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
     val shortDayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -537,13 +718,24 @@ fun RoutineScreen(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = "Routine", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(
-                    text = "Back",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFFFFD700),
-                    modifier = Modifier.clickable { onBack() }
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { showCo2 = true }.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Co2IconCanvas()
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "CO2", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF7dd3fc))
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Back",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFFFD700),
+                        modifier = Modifier.clickable { onBack() }
+                    )
+                }
             }
         }
 
