@@ -101,6 +101,7 @@ fun TasksScreen() {
     var showMobilityScreen by remember { mutableStateOf(false) }
     var showBirthdayScreen by remember { mutableStateOf(false) }
     var showTravelScreen by remember { mutableStateOf(false) }
+    var showCo2Screen by remember { mutableStateOf(false) }
     // Haircut mode: swaps the Fri/Sat Today list for the Haircut routine. Saved for today only.
     val haircutContext = LocalContext.current
     val haircutPrefs = remember { haircutContext.getSharedPreferences("haircut_mode", android.content.Context.MODE_PRIVATE) }
@@ -156,6 +157,10 @@ fun TasksScreen() {
     }
     if (showTravelScreen) {
         TravelScreen(onBack = { showTravelScreen = false })
+        return
+    }
+    if (showCo2Screen) {
+        Co2Screen(onBack = { showCo2Screen = false })
         return
     }
 
@@ -267,6 +272,13 @@ fun TasksScreen() {
                     fontSize = 18.sp,
                     modifier = Modifier
                         .clickable { showWeightScreen = true }
+                        .padding(horizontal = 2.dp)
+                )
+                Text(
+                    text = "🥤",
+                    fontSize = 18.sp,
+                    modifier = Modifier
+                        .clickable { showCo2Screen = true }
                         .padding(horizontal = 2.dp)
                 )
                 Text(
