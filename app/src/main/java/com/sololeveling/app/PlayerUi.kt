@@ -2291,7 +2291,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                     Column {
                         d.study.forEach { s ->
                             Text(
-                                text = (if (wpDone.contains("study")) "\u2713 " else "") + (if (d.label.startsWith("Delivery")) "Bonus Study $s" else "Study Time ~ $s"),
+                                text = (if (wpDone.contains("study")) "\u2713 " else "") + "Study Time ~ $s",
                                 fontSize = 14.sp,
                                 color = if (wpDone.contains("study")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
                                 modifier = Modifier.pointerInput(Unit) {
