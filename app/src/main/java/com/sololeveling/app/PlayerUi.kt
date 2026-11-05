@@ -393,17 +393,6 @@ fun TasksScreen() {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Box(
-                modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
-            ) {
-                Column {
-                    Text("I am getting my CCNA so I can:", color = Color(0xFF4ade80), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
-                    Text("\u2022 Stop working two jobs", color = Color(0xFF86efac), fontSize = 13.sp)
-                    Text("\u2022 Get my own place", color = Color(0xFF86efac), fontSize = 13.sp)
-                    Text("\u2022 Leave Level 1 support behind", color = Color(0xFF86efac), fontSize = 13.sp)
-                }
-            }
         }
 
         if (loading) {
@@ -3116,6 +3105,51 @@ fun OathLanternIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui
     }
 }
 
+// Page-break divider: a dashed rule with a small "page torn in two" icon in the middle.
+@Composable
+fun PageBreakIcon(modifier: Modifier = Modifier) {
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFF1f4d33)))
+        androidx.compose.foundation.Canvas(modifier = Modifier.padding(horizontal = 10.dp).size(width = 30.dp, height = 22.dp)) {
+            val w = this.size.width
+            val h = this.size.height
+            val green = Color(0xFF22e07a)
+            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.6.dp.toPx())
+            drawRoundRect(
+                color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.22f, 0f),
+                size = androidx.compose.ui.geometry.Size(w * 0.56f, h * 0.36f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()), style = stroke
+            )
+            drawRoundRect(
+                color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.22f, h * 0.64f),
+                size = androidx.compose.ui.geometry.Size(w * 0.56f, h * 0.36f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()), style = stroke
+            )
+            drawLine(
+                color = green, start = androidx.compose.ui.geometry.Offset(0f, h * 0.5f), end = androidx.compose.ui.geometry.Offset(w, h * 0.5f),
+                strokeWidth = 1.6.dp.toPx(),
+                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
+            )
+        }
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFF1f4d33)))
+    }
+}
+
+// The "why" box (moved here from the Routine header).
+@Composable
+fun CcnaWhyCard() {
+    Box(
+        modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
+    ) {
+        Column {
+            Text("I am getting my CCNA so I can:", color = Color(0xFF4ade80), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
+            Text("\u2022 Stop working two jobs", color = Color(0xFF86efac), fontSize = 13.sp)
+            Text("\u2022 Get my own place", color = Color(0xFF86efac), fontSize = 13.sp)
+            Text("\u2022 Leave Level 1 support behind", color = Color(0xFF86efac), fontSize = 13.sp)
+        }
+    }
+}
+
 // The lantern button for the Routine screen's icon row: tap to read the oath.
 @Composable
 fun OathLanternButton() {
@@ -3137,6 +3171,8 @@ fun OathLanternButton() {
                     OATH_LINES.forEach { line ->
                         Text(line, color = Color(0xFFe2e8f0), fontSize = 15.sp, lineHeight = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 3.dp))
                     }
+                    PageBreakIcon(modifier = Modifier.padding(vertical = 14.dp))
+                    CcnaWhyCard()
                 }
             },
             confirmButton = {
