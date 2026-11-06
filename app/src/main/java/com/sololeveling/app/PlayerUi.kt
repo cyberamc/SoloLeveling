@@ -80,6 +80,76 @@ fun PlayerScreen() {
     TasksScreen()
 }
 
+// ---- Clothes guide ----
+val CLOTHES_GUIDE = listOf(
+    Triple(Color(0xFF111111), "Black", "Fri & Sat Evenings, Sunday, & Mon Gym"),
+    Triple(Color(0xFF2563eb), "Blue", "Mon & Tues"),
+    Triple(Color(0xFF800020), "Maroon", "Wed & Thurs"),
+    Triple(Color(0xFFf59e0b), "Motivation", "Tues Gym"),
+    Triple(Color(0xFFe5e7eb), "Nike", "Thurs Gym"),
+    Triple(Color(0xFF22c55e), "Green", "Fri"),
+    Triple(Color(0xFFef4444), "Majin", "Sat")
+)
+
+@Composable
+fun ShirtIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui.unit.Dp = 22.dp) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(iconSize)) {
+        val w = this.size.width
+        val h = this.size.height
+        val shirt = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.31f, h * 0.09f); lineTo(w * 0.08f, h * 0.27f); lineTo(w * 0.19f, h * 0.50f)
+            lineTo(w * 0.27f, h * 0.45f); lineTo(w * 0.27f, h * 0.91f); lineTo(w * 0.73f, h * 0.91f)
+            lineTo(w * 0.73f, h * 0.45f); lineTo(w * 0.81f, h * 0.50f); lineTo(w * 0.92f, h * 0.27f)
+            lineTo(w * 0.69f, h * 0.09f)
+            quadraticBezierTo(w * 0.5f, h * 0.27f, w * 0.31f, h * 0.09f); close()
+        }
+        drawPath(shirt, Color(0xFF0c3d5c))
+        drawPath(shirt, Color(0xFF38bdf8), style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.065f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
+}
+
+// Shirt button for the Routine screen's icon row: tap to see which clothes go on which days.
+@Composable
+fun ClothesButton() {
+    var showClothes by remember { mutableStateOf(false) }
+    ShirtIcon(modifier = Modifier.clickable { showClothes = true }.padding(horizontal = 2.dp))
+    if (showClothes) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showClothes = false },
+            containerColor = Color(0xFF0c1a12),
+            title = {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    ShirtIcon(iconSize = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Clothes", color = Color(0xFF38bdf8), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    CLOTHES_GUIDE.forEach { (dot, name, days) ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.Top) {
+                            Box(
+                                modifier = Modifier.padding(top = 4.dp).size(13.dp)
+                                    .background(Color(0xFF666666), shape = androidx.compose.foundation.shape.CircleShape)
+                                    .padding(1.dp)
+                                    .background(dot, shape = androidx.compose.foundation.shape.CircleShape)
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(name, color = Color(0xFFe2e8f0), fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(86.dp))
+                            Text(days, color = Color(0xFF94a3b8), fontSize = 14.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showClothes = false }) {
+                    Text("Close", color = Color(0xFF38bdf8))
+                }
+            }
+        )
+    }
+}
+
 @Composable
 fun TasksScreen() {
     var refreshTrigger by remember { mutableIntStateOf(0) }
@@ -274,6 +344,7 @@ fun TasksScreen() {
                         .clickable { showWeightScreen = true }
                         .padding(horizontal = 2.dp)
                 )
+                ClothesButton()
                 Text(
                     text = "🥤",
                     fontSize = 18.sp,
