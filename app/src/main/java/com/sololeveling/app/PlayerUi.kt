@@ -478,23 +478,6 @@ fun TasksScreen() {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "daily-routine-reference") {
                     BirthdayBanners()
-                    if (todayWeekday == 5 || todayWeekday == 6) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().background(Color(0xFF2e2415), shape = RoundedCornerShape(10.dp)).padding(14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Stop Eating Junk Food On Delivery Days", color = Color(0xFFe0a458), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                            }
-                            Box(
-                                modifier = Modifier.fillMaxWidth().background(Color(0xFF2a1616), shape = RoundedCornerShape(10.dp)).padding(14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Do Not Watch Movies With Fam After 9 PM", color = Color(0xFFe89aa0), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
                     TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6)) {
                         val held = combinedToday.firstOrNull { it.title.contains("Held The Line", ignoreCase = true) }
                         if (held != null) {
