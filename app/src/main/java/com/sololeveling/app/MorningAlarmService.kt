@@ -96,10 +96,19 @@ class MorningAlarmService : Service() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("navigate_to", alarmType)
         }
-        val dismissPi = PendingIntent.getActivity(
-            this, 0, dismissIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
+        // Evening (bedtime) alarm: Dismiss stops the sound directly, so it works from the lock screen without unlocking
+        // or waiting for the app to open. The morning alarm keeps opening the Morning Brief.
+        val dismissPi = if (alarmType == TYPE_EVENING) {
+            PendingIntent.getService(
+                this, 4, Intent(this, MorningAlarmService::class.java).apply { action = ACTION_DISMISS },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        } else {
+            PendingIntent.getActivity(
+                this, 0, dismissIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        }
 
         // Open app intent for notification tap
         val openIntent = Intent(this, MainActivity::class.java).apply {
