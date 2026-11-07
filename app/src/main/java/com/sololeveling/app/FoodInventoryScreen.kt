@@ -43,7 +43,7 @@ val INV_STATUS_COLORS = listOf(
 )
 fun invStatus(level: Int): Int = if (level >= 2) 2 else level
 
-val ROOM_ORDER = listOf("Kitchen", "Garage", "Bedroom", "Bathroom")
+val ROOM_ORDER = listOf("Kitchen", "Garage", "Bedroom", "Bathroom", "Car")
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
