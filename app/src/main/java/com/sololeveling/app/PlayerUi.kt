@@ -180,6 +180,9 @@ fun TasksScreen() {
     // Sunday Packages Drop-Off: swaps the 5 AM - 11 AM routine rows. Saved for today only.
     val dropOffPrefs = remember { haircutContext.getSharedPreferences("dropoff_mode", android.content.Context.MODE_PRIVATE) }
     var dropOffOn by remember { mutableStateOf(dropOffPrefs.getString("date", "") == haircutToday && dropOffPrefs.getBoolean("on", false)) }
+    // Delivery: Late Finish: swaps the 2:30 PM - 9 PM routine rows on Fri/Sat. Saved for today only.
+    val latePrefs = remember { haircutContext.getSharedPreferences("late_mode", android.content.Context.MODE_PRIVATE) }
+    var lateOn by remember { mutableStateOf(latePrefs.getString("date", "") == haircutToday && latePrefs.getBoolean("on", false)) }
     var showTimerDialog by remember { mutableStateOf(false) }
     var showAlarmDialog by remember { mutableStateOf(false) }
 
@@ -388,6 +391,23 @@ fun TasksScreen() {
                             .padding(horizontal = 4.dp)
                     )
                 }
+                if (todayWeekday == 5 || todayWeekday == 6) {
+                    Text(
+                        text = "\uD83D\uDE9A",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .background(if (lateOn && !haircutMode) Color(0xFF3a3a6a) else Color.Transparent, shape = RoundedCornerShape(6.dp))
+                            .clickable {
+                                lateOn = !lateOn
+                                latePrefs.edit().putString("date", haircutToday).putBoolean("on", lateOn).apply()
+                                if (lateOn && haircutMode) {
+                                    haircutMode = false
+                                    haircutPrefs.edit().putString("date", haircutToday).putBoolean("on", false).apply()
+                                }
+                            }
+                            .padding(horizontal = 4.dp)
+                    )
+                }
                 var showMoreIcons by remember { mutableStateOf(false) }
                 Text(
                     text = if (showMoreIcons) "\u25C2" else "\u25B8",
@@ -494,7 +514,7 @@ fun TasksScreen() {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "daily-routine-reference") {
                     BirthdayBanners()
-                    TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6), dropoff = todayWeekday == 0 && dropOffOn) {
+                    TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6), dropoff = todayWeekday == 0 && dropOffOn, late = (todayWeekday == 5 || todayWeekday == 6) && lateOn && !haircutMode) {
                         val held = combinedToday.firstOrNull { it.title.contains("Held The Line", ignoreCase = true) }
                         if (held != null) {
                             HeldTheLineRow(quest = held, onCompleteToggle = { refreshTrigger++ })
@@ -2395,10 +2415,10 @@ fun TimerDialog(onDismiss: () -> Unit) {
 data class TodayRoutineRow(val time: String, val lines: List<String>)
 data class TodayRoutine(val label: String, val rows: List<TodayRoutineRow>, val study: List<String>)
 
-fun fetchRoutineToday(weekday: Int, haircut: Boolean, dropoff: Boolean = false): TodayRoutine? {
+fun fetchRoutineToday(weekday: Int, haircut: Boolean, dropoff: Boolean = false, late: Boolean = false): TodayRoutine? {
     return try {
         val flag = if (haircut) 1 else 0
-        val conn = java.net.URL("https://mysololeveling.us/api/routine-today?weekday=$weekday&haircut=$flag" + (if (dropoff) "&dropoff=1" else "")).openConnection() as java.net.HttpURLConnection
+        val conn = java.net.URL("https://mysololeveling.us/api/routine-today?weekday=$weekday&haircut=$flag" + (if (dropoff) "&dropoff=1" else "") + (if (late) "&late=1" else "")).openConnection() as java.net.HttpURLConnection
         conn.connectTimeout = 8000
         conn.readTimeout = 8000
         val body = conn.inputStream.bufferedReader().use { it.readText() }
@@ -2473,11 +2493,11 @@ fun HeldTheLineRow(quest: Quest, onCompleteToggle: () -> Unit) {
 }
 
 @Composable
-fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", readOnly: Boolean = false, dropoff: Boolean = false, extra: @Composable () -> Unit = {}) {
-    var data by remember(weekday, haircut, dropoff) { mutableStateOf<TodayRoutine?>(null) }
+fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", readOnly: Boolean = false, dropoff: Boolean = false, late: Boolean = false, extra: @Composable () -> Unit = {}) {
+    var data by remember(weekday, haircut, dropoff, late) { mutableStateOf<TodayRoutine?>(null) }
 
-    LaunchedEffect(weekday, haircut, dropoff) {
-        val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchRoutineToday(weekday, haircut, dropoff) }
+    LaunchedEffect(weekday, haircut, dropoff, late) {
+        val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchRoutineToday(weekday, haircut, dropoff, late) }
         if (fetched != null) data = fetched
     }
 
