@@ -1092,6 +1092,45 @@ fun StepBtn(sym: String, onClick: () -> Unit) {
     }
 }
 
+/** Free-text note shown on delivery days. Saved on the phone with today's date and erased the first time it is opened on a later day. */
+@Composable
+fun DeliveryDayNote() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("delivery_day_note", android.content.Context.MODE_PRIVATE) }
+    val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()) }
+    var text by remember {
+        if (prefs.getString("date", "") != today) {
+            prefs.edit().putString("date", today).putString("text", "").apply()
+        }
+        mutableStateOf(prefs.getString("text", "") ?: "")
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .background(Color(0xFF12122A), RoundedCornerShape(10.dp))
+            .padding(14.dp)
+    ) {
+        Text("\uD83D\uDCDD Today's Note", color = Color(0xFF7B9CD8), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = text,
+            onValueChange = {
+                text = it
+                prefs.edit().putString("date", today).putString("text", it).apply()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2,
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, color = Color(0xFFE2E8F0)),
+            placeholder = { Text("Notes for today...", color = Color(0xFF7A7A99), fontSize = 14.sp) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF7B8CDE),
+                unfocusedBorderColor = Color(0xFF2A2A3A),
+                cursorColor = Color(0xFF7B8CDE)
+            )
+        )
+        Text("Cleared automatically tomorrow", fontSize = 11.sp, color = Color(0xFF7A7A99), modifier = Modifier.padding(top = 6.dp))
+    }
+}
+
 @Composable
 fun FinanceScreen(baseUrl: String) {
     var currentView by remember { mutableStateOf<String?>(null) }
@@ -1143,6 +1182,8 @@ fun FinanceScreen(baseUrl: String) {
                             Text("\u2022 500 Ferry Road", color = Color(0xFF4ADE80), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
                         }
                     }
+                    Spacer(Modifier.height(10.dp))
+                    DeliveryDayNote()
                     Spacer(Modifier.height(12.dp))
                     TodayDeliveryTracker(baseUrl = baseUrl)
                     Spacer(Modifier.height(12.dp))
