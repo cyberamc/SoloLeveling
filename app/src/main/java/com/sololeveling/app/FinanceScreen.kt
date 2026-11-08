@@ -1115,17 +1115,33 @@ fun FinanceScreen(baseUrl: String) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
+                            .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("\u26A0", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Galveston \u2014 avoid Market, N Holiday Dr, and Seawall",
-                            color = Color(0xFFF87171),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("Always Look At Address!", color = Color(0xFFF59E0B), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Text("\u26A0", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Column {
+                            Text("Route 121 / Galveston:", color = Color(0xFFF87171), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            Text("Avoid:", color = Color(0xFFF87171), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            listOf("Market", "N Holiday Dr", "Seawall", "FM 3000 Rd", "20th Street", "East Beach", "Strand Street").forEach { street ->
+                                Text("\u2022 " + street, color = Color(0xFFF87171), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Text("Approved Apartment:", color = Color(0xFF4ADE80), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            Text("\u2022 500 Ferry Road", color = Color(0xFF4ADE80), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                     Spacer(Modifier.height(12.dp))
                     TodayDeliveryTracker(baseUrl = baseUrl)
