@@ -352,13 +352,6 @@ fun TasksScreen() {
                 )
                 ClothesButton()
                 Text(
-                    text = "🥤",
-                    fontSize = 18.sp,
-                    modifier = Modifier
-                        .clickable { showCo2Screen = true }
-                        .padding(horizontal = 2.dp)
-                )
-                Text(
                     text = "⏱️",
                     fontSize = 18.sp,
                     modifier = Modifier
@@ -418,6 +411,13 @@ fun TasksScreen() {
                         .padding(horizontal = 6.dp)
                 )
                 if (showMoreIcons) {
+                    Text( /*CO2_MOVED*/
+                        text = "🥤",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showCo2Screen = true }
+                            .padding(horizontal = 2.dp)
+                    )
                     Text(
                         text = "🐶",
                         fontSize = 18.sp,
