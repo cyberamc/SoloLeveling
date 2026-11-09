@@ -4726,6 +4726,26 @@ val BACKUP_DINNER_MEALS = listOf(
     )
 )
 
+val LATE_SNACK_MEAL = Meal(
+    name = "McDonald's Double Quarter Pounder with Cheese",
+    mealType = "Snack",
+    macros = Macros(calories = 820, protein = 48, fat = 51, netCarbs = "41"),
+    ingredients = listOf("Double Quarter Pounder with Cheese, no pickles, no mustard, add mayo"),
+    steps = listOf(
+        MealStep("The Order", "Double Quarter Pounder with Cheese, no pickles, no mustard, add mayo")
+    )
+)
+
+// Adds `add` to a displayed daily total such as "2,355" or "150g" (keeps the unit, re-adds the thousands comma).
+fun macroPlus(base: String, add: Double): String {
+    if (add == 0.0) return base
+    val suffix = base.filter { it.isLetter() }
+    val n = base.replace(",", "").filter { it.isDigit() || it == '.' }.toDoubleOrNull() ?: return base
+    val t = n + add
+    val txt = if (t % 1.0 == 0.0) String.format(java.util.Locale.US, "%,d", t.toLong()) else String.format(java.util.Locale.US, "%.1f", t)
+    return txt + suffix
+}
+
 @Composable
 fun DietScreen() {
     var selectedMeal by remember { mutableStateOf<Meal?>(null) }
@@ -4736,7 +4756,12 @@ fun DietScreen() {
             todayDow == java.util.Calendar.FRIDAY || todayDow == java.util.Calendar.SATURDAY
         )
     }
-    var backupDinner by remember { mutableStateOf(false) }
+    // Backup Dinner and Late Snack are remembered for today only; they reset the next day.
+    val dietContext = LocalContext.current
+    val dietPrefs = remember { dietContext.getSharedPreferences("diet_toggles", android.content.Context.MODE_PRIVATE) }
+    val dietToday = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
+    var backupDinner by remember { mutableStateOf(dietPrefs.getString("date", "") == dietToday && dietPrefs.getBoolean("backup", false)) }
+    var lateSnack by remember { mutableStateOf(dietPrefs.getString("date", "") == dietToday && dietPrefs.getBoolean("snack", false)) }
 
     BackHandler(enabled = selectedMeal != null) {
         selectedMeal = null
@@ -4748,7 +4773,15 @@ fun DietScreen() {
             deliveryDiet = deliveryDiet,
             onToggleDiet = { deliveryDiet = !deliveryDiet },
             backupDinner = backupDinner,
-            onToggleBackup = { backupDinner = !backupDinner },
+            onToggleBackup = {
+                backupDinner = !backupDinner
+                dietPrefs.edit().putString("date", dietToday).putBoolean("backup", backupDinner).putBoolean("snack", lateSnack).apply()
+            },
+            lateSnack = lateSnack,
+            onToggleLateSnack = {
+                lateSnack = !lateSnack
+                dietPrefs.edit().putString("date", dietToday).putBoolean("backup", backupDinner).putBoolean("snack", lateSnack).apply()
+            },
             onMealSelected = { selectedMeal = it }
         )
     } else {
@@ -4771,7 +4804,7 @@ fun MacroBox(label: String, value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner: Boolean, onToggleBackup: () -> Unit, onMealSelected: (Meal) -> Unit) {
+fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner: Boolean, onToggleBackup: () -> Unit, lateSnack: Boolean, onToggleLateSnack: () -> Unit, onMealSelected: (Meal) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -4837,10 +4870,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,385" else if (deliveryDiet) "2,355" else if (backupDinner) "2,065" else "2,035", Modifier.weight(1f))
-                    MacroBox("Protein", if (deliveryDiet && backupDinner) "150g" else if (deliveryDiet) "150g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet && backupDinner) "120g" else if (deliveryDiet) "123g" else if (backupDinner) "108g" else "111g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "170g" else if (deliveryDiet) "149g" else if (backupDinner) "104.5g" else "83.5g", Modifier.weight(1f))
+                    MacroBox("Calories", macroPlus(if (deliveryDiet && backupDinner) "2,385" else if (deliveryDiet) "2,355" else if (backupDinner) "2,065" else "2,035", if (deliveryDiet && lateSnack) 820.0 else 0.0), Modifier.weight(1f))
+                    MacroBox("Protein", macroPlus(if (deliveryDiet && backupDinner) "150g" else if (deliveryDiet) "150g" else if (backupDinner) "155g" else "155g", if (deliveryDiet && lateSnack) 48.0 else 0.0), Modifier.weight(1f))
+                    MacroBox("Fat", macroPlus(if (deliveryDiet && backupDinner) "120g" else if (deliveryDiet) "123g" else if (backupDinner) "108g" else "111g", if (deliveryDiet && lateSnack) 51.0 else 0.0), Modifier.weight(1f))
+                    MacroBox("Net Carbs", macroPlus(if (deliveryDiet && backupDinner) "170g" else if (deliveryDiet) "149g" else if (backupDinner) "104.5g" else "83.5g", if (deliveryDiet && lateSnack) 41.0 else 0.0), Modifier.weight(1f))
                 }
             }
         }
@@ -4906,6 +4939,40 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+            if (deliveryDiet) {
+                item(key = "late_snack_header") {
+                    Text(
+                        text = "Late Snack (Optional)",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF999999),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+                item(key = "late_snack_row") {
+                    Row(modifier = Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { onMealSelected(LATE_SNACK_MEAL) },
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(text = LATE_SNACK_MEAL.name, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .width(56.dp)
+                                .fillMaxHeight()
+                                .background(if (lateSnack) Color(0xFF3a2200) else Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp))
+                                .clickable { onToggleLateSnack() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "\u2713", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = if (lateSnack) Color(0xFFFF8C00) else Color(0xFF555555))
+                        }
+                    }
                 }
             }
             item {
