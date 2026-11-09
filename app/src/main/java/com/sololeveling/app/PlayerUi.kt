@@ -788,8 +788,6 @@ fun Co2Screen(onBack: () -> Unit) {
 
 @Composable
 fun RoutineScreen(onBack: () -> Unit) {
-    var showCo2 by remember { mutableStateOf(false) }
-    if (showCo2) { Co2Screen(onBack = { showCo2 = false }); return }
     BackHandler { onBack() }
     val fullDayNames = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday")
     val shortDayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -809,24 +807,13 @@ fun RoutineScreen(onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(text = "Routine", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Row(
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { showCo2 = true }.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Co2IconCanvas()
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "CO2", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF7dd3fc))
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = "Back",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFD700),
-                        modifier = Modifier.clickable { onBack() }
-                    )
-                }
+                Text(
+                    text = "Back",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier.clickable { onBack() }
+                )
             }
         }
 
