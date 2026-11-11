@@ -1140,6 +1140,7 @@ fun FinanceScreen(baseUrl: String) {
     when (currentView) {
         "delivery" -> DeliveryTrackerScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "bookkeeping" -> BookkeepingScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        "spending" -> SpendingScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "speedxchecks" -> SpeedxChecksScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "deliveryhistory" -> DeliveryHistoryScreen(baseUrl = baseUrl, onBack = { currentView = null })
         else -> {
@@ -1188,6 +1189,9 @@ fun FinanceScreen(baseUrl: String) {
                     TodayDeliveryTracker(baseUrl = baseUrl)
                     Spacer(Modifier.height(12.dp))
                 }
+
+                /*SPENDING_HUB*/ SpendingCard(baseUrl = baseUrl, onOpen = { currentView = "spending" })
+                Spacer(Modifier.height(12.dp))
 
                 Button(
                     onClick = { currentView = "delivery" },
