@@ -150,6 +150,77 @@ fun ClothesButton() {
     }
 }
 
+// ---- WFH Steps Schedule ----
+val WFH_STEPS_GUIDE = listOf(
+    Pair("Walking Pad 10:30 AM:", "0.5 HR / 3K"),
+    Pair("Phase 2:", "1 HR / 6K During Entertainment"),
+    Pair("Phase 3:", "0.5 HR / 3K After Lunch"),
+    Pair("Phase 4:", "1 HR / 3K After Lunch"),
+    Pair("Phase 5:", "Walk Toby After Work")
+)
+
+@Composable
+fun StepsGuideIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui.unit.Dp = 20.dp) {
+    val green = Color(0xFF6ACB6A)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(iconSize)) {
+        val w = this.size.width
+        val h = this.size.height
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.08f, h * 0.44f), size = androidx.compose.ui.geometry.Size(w * 0.30f, h * 0.40f))
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.11f, h * 0.30f), size = androidx.compose.ui.geometry.Size(w * 0.24f, h * 0.16f))
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.55f, h * 0.24f), size = androidx.compose.ui.geometry.Size(w * 0.30f, h * 0.40f))
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.58f, h * 0.10f), size = androidx.compose.ui.geometry.Size(w * 0.24f, h * 0.16f))
+    }
+}
+
+// Footprints button for the Routine screen's icon row: tap to see the WFH Steps Schedule.
+@Composable
+fun StepsGuideButton() {
+    var showSteps by remember { mutableStateOf(false) }
+    StepsGuideIcon(modifier = Modifier.clickable { showSteps = true }.padding(horizontal = 2.dp))
+    if (showSteps) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSteps = false },
+            containerColor = Color(0xFF0c1a12),
+            title = {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    StepsGuideIcon(iconSize = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("WFH Steps Schedule", color = Color(0xFF6ACB6A), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    WFH_STEPS_GUIDE.forEach { (label, detail) ->
+                        Text(
+                            text = androidx.compose.ui.text.buildAnnotatedString {
+                                pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = Color.White))
+                                append(label)
+                                pop()
+                                append(" " + detail)
+                            },
+                            color = Color(0xFFe2e8f0),
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        )
+                    }
+                    Text(
+                        text = "Goal: 20K daily",
+                        color = Color(0xFF6ACB6A),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 10.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showSteps = false }) {
+                    Text("Close", color = Color(0xFF6ACB6A))
+                }
+            }
+        )
+    }
+}
+
 @Composable
 fun TasksScreen() {
     var refreshTrigger by remember { mutableIntStateOf(0) }
@@ -351,6 +422,7 @@ fun TasksScreen() {
                         .padding(horizontal = 2.dp)
                 )
                 ClothesButton()
+                StepsGuideButton()
                 Text(
                     text = "⏱️",
                     fontSize = 18.sp,
