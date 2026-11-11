@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit
  */
 object UserReminder {
     const val CHANNEL_ID = "user_reminder"
+    const val HOLD_CHANNEL_ID = "hold_the_line"
 
     private const val BASE_URL = "https://mysololeveling.us"
     private const val WORK_NAME = "user_reminder_poll"
@@ -67,6 +68,22 @@ object UserReminder {
             ).apply { description = "Your scheduled one-time reminders" }
             val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             mgr.createNotificationChannel(channel)
+            // "Hold The Line" reminders get their own louder, distinct channel.
+            val hold = NotificationChannel(HOLD_CHANNEL_ID, "Hold The Line", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Hold The Line reminders"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 700, 250, 700, 250, 1000)
+                enableLights(true)
+                lightColor = android.graphics.Color.RED
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+            }
+            mgr.createNotificationChannel(hold)
         }
     }
 
@@ -186,7 +203,39 @@ object UserReminder {
         }
     }
 
+    /** True for reminders about holding the line (the title can be a whole sentence). */
+    fun isHoldTheLine(title: String): Boolean =
+        Regex("(?i)\\b(hold|held) the line\\b").containsMatchIn(title)
+
+    private fun showHoldTheLine(context: Context, id: Int, title: String) {
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val contentPi = PendingIntent.getActivity(
+            context, NOTIF_BASE + id, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val heading = "\uD83D\uDEE1\uFE0F HOLD THE LINE"
+        val text = title.trim()
+        val notification = NotificationCompat.Builder(context, HOLD_CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(heading)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().setBigContentTitle(heading).bigText(text))
+            .setColor(0xFFDC2626.toInt())
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVibrate(longArrayOf(0, 700, 250, 700, 250, 1000))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(false)
+            .setContentIntent(contentPi)
+            .build()
+        val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        mgr.notify(NOTIF_BASE + id, notification)
+    }
+
     fun showNotification(context: Context, id: Int, title: String) {
+        if (isHoldTheLine(title)) { showHoldTheLine(context, id, title); return }
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
