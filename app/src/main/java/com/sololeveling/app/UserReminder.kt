@@ -215,8 +215,10 @@ object UserReminder {
             context, NOTIF_BASE + id, openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val heading = "\uD83D\uDEE1\uFE0F Hold The Line"
-        val text = title.trim().split(" ").joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercase() } } /*HOLD_TITLE_CASE*/
+        val heading = "\uD83D\uDEE1\uFE0F Hold The Line, Aaron"
+        // Drop a leading "Hold The Line, Aaron." from the message: the heading already says it. /*HOLD_STRIP_PREFIX*/
+        val stripped = title.trim().replace(Regex("(?i)^(hold|held) the line[,.:!\\s-]*(aaron)?[,.:!\\s-]*"), "")
+        val text = (if (stripped.isBlank()) title.trim() else stripped).split(" ").joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercase() } } /*HOLD_TITLE_CASE*/
         val notification = NotificationCompat.Builder(context, HOLD_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(heading)
