@@ -43,7 +43,7 @@ val INV_STATUS_COLORS = listOf(
 )
 fun invStatus(level: Int): Int = if (level >= 2) 2 else level
 
-val ROOM_ORDER = listOf("Kitchen", "Garage", "Bedroom", "Bathroom", "Car")
+val ROOM_ORDER = listOf("Kitchen", "Garage", "Bedroom", "Bathroom")
 
 // ─── Network ──────────────────────────────────────────────────────────────────
 
@@ -438,6 +438,13 @@ fun SuppliesScreen(baseUrl: String) {
             groupByTime = true,
             onBack = { currentView = null }
         )
+        "car" -> InventoryScreen(
+            baseUrl = baseUrl,
+            endpoint = "/api/car-inventory",
+            title = "Car Supply",
+            groupByRoom = false,
+            onBack = { currentView = null }
+        )
         else -> {
             Column(
                 modifier = Modifier
@@ -482,6 +489,17 @@ fun SuppliesScreen(baseUrl: String) {
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("💊  Supplement Supply", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                Button(
+                    onClick = { currentView = "car" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("🚗  Car Supply", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
