@@ -394,6 +394,7 @@ fun TasksScreen() {
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
+            var showMoreIcons by remember { mutableStateOf(false) } /*ICON_ROW_BELOW*/
             Row(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -473,16 +474,22 @@ fun TasksScreen() {
                             .padding(horizontal = 4.dp)
                     )
                 }
-                var showMoreIcons by remember { mutableStateOf(false) }
                 Text(
-                    text = if (showMoreIcons) "\u25C2" else "\u25B8",
+                    text = if (showMoreIcons) "\u25B4" else "\u25BE",
                     fontSize = 18.sp,
                     color = Color(0xFF8A8A8A),
                     modifier = Modifier
                         .clickable { showMoreIcons = !showMoreIcons }
                         .padding(horizontal = 6.dp)
                 )
-                if (showMoreIcons) {
+            }
+            if (showMoreIcons) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                ) {
                     Text( /*CO2_MOVED*/
                         text = "🥤",
                         fontSize = 18.sp,
