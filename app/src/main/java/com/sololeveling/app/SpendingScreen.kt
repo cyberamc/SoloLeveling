@@ -64,7 +64,8 @@ data class SpSummary(
     val spentToday: Double,
     val spentWeek: Double,
     val spentMonth: Double,
-    val byCategory: List<Pair<String, Double>>
+    val byCategory: List<Pair<String, Double>>,
+    val loansDueTotal: Double = 0.0
 )
 
 fun spMoney(v: Double): String =
@@ -129,7 +130,8 @@ fun fetchSpendingSummary(baseUrl: String): SpSummary {
         spentToday = o.getDouble("spent_today"),
         spentWeek = o.getDouble("spent_week"),
         spentMonth = o.getDouble("spent_month"),
-        byCategory = by
+        byCategory = by,
+        loansDueTotal = o.optDouble("loans_due_total", 0.0)
     )
 }
 
@@ -151,11 +153,12 @@ fun postSpending(baseUrl: String, amount: Double, category: String, note: String
     })
 }
 
-fun setSpendingBalance(baseUrl: String, balance: Double, clearedEntries: List<Int>, clearedBills: List<Int>) {
+fun setSpendingBalance(baseUrl: String, balance: Double, clearedEntries: List<Int>, clearedBills: List<Int>, clearedLoans: List<Int> = emptyList()) {
     spCall(baseUrl, "POST", "/api/spending/balance", JSONObject().apply {
         put("balance", balance)
         put("cleared_entries", JSONArray(clearedEntries))
         put("cleared_bills", JSONArray(clearedBills))
+        put("cleared_loans", JSONArray(clearedLoans))
     })
 }
 
@@ -163,6 +166,7 @@ fun clearSpendingItem(baseUrl: String, kind: String, id: Int) {
     spCall(baseUrl, "POST", "/api/spending/clear", JSONObject().apply {
         put("entries", JSONArray(if (kind == "entry") listOf(id) else emptyList<Int>()))
         put("bills", JSONArray(if (kind == "bill") listOf(id) else emptyList<Int>()))
+        put("loans", JSONArray(if (kind == "loan") listOf(id) else emptyList<Int>()))
     })
 }
 
@@ -317,6 +321,7 @@ fun SpendingScreen(baseUrl: String, onBack: () -> Unit) {
                 SpRow("Available now", spMoney(cur.available))
                 SpRow("Bills due before payday" + (cur.paydayDate?.let { "  (${it.substring(5)}, ${cur.paydayLabel})" } ?: ""),
                     "-" + spMoney(cur.billsDueTotal).replace("-", ""), SpRed)
+                if (cur.loansDueTotal > 0) SpRow("Loan payments due before payday", "-" + spMoney(cur.loansDueTotal).replace("-", ""), SpRed)
                 val bad = cur.safe <= 0
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).clip(RoundedCornerShape(10.dp))
@@ -503,8 +508,9 @@ fun SpendingScreen(baseUrl: String, onBack: () -> Unit) {
                         if (b != null) {
                             val ce = posted.filter { it.startsWith("entry:") }.map { it.substringAfter(":").toInt() }
                             val cb = posted.filter { it.startsWith("bill:") }.map { it.substringAfter(":").toInt() }
+                            val cl = posted.filter { it.startsWith("loan:") }.map { it.substringAfter(":").toInt() }
                             showBalance = false
-                            doIo { setSpendingBalance(baseUrl, b, ce, cb) }
+                            doIo { setSpendingBalance(baseUrl, b, ce, cb, cl) }
                         }
                     }) { Text("Save") }
                 },

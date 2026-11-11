@@ -1141,6 +1141,7 @@ fun FinanceScreen(baseUrl: String) {
         "delivery" -> DeliveryTrackerScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "bookkeeping" -> BookkeepingScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "spending" -> SpendingScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        "loans" -> LoansScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "speedxchecks" -> SpeedxChecksScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "deliveryhistory" -> DeliveryHistoryScreen(baseUrl = baseUrl, onBack = { currentView = null })
         else -> {
@@ -1191,6 +1192,16 @@ fun FinanceScreen(baseUrl: String) {
                 }
 
                 /*SPENDING_HUB*/ SpendingCard(baseUrl = baseUrl, onOpen = { currentView = "spending" })
+                Spacer(Modifier.height(12.dp))
+                /*LOANS_HUB*/ Button(
+                    onClick = { currentView = "loans" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("\uD83D\uDCB3  Loans", color = Color.White, fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold)
+                }
                 Spacer(Modifier.height(12.dp))
 
                 Button(
