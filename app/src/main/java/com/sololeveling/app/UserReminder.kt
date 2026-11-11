@@ -215,8 +215,8 @@ object UserReminder {
             context, NOTIF_BASE + id, openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val heading = "\uD83D\uDEE1\uFE0F HOLD THE LINE"
-        val text = title.trim()
+        val heading = "\uD83D\uDEE1\uFE0F Hold The Line"
+        val text = title.trim().split(" ").joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercase() } } /*HOLD_TITLE_CASE*/
         val notification = NotificationCompat.Builder(context, HOLD_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(heading)
