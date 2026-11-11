@@ -44,7 +44,7 @@ private val SpMuted = Color(0xFF888899)
 
 data class SpPending(val kind: String, val id: Int, val name: String, val sub: String, val amount: Double)
 data class SpEntry(val id: Int, val amount: Double, val category: String, val note: String, val spentOn: String, val cleared: Boolean)
-data class SpBillDue(val name: String, val amount: Double, val dueDay: Int?)
+data class SpBillDue(val name: String, val amount: Double, val dueDay: Int?, val label: String = "")
 data class SpSummary(
     val today: String,
     val categories: List<String>,
@@ -103,7 +103,7 @@ fun fetchSpendingSummary(baseUrl: String): SpSummary {
     val due = o.getJSONArray("bills_due").let { a ->
         (0 until a.length()).map {
             val b = a.getJSONObject(it)
-            SpBillDue(b.getString("name"), b.getDouble("amount"), if (b.isNull("due_day")) null else b.getInt("due_day"))
+            SpBillDue(b.getString("name"), b.getDouble("amount"), if (b.isNull("due_day")) null else b.getInt("due_day"), b.optString("label", ""))
         }
     }
     val by = o.getJSONArray("by_category").let { a ->
@@ -346,7 +346,7 @@ fun SpendingScreen(baseUrl: String, onBack: () -> Unit) {
                         modifier = Modifier.padding(top = 6.dp).clickable { showDue = !showDue })
                     if (showDue) cur.billsDue.forEach { b ->
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(b.name + if (b.dueDay == null) "  (no due day)" else "", color = Color(0xFFAAAAAA), fontSize = 12.sp,
+                            Text(b.name + if (b.label.isNotEmpty()) "  (${b.label})" else "", color = Color(0xFFAAAAAA), fontSize = 12.sp,
                                 modifier = Modifier.weight(1f))
                             Text(spMoney(b.amount), color = Color(0xFFAAAAAA), fontSize = 12.sp)
                         }
