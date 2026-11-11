@@ -1915,7 +1915,7 @@ suspend fun fetchWillpowerStreaks(): List<WpStreakRow> {
             val m = o[key] as? Map<*, *>
             return WpStreakRow(label, (m?.get("current") as? Number)?.toInt() ?: 0, (m?.get("best") as? Number)?.toInt() ?: 0)
         }
-        listOf(row("Study", "study"), row("Hydrate", "water"), row("Physical", "steps"), row("Diet", "diet"))
+        listOf(row("Study", "study"), row("Hydrate", "water"), row("Physical", "steps"), row("Diet", "diet"), row("Held The Line", "held"))
     } catch (e: Exception) { emptyList() }
 }
 
