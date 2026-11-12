@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit
  */
 object UserReminder {
     const val CHANNEL_ID = "user_reminder"
-    const val HOLD_CHANNEL_ID = "hold_the_line"
+    const val HOLD_CHANNEL_ID = "hold_the_line_v2" /*HOLD_SOUND*/
 
     private const val BASE_URL = "https://mysololeveling.us"
     private const val WORK_NAME = "user_reminder_poll"
@@ -77,13 +77,14 @@ object UserReminder {
                 enableLights(true)
                 lightColor = android.graphics.Color.RED
                 setSound(
-                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.net.Uri.parse("android.resource://" + context.packageName + "/raw/pain_speech"),
                     android.media.AudioAttributes.Builder()
                         .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
                         .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build()
                 )
             }
+            mgr.deleteNotificationChannel("hold_the_line")
             mgr.createNotificationChannel(hold)
         }
     }
@@ -216,7 +217,7 @@ object UserReminder {
             context, NOTIF_BASE + id, openIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        val heading = "\uD83D\uDEE1\uFE0F Hold The Line, Aaron"
+        val heading = "Hold The Line, Aaron"
         // Drop a leading "Hold The Line, Aaron." from the message: the heading already says it. /*HOLD_STRIP_PREFIX*/
         val stripped = title.trim().replace(Regex("(?i)^(hold|held) the line[,.:!\\s-]*(aaron)?[,.:!\\s-]*"), "")
         val text = (if (stripped.isBlank()) "The willpower you earn from your other streaks is almost erased by a failed Held The Line. Remember your oath." else stripped).split(" ").joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercase() } } /*HOLD_TITLE_CASE*/
