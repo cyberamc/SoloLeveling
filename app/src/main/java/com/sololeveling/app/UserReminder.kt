@@ -58,6 +58,7 @@ object UserReminder {
     const val ACTION_FIRE = "com.sololeveling.app.USER_REMINDER_FIRE"
     const val EXTRA_ID = "reminder_id"
     const val EXTRA_TITLE = "reminder_title"
+    const val ACTION_HOLD_REPOST = "com.sololeveling.app.HOLD_THE_LINE_REPOST"
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -207,7 +208,7 @@ object UserReminder {
     fun isHoldTheLine(title: String): Boolean =
         Regex("(?i)\\b(hold|held) the line\\b").containsMatchIn(title)
 
-    private fun showHoldTheLine(context: Context, id: Int, title: String) {
+    fun showHoldTheLine(context: Context, id: Int, title: String, silent: Boolean = false) { /*HOLD_REPOST*/
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -218,7 +219,16 @@ object UserReminder {
         val heading = "\uD83D\uDEE1\uFE0F Hold The Line, Aaron"
         // Drop a leading "Hold The Line, Aaron." from the message: the heading already says it. /*HOLD_STRIP_PREFIX*/
         val stripped = title.trim().replace(Regex("(?i)^(hold|held) the line[,.:!\\s-]*(aaron)?[,.:!\\s-]*"), "")
-        val text = (if (stripped.isBlank()) title.trim() else stripped).split(" ").joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercase() } } /*HOLD_TITLE_CASE*/
+        val text = (if (stripped.isBlank()) "The willpower you earn from your other streaks is almost erased by a failed Held The Line. Remember your oath." else stripped).split(" ").joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercase() } } /*HOLD_TITLE_CASE*/
+        val repostIntent = Intent(context, UserReminderReceiver::class.java).apply {
+            action = ACTION_HOLD_REPOST
+            putExtra(EXTRA_ID, id)
+            putExtra(EXTRA_TITLE, title)
+        }
+        val deletePi = PendingIntent.getBroadcast(
+            context, REQ_BASE + 100000 + id, repostIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         val notification = NotificationCompat.Builder(context, HOLD_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(heading)
@@ -229,7 +239,10 @@ object UserReminder {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVibrate(longArrayOf(0, 700, 250, 700, 250, 1000))
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setAutoCancel(false)
+            .setAutoCancel(true)
+            .setOngoing(true)
+            .setSilent(silent)
+            .setDeleteIntent(deletePi)
             .setContentIntent(contentPi)
             .build()
         val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -277,6 +290,12 @@ class ReminderPollWorker(
 
 class UserReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == UserReminder.ACTION_HOLD_REPOST) {
+            val rid = intent.getIntExtra(UserReminder.EXTRA_ID, -1)
+            val rtitle = intent.getStringExtra(UserReminder.EXTRA_TITLE) ?: ""
+            if (rid >= 0) UserReminder.showHoldTheLine(context, rid, rtitle, true)
+            return
+        }
         if (intent.action != UserReminder.ACTION_FIRE) return
         val id = intent.getIntExtra(UserReminder.EXTRA_ID, -1)
         val title = intent.getStringExtra(UserReminder.EXTRA_TITLE) ?: ""
