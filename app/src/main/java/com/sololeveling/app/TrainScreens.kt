@@ -1071,15 +1071,21 @@ private fun TrChip(text: String, primary: Boolean) {
     ) { Text(text, color = if (primary) TR_GOLD else Color(0xFFcdd6e2), fontSize = 12.sp, fontWeight = if (primary) FontWeight.Bold else FontWeight.Normal) }
 }
 
-// ── Routine editor ──
+// ── Routine editor (staged: nothing is saved until you press Save) ──
 
-class TrRSet(val id: Long, type0: String, weight0: String, reps0: String) {
+private var trKeySeq = 0L
+private fun trNextKey(): Long {
+    trKeySeq += 1
+    return trKeySeq
+}
+
+class TrRSet(val key: Long, val id: Long?, type0: String, weight0: String, reps0: String, val orig: Map<*, *>?) {
     var type by mutableStateOf(type0)
     var weight by mutableStateOf(weight0)
     var reps by mutableStateOf(reps0)
 }
 
-class TrREx(val id: Long, val exerciseId: String?, val title: String, rest0: String, notes0: String, val sets: SnapshotStateList<TrRSet>) {
+class TrREx(val key: Long, val id: Long?, val exerciseId: String, val title: String, rest0: String, notes0: String, val sets: SnapshotStateList<TrRSet>) {
     var rest by mutableStateOf(rest0)
     var notes by mutableStateOf(notes0)
 }
@@ -1095,49 +1101,129 @@ private fun trRepsText(m: Map<*, *>): String {
     return ""
 }
 
-// Reps box accepts "8" or a range like "8-10".
-private fun trSaveRSet(s: TrRSet) {
-    val body = HashMap<String, Any?>()
-    body["type"] = s.type
-    body["weight_lbs"] = s.weight.toDoubleOrNull()
-    val t = s.reps.trim()
+private class TrRepsVal(val reps: Int?, val mn: Int?, val mx: Int?)
+
+// Reps box accepts "8" or a range like "8-10". Returns null when it is not valid (for example "8-").
+private fun trParseReps(text: String): TrRepsVal? {
+    val t = text.trim()
+    if (t.isEmpty()) return TrRepsVal(null, null, null)
     if (t.contains("-")) {
         val parts = t.split("-")
-        val a = parts[0].toIntOrNull()
-        val b = if (parts.size > 1) parts[1].toIntOrNull() else null
-        if (a == null || b == null) return
-        body["reps"] = null
-        body["rep_min"] = Math.min(a, b)
-        body["rep_max"] = Math.max(a, b)
-    } else {
-        body["reps"] = t.toIntOrNull()
-        body["rep_min"] = null
-        body["rep_max"] = null
+        if (parts.size != 2) return null
+        val a = parts[0].toIntOrNull() ?: return null
+        val b = parts[1].toIntOrNull() ?: return null
+        return TrRepsVal(null, Math.min(a, b), Math.max(a, b))
     }
-    trainCall("PATCH", "/api/train/routine-set/" + s.id, body)
+    val r = t.toIntOrNull() ?: return null
+    return TrRepsVal(r, null, null)
+}
+
+// A text fingerprint of the draft; the editor is "dirty" when it differs from the fingerprint taken at load time.
+private fun trDraftSig(title: String, exs: List<TrREx>): String {
+    val sb = StringBuilder()
+    sb.append(title.trim()).append('\u0001')
+    for (ex in exs) {
+        sb.append(ex.id?.toString() ?: ("n" + ex.key)).append('|').append(ex.rest).append('|').append(ex.notes).append('\u0002')
+        for (s in ex.sets) sb.append(s.type).append(':').append(s.weight).append(':').append(s.reps).append(';')
+        sb.append('\u0003')
+    }
+    return sb.toString()
+}
+
+// Returns (payload, null) when valid, or (null, message) when something needs fixing.
+private fun trBuildPayload(title: String, exs: List<TrREx>): Pair<Map<String, Any?>?, String?> {
+    val t = title.trim()
+    if (t.isEmpty()) return Pair(null, "Give the routine a name.")
+    val list = ArrayList<Map<String, Any?>>()
+    for (ex in exs) {
+        val rest = if (ex.rest.isBlank()) 0 else (ex.rest.toIntOrNull() ?: return Pair(null, ex.title + ": rest time must be a whole number."))
+        if (rest > 3600) return Pair(null, ex.title + ": rest can be at most 3600 seconds.")
+        val sets = ArrayList<Map<String, Any?>>()
+        var n = 0
+        for (s in ex.sets) {
+            n += 1
+            val o = s.orig
+            val origW = (o?.get("weight_lbs") as? Number)?.toDouble()
+            val w: Double? = if (o != null && s.weight == trFmtW(origW)) origW else s.weight.toDoubleOrNull()
+            if (s.weight.isNotBlank() && w == null) return Pair(null, ex.title + " set " + n + ": weight is not a number.")
+            if (w != null && w > 2000.0) return Pair(null, ex.title + " set " + n + ": weight can be at most 2000 lbs.")
+            val rv: TrRepsVal? = if (o != null && s.reps == trRepsText(o)) {
+                TrRepsVal((o["reps"] as? Number)?.toInt(), (o["rep_min"] as? Number)?.toInt(), (o["rep_max"] as? Number)?.toInt())
+            } else {
+                trParseReps(s.reps)
+            }
+            if (rv == null) return Pair(null, ex.title + " set " + n + ": reps must look like 8 or 8-10.")
+            if (Math.max(rv.reps ?: 0, rv.mx ?: 0) > 1000) return Pair(null, ex.title + " set " + n + ": reps can be at most 1000.")
+            val sm = HashMap<String, Any?>()
+            if (s.id != null) sm["id"] = s.id
+            sm["type"] = s.type
+            sm["weight_lbs"] = w
+            sm["reps"] = rv.reps
+            sm["rep_min"] = rv.mn
+            sm["rep_max"] = rv.mx
+            sets.add(sm)
+        }
+        val em = HashMap<String, Any?>()
+        if (ex.id != null) em["id"] = ex.id
+        em["exercise_id"] = ex.exerciseId
+        em["rest_seconds"] = rest
+        em["notes"] = if (ex.notes.isBlank()) null else ex.notes
+        em["sets"] = sets
+        list.add(em)
+    }
+    val body = HashMap<String, Any?>()
+    body["title"] = t
+    body["exercises"] = list
+    return Pair(body, null)
 }
 
 @Composable
 fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     var title by remember { mutableStateOf("") }
-    var savedTitle by remember { mutableStateOf("") }
     var loaded by remember { mutableStateOf(false) }
     val exs = remember { mutableStateListOf<TrREx>() }
+    var baseline by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
-    var reload by remember { mutableStateOf(0) }
+    var saving by remember { mutableStateOf(false) }
     var showPicker by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<TrREx?>(null) }
+    var confirmLeave by remember { mutableStateOf(false) }
 
-    BackHandler { if (showPicker) showPicker = false else onBack() }
+    val dirty = loaded && trDraftSig(title, exs) != baseline
 
-    LaunchedEffect(reload) {
+    fun requestLeave() {
+        if (dirty && !saving) confirmLeave = true else onBack()
+    }
+
+    fun doSave() {
+        if (saving) return
+        if (!loaded) return
+        if (!dirty) { onBack(); return }
+        val built = trBuildPayload(title, exs)
+        val payload = built.first
+        if (payload == null) { error = built.second; return }
+        error = null
+        saving = true
+        scope.launch {
+            try {
+                withContext(Dispatchers.IO) { trainCall("PUT", "/api/train/routine/" + routineId + "/full", payload) }
+                saving = false
+                onBack()
+            } catch (e: Exception) {
+                saving = false
+                error = "Could not save: " + (e.message ?: "unknown error")
+            }
+        }
+    }
+
+    BackHandler { if (showPicker) showPicker = false else requestLeave() }
+
+    LaunchedEffect(routineId) {
         try {
             val t = withContext(Dispatchers.IO) { trainCall("GET", "/api/train/routine/" + routineId) }
             val m = trJson(t)
-            val tt = (m["title"] as? String) ?: ""
-            title = tt
-            savedTitle = tt
+            title = (m["title"] as? String) ?: ""
             exs.clear()
             (m["exercises"] as? List<*>)?.forEach { e ->
                 val em = e as? Map<*, *>
@@ -1148,18 +1234,21 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                         if (sm != null) {
                             sets.add(
                                 TrRSet(
-                                    (sm["id"] as? Number)?.toLong() ?: 0L,
+                                    trNextKey(),
+                                    (sm["id"] as? Number)?.toLong(),
                                     (sm["type"] as? String) ?: "normal",
                                     trFmtW((sm["weight_lbs"] as? Number)?.toDouble()),
-                                    trRepsText(sm)
+                                    trRepsText(sm),
+                                    sm
                                 )
                             )
                         }
                     }
                     exs.add(
                         TrREx(
-                            (em["id"] as? Number)?.toLong() ?: 0L,
-                            em["exercise_id"] as? String,
+                            trNextKey(),
+                            (em["id"] as? Number)?.toLong(),
+                            (em["exercise_id"] as? String) ?: "",
                             (em["title"] as? String) ?: "Exercise",
                             ((em["rest_seconds"] as? Number)?.toInt() ?: 0).toString(),
                             (em["notes"] as? String) ?: "",
@@ -1168,35 +1257,36 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                     )
                 }
             }
+            baseline = trDraftSig(title, exs)
             loaded = true
             error = null
         } catch (e: Exception) {
-            error = e.message
-        }
-    }
-
-    LaunchedEffect(title) {
-        if (!loaded || title == savedTitle || title.isBlank()) return@LaunchedEffect
-        delay(900)
-        try {
-            withContext(Dispatchers.IO) { trainCall("PATCH", "/api/train/routine/" + routineId, mapOf("title" to title.trim())) }
-            savedTitle = title
-        } catch (e: Exception) {
-            error = e.message
+            error = "Could not load: " + (e.message ?: "unknown error")
         }
     }
 
     if (showPicker) {
         TrExercisePicker(
-            onPick = { id ->
+            onPick = { picked ->
                 showPicker = false
-                scope.launch {
-                    try {
-                        withContext(Dispatchers.IO) { trainCall("POST", "/api/train/routine/" + routineId + "/exercise", mapOf("exercise_id" to id)) }
-                        reload++
-                    } catch (e: Exception) {
-                        error = e.message
+                val exId = (picked["id"] as? String) ?: ""
+                if (exId.isNotEmpty()) {
+                    val lu = picked["last_use"] as? Map<*, *>
+                    val sets = mutableStateListOf<TrRSet>()
+                    val luSets = lu?.get("sets") as? List<*>
+                    if (luSets != null && luSets.isNotEmpty()) {
+                        luSets.forEach { x ->
+                            val sm = x as? Map<*, *>
+                            if (sm != null) {
+                                sets.add(TrRSet(trNextKey(), null, (sm["type"] as? String) ?: "normal", trFmtW((sm["weight_lbs"] as? Number)?.toDouble()), trRepsText(sm), null))
+                            }
+                        }
+                    } else {
+                        for (i in 1..3) sets.add(TrRSet(trNextKey(), null, "normal", "", "", null))
                     }
+                    val rest = (lu?.get("rest_seconds") as? Number)?.toInt() ?: 90
+                    val notes = (lu?.get("notes") as? String) ?: ""
+                    exs.add(TrREx(trNextKey(), null, exId, (picked["title"] as? String) ?: "Exercise", rest.toString(), notes, sets))
                 }
             },
             onClose = { showPicker = false }
@@ -1206,12 +1296,19 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
 
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
         Row(
-            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).systemBarsPadding().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).systemBarsPadding().padding(horizontal = 8.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Edit Routine", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            Text("Done", color = TR_GOLD, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onBack() }.padding(8.dp))
+            Text("Cancel", color = Color(0xFFcdd6e2), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.clickable { requestLeave() }.padding(10.dp))
+            Text("Edit Routine", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(
+                if (saving) "Saving..." else "Save",
+                color = if (loaded && !saving) TR_GOLD else TR_MUTED,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { doSave() }.padding(10.dp)
+            )
         }
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item {
@@ -1226,23 +1323,26 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                         cursorBrush = SolidColor(TR_GOLD),
                         modifier = Modifier.fillMaxWidth().background(Color(0xFF1f2937), RoundedCornerShape(8.dp)).padding(12.dp)
                     )
-                    Text("Changes save automatically.", fontSize = 11.sp, color = TR_MUTED, modifier = Modifier.padding(top = 6.dp))
-                    if (error != null) Text("Error: " + error, fontSize = 12.sp, color = Color(0xFFf87171), modifier = Modifier.padding(top = 4.dp))
+                    Text(
+                        if (dirty) "Unsaved changes. Press Save to keep them, or Cancel to leave without saving." else "Nothing is saved until you press Save.",
+                        fontSize = 11.sp,
+                        color = if (dirty) Color(0xFFfbbf24) else TR_MUTED,
+                        modifier = Modifier.padding(top = 6.dp)
+                    )
+                    if (error != null) Text(error ?: "", fontSize = 12.sp, color = Color(0xFFf87171), modifier = Modifier.padding(top = 4.dp))
                 }
             }
-            items(exs, key = { it.id }) { ex ->
+            items(exs, key = { it.key }) { ex ->
                 TrRExCard(
                     ex = ex,
                     index = exs.indexOf(ex),
                     count = exs.size,
                     onMove = { d ->
-                        scope.launch {
-                            try {
-                                withContext(Dispatchers.IO) { trainCall("POST", "/api/train/routine-exercise/" + ex.id + "/move", mapOf("dir" to d)) }
-                                reload++
-                            } catch (e: Exception) {
-                                error = e.message
-                            }
+                        val i = exs.indexOf(ex)
+                        val j = i + d
+                        if (i >= 0 && j >= 0 && j < exs.size) {
+                            exs.removeAt(i)
+                            exs.add(j, ex)
                         }
                     },
                     onRemove = { removeTarget = ex }
@@ -1266,43 +1366,36 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
             onDismissRequest = { removeTarget = null },
             containerColor = Color(0xFF1a1a1a),
             title = { Text("Remove exercise?", color = Color.White) },
-            text = { Text(rt.title + " will be removed from this routine. Past workouts are not affected.", color = Color(0xFFcdd6e2)) },
+            text = { Text(rt.title + " will be removed from this routine when you press Save. Past workouts are not affected.", color = Color(0xFFcdd6e2)) },
             confirmButton = {
                 TextButton(onClick = {
+                    exs.remove(rt)
                     removeTarget = null
-                    scope.launch {
-                        try {
-                            withContext(Dispatchers.IO) { trainCall("DELETE", "/api/train/routine-exercise/" + rt.id) }
-                            reload++
-                        } catch (e: Exception) {
-                            error = e.message
-                        }
-                    }
                 }) { Text("Remove", color = Color(0xFFf87171), fontWeight = FontWeight.Bold) }
             },
-            dismissButton = { TextButton(onClick = { removeTarget = null }) { Text("Cancel", color = TR_MUTED) } }
+            dismissButton = { TextButton(onClick = { removeTarget = null }) { Text("Keep", color = TR_MUTED) } }
+        )
+    }
+
+    if (confirmLeave) {
+        AlertDialog(
+            onDismissRequest = { confirmLeave = false },
+            containerColor = Color(0xFF1a1a1a),
+            title = { Text("Discard changes?", color = Color.White) },
+            text = { Text("You have unsaved changes to this routine. Leave without saving?", color = Color(0xFFcdd6e2)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmLeave = false
+                    onBack()
+                }) { Text("Discard", color = Color(0xFFf87171), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { confirmLeave = false }) { Text("Keep editing", color = TR_GOLD) } }
         )
     }
 }
 
 @Composable
 private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, onRemove: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    var first by remember { mutableStateOf(true) }
-
-    LaunchedEffect(ex.rest, ex.notes) {
-        if (first) { first = false; return@LaunchedEffect }
-        delay(900)
-        try {
-            val body = HashMap<String, Any?>()
-            val r = ex.rest.toIntOrNull()
-            if (r != null) body["rest_seconds"] = r
-            body["notes"] = ex.notes
-            withContext(Dispatchers.IO) { trainCall("PATCH", "/api/train/routine-exercise/" + ex.id, body) }
-        } catch (e: Exception) {
-        }
-    }
-
     val labels = ArrayList<String>()
     var n = 0
     ex.sets.forEach { s ->
@@ -1349,29 +1442,14 @@ private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, 
             TrRSetRow(
                 set = s,
                 label = if (i < labels.size) labels[i] else "",
-                onDelete = {
-                    scope.launch {
-                        try {
-                            withContext(Dispatchers.IO) { trainCall("DELETE", "/api/train/routine-set/" + s.id) }
-                            ex.sets.remove(s)
-                        } catch (e: Exception) {
-                        }
-                    }
-                }
+                onDelete = { ex.sets.remove(s) }
             )
         }
         Text(
             "+ Add Set", color = Color(0xFF7B8CDE), fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clickable {
-                scope.launch {
-                    try {
-                        val t = withContext(Dispatchers.IO) { trainCall("POST", "/api/train/routine-exercise/" + ex.id + "/set", emptyMap()) }
-                        val newId = (trJson(t)["set_id"] as? Number)?.toLong() ?: 0L
-                        val last = if (ex.sets.isNotEmpty()) ex.sets[ex.sets.size - 1] else null
-                        ex.sets.add(TrRSet(newId, "normal", last?.weight ?: "", last?.reps ?: ""))
-                    } catch (e: Exception) {
-                    }
-                }
+                val last = if (ex.sets.isNotEmpty()) ex.sets[ex.sets.size - 1] else null
+                ex.sets.add(TrRSet(trNextKey(), null, "normal", last?.weight ?: "", last?.reps ?: "", null))
             }.padding(vertical = 8.dp),
             textAlign = TextAlign.Center
         )
@@ -1381,16 +1459,6 @@ private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, 
 @Composable
 private fun TrRSetRow(set: TrRSet, label: String, onDelete: () -> Unit) {
     var menu by remember { mutableStateOf(false) }
-    var first by remember { mutableStateOf(true) }
-
-    LaunchedEffect(set.weight, set.reps, set.type) {
-        if (first) { first = false; return@LaunchedEffect }
-        delay(900)
-        try {
-            withContext(Dispatchers.IO) { trSaveRSet(set) }
-        } catch (e: Exception) {
-        }
-    }
 
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.width(40.dp), contentAlignment = Alignment.Center) {
@@ -1412,7 +1480,7 @@ private fun TrRSetRow(set: TrRSet, label: String, onDelete: () -> Unit) {
 }
 
 @Composable
-private fun TrExercisePicker(onPick: (String) -> Unit, onClose: () -> Unit) {
+private fun TrExercisePicker(onPick: (Map<*, *>) -> Unit, onClose: () -> Unit) {
     var q by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<Map<*, *>>>(emptyList()) }
 
@@ -1450,8 +1518,7 @@ private fun TrExercisePicker(onPick: (String) -> Unit, onClose: () -> Unit) {
         )
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(results) { r ->
-                val id = (r["id"] as? String) ?: ""
-                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF141414), RoundedCornerShape(8.dp)).clickable { onPick(id) }.padding(12.dp)) {
+                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF141414), RoundedCornerShape(8.dp)).clickable { onPick(r) }.padding(12.dp)) {
                     Text((r["title"] as? String) ?: "", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     val mu = r["primary_muscle"] as? String
                     if (mu != null) Text(trTitleCase(mu), color = TR_MUTED, fontSize = 11.sp)
