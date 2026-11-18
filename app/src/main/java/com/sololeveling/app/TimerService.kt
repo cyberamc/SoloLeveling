@@ -9,6 +9,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.core.app.NotificationCompat
 
 /**
@@ -33,6 +35,7 @@ class TimerService : Service() {
         val label = intent?.getStringExtra(EXTRA_LABEL) ?: "Timer"
         val doneText = intent?.getStringExtra(EXTRA_DONE_TEXT) ?: "Time's up"
         val totalSeconds = intent?.getIntExtra(EXTRA_SECONDS, 0) ?: 0
+        val vibrate = intent?.getBooleanExtra(EXTRA_VIBRATE, false) ?: false
         if (totalSeconds <= 0) {
             stopEverything()
             return START_NOT_STICKY
@@ -53,11 +56,23 @@ class TimerService : Service() {
             override fun onFinish() {
                 val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 nm.notify(DONE_ID, buildDone(label, doneText))
+                if (vibrate) buzz()
                 stopEverything()
             }
         }.start()
 
         return START_STICKY
+    }
+
+    @Suppress("DEPRECATION")
+    private fun buzz() {
+        try {
+            val v = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            val pattern = longArrayOf(0, 500, 200, 500, 200, 500)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) v.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            else v.vibrate(pattern, -1)
+        } catch (e: Exception) {
+        }
     }
 
     private fun stopEverything() {
@@ -132,6 +147,7 @@ class TimerService : Service() {
         const val EXTRA_LABEL = "label"
         const val EXTRA_SECONDS = "seconds"
         const val EXTRA_DONE_TEXT = "done_text"
+        const val EXTRA_VIBRATE = "vibrate"
 
         fun createChannel(context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -143,11 +159,12 @@ class TimerService : Service() {
             }
         }
 
-        fun start(context: Context, label: String, seconds: Int, doneText: String) {
+        fun start(context: Context, label: String, seconds: Int, doneText: String, vibrate: Boolean = false) {
             val intent = Intent(context, TimerService::class.java).apply {
                 putExtra(EXTRA_LABEL, label)
                 putExtra(EXTRA_SECONDS, seconds)
                 putExtra(EXTRA_DONE_TEXT, doneText)
+                putExtra(EXTRA_VIBRATE, vibrate)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
