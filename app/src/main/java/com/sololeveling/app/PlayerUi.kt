@@ -1,4 +1,4 @@
-﻿package com.sololeveling.app
+package com.sololeveling.app
 
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.platform.LocalContext
@@ -80,6 +80,148 @@ fun PlayerScreen() {
     TasksScreen()
 }
 
+// ---- Clothes guide ----
+val CLOTHES_GUIDE = listOf(
+    Triple(Color(0xFF111111), "Black", "Mon Gym"),
+    Triple(Color(0xFF2563eb), "Blue", "Mon & Tues"),
+    Triple(Color(0xFF800020), "Maroon", "Wed & Thurs"),
+    Triple(Color(0xFF111111), "Motivation", "Tues Gym"),
+    Triple(Color(0xFF111111), "Nike", "Thurs Gym"),
+    Triple(Color(0xFF22c55e), "Green", "Fri"),
+    Triple(Color(0xFF111111), "Majin", "Sat"),
+    Triple(Color(0xFFFFD700), "Gold", "Fri & Sat Evenings, Sunday")
+)
+
+@Composable
+fun ShirtIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui.unit.Dp = 22.dp) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(iconSize)) {
+        val w = this.size.width
+        val h = this.size.height
+        val shirt = androidx.compose.ui.graphics.Path().apply {
+            moveTo(w * 0.31f, h * 0.09f); lineTo(w * 0.08f, h * 0.27f); lineTo(w * 0.19f, h * 0.50f)
+            lineTo(w * 0.27f, h * 0.45f); lineTo(w * 0.27f, h * 0.91f); lineTo(w * 0.73f, h * 0.91f)
+            lineTo(w * 0.73f, h * 0.45f); lineTo(w * 0.81f, h * 0.50f); lineTo(w * 0.92f, h * 0.27f)
+            lineTo(w * 0.69f, h * 0.09f)
+            quadraticBezierTo(w * 0.5f, h * 0.27f, w * 0.31f, h * 0.09f); close()
+        }
+        drawPath(shirt, Color(0xFF0c3d5c))
+        drawPath(shirt, Color(0xFF38bdf8), style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.065f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
+}
+
+// Shirt button for the Routine screen's icon row: tap to see which clothes go on which days.
+@Composable
+fun ClothesButton() {
+    var showClothes by remember { mutableStateOf(false) }
+    ShirtIcon(modifier = Modifier.clickable { showClothes = true }.padding(horizontal = 2.dp))
+    if (showClothes) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showClothes = false },
+            containerColor = Color(0xFF0c1a12),
+            title = {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    ShirtIcon(iconSize = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("Clothes", color = Color(0xFF38bdf8), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    CLOTHES_GUIDE.forEach { (dot, name, days) ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.Top) {
+                            Box(
+                                modifier = Modifier.padding(top = 4.dp).size(13.dp)
+                                    .background(Color(0xFF666666), shape = androidx.compose.foundation.shape.CircleShape)
+                                    .padding(1.dp)
+                                    .background(dot, shape = androidx.compose.foundation.shape.CircleShape)
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(name, color = Color(0xFFe2e8f0), fontSize = 14.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(86.dp))
+                            Text(days, color = Color(0xFF94a3b8), fontSize = 14.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showClothes = false }) {
+                    Text("Close", color = Color(0xFF38bdf8))
+                }
+            }
+        )
+    }
+}
+
+// ---- WFH Steps Schedule ----
+val WFH_STEPS_GUIDE = listOf(
+    Pair("Walking Pad 10:30 AM:", "0.5 HR / 3K"),
+    Pair("Phase 2:", "1 HR / 6K During Entertainment"),
+    Pair("Phase 3:", "0.5 HR / 3K After Lunch"),
+    Pair("Phase 4:", "1 HR / 3K After Lunch"),
+    Pair("Phase 5:", "Walk Toby After Work")
+)
+
+@Composable
+fun StepsGuideIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui.unit.Dp = 20.dp) {
+    val green = Color(0xFF6ACB6A)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(iconSize)) {
+        val w = this.size.width
+        val h = this.size.height
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.08f, h * 0.44f), size = androidx.compose.ui.geometry.Size(w * 0.30f, h * 0.40f))
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.11f, h * 0.30f), size = androidx.compose.ui.geometry.Size(w * 0.24f, h * 0.16f))
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.55f, h * 0.24f), size = androidx.compose.ui.geometry.Size(w * 0.30f, h * 0.40f))
+        drawOval(color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.58f, h * 0.10f), size = androidx.compose.ui.geometry.Size(w * 0.24f, h * 0.16f))
+    }
+}
+
+// Footprints button for the Routine screen's icon row: tap to see the WFH Steps Schedule.
+@Composable
+fun StepsGuideButton() {
+    var showSteps by remember { mutableStateOf(false) }
+    StepsGuideIcon(modifier = Modifier.clickable { showSteps = true }.padding(horizontal = 2.dp))
+    if (showSteps) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showSteps = false },
+            containerColor = Color(0xFF0c1a12),
+            title = {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                    StepsGuideIcon(iconSize = 26.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text("WFH Steps Schedule", color = Color(0xFF6ACB6A), fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    WFH_STEPS_GUIDE.forEach { (label, detail) ->
+                        Text(
+                            text = androidx.compose.ui.text.buildAnnotatedString {
+                                pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, color = Color.White))
+                                append(label)
+                                pop()
+                                append(" " + detail)
+                            },
+                            color = Color(0xFFe2e8f0),
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        )
+                    }
+                    Text(
+                        text = "Goal: 20K daily",
+                        color = Color(0xFF6ACB6A),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 10.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = { showSteps = false }) {
+                    Text("Close", color = Color(0xFF6ACB6A))
+                }
+            }
+        )
+    }
+}
+
 @Composable
 fun TasksScreen() {
     var refreshTrigger by remember { mutableIntStateOf(0) }
@@ -101,12 +243,20 @@ fun TasksScreen() {
     var showMobilityScreen by remember { mutableStateOf(false) }
     var showBirthdayScreen by remember { mutableStateOf(false) }
     var showTravelScreen by remember { mutableStateOf(false) }
+    var showCo2Screen by remember { mutableStateOf(false) }
     // Haircut mode: swaps the Fri/Sat Today list for the Haircut routine. Saved for today only.
     val haircutContext = LocalContext.current
     val haircutPrefs = remember { haircutContext.getSharedPreferences("haircut_mode", android.content.Context.MODE_PRIVATE) }
     val haircutToday = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
     var haircutMode by remember { mutableStateOf(haircutPrefs.getString("date", "") == haircutToday && haircutPrefs.getBoolean("on", false)) }
+    // Sunday Packages Drop-Off: swaps the 5 AM - 11 AM routine rows. Saved for today only.
+    val dropOffPrefs = remember { haircutContext.getSharedPreferences("dropoff_mode", android.content.Context.MODE_PRIVATE) }
+    var dropOffOn by remember { mutableStateOf(dropOffPrefs.getString("date", "") == haircutToday && dropOffPrefs.getBoolean("on", false)) }
+    // Delivery: Late Finish: swaps the 2:30 PM - 9 PM routine rows on Fri/Sat. Saved for today only.
+    val latePrefs = remember { haircutContext.getSharedPreferences("late_mode", android.content.Context.MODE_PRIVATE) }
+    var lateOn by remember { mutableStateOf(latePrefs.getString("date", "") == haircutToday && latePrefs.getBoolean("on", false)) }
     var showTimerDialog by remember { mutableStateOf(false) }
+    var showRave by remember { mutableStateOf(false) }
     var showAlarmDialog by remember { mutableStateOf(false) }
 
     if (showRoutine) {
@@ -115,6 +265,10 @@ fun TasksScreen() {
     }
     if (showNotepad) {
         NotepadScreen(onBack = { showNotepad = false })
+        return
+    }
+    if (showRave) {
+        RaveScreen(onBack = { showRave = false })
         return
     }
     if (showSteps) {
@@ -156,6 +310,10 @@ fun TasksScreen() {
     }
     if (showTravelScreen) {
         TravelScreen(onBack = { showTravelScreen = false })
+        return
+    }
+    if (showCo2Screen) {
+        Co2Screen(onBack = { showCo2Screen = false })
         return
     }
 
@@ -242,6 +400,7 @@ fun TasksScreen() {
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
+            var showMoreIcons by remember { mutableStateOf(false) } /*ICON_ROW_BELOW*/
             Row(
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -269,6 +428,9 @@ fun TasksScreen() {
                         .clickable { showWeightScreen = true }
                         .padding(horizontal = 2.dp)
                 )
+                ClothesButton()
+                StepsGuideButton()
+                RaveButton { showRave = true }
                 Text(
                     text = "⏱️",
                     fontSize = 18.sp,
@@ -289,16 +451,59 @@ fun TasksScreen() {
                             .padding(horizontal = 4.dp)
                     )
                 }
-                var showMoreIcons by remember { mutableStateOf(false) }
+                if (todayWeekday == 0) {
+                    Text(
+                        text = "\uD83D\uDCE6",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .background(if (dropOffOn) Color(0xFF3a3a6a) else Color.Transparent, shape = RoundedCornerShape(6.dp))
+                            .clickable {
+                                dropOffOn = !dropOffOn
+                                dropOffPrefs.edit().putString("date", haircutToday).putBoolean("on", dropOffOn).apply()
+                            }
+                            .padding(horizontal = 4.dp)
+                    )
+                }
+                if (todayWeekday == 5 || todayWeekday == 6) {
+                    Text(
+                        text = "\uD83D\uDE9A",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .background(if (lateOn && !haircutMode) Color(0xFF3a3a6a) else Color.Transparent, shape = RoundedCornerShape(6.dp))
+                            .clickable {
+                                lateOn = !lateOn
+                                latePrefs.edit().putString("date", haircutToday).putBoolean("on", lateOn).apply()
+                                if (lateOn && haircutMode) {
+                                    haircutMode = false
+                                    haircutPrefs.edit().putString("date", haircutToday).putBoolean("on", false).apply()
+                                }
+                            }
+                            .padding(horizontal = 4.dp)
+                    )
+                }
                 Text(
-                    text = if (showMoreIcons) "\u25C2" else "\u25B8",
+                    text = if (showMoreIcons) "\u25B4" else "\u25BE",
                     fontSize = 18.sp,
                     color = Color(0xFF8A8A8A),
                     modifier = Modifier
                         .clickable { showMoreIcons = !showMoreIcons }
                         .padding(horizontal = 6.dp)
                 )
-                if (showMoreIcons) {
+            }
+            if (showMoreIcons) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                ) {
+                    Text( /*CO2_MOVED*/
+                        text = "🥤",
+                        fontSize = 18.sp,
+                        modifier = Modifier
+                            .clickable { showCo2Screen = true }
+                            .padding(horizontal = 2.dp)
+                    )
                     Text(
                         text = "🐶",
                         fontSize = 18.sp,
@@ -381,17 +586,6 @@ fun TasksScreen() {
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(10.dp))
-            Box(
-                modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
-            ) {
-                Column {
-                    Text("I am getting my CCNA so I can:", color = Color(0xFF4ade80), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
-                    Text("\u2022 Stop working two jobs", color = Color(0xFF86efac), fontSize = 13.sp)
-                    Text("\u2022 Get my own place", color = Color(0xFF86efac), fontSize = 13.sp)
-                    Text("\u2022 Leave Level 1 support behind", color = Color(0xFF86efac), fontSize = 13.sp)
-                }
-            }
         }
 
         if (loading) {
@@ -406,24 +600,7 @@ fun TasksScreen() {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 item(key = "daily-routine-reference") {
                     BirthdayBanners()
-                    if (todayWeekday == 5 || todayWeekday == 6) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Box(
-                                modifier = Modifier.fillMaxWidth().background(Color(0xFF2e2415), shape = RoundedCornerShape(10.dp)).padding(14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Stop Eating Junk Food On Delivery Days", color = Color(0xFFe0a458), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                            }
-                            Box(
-                                modifier = Modifier.fillMaxWidth().background(Color(0xFF2a1616), shape = RoundedCornerShape(10.dp)).padding(14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("Do Not Watch Movies With Fam After 9 PM", color = Color(0xFFe89aa0), fontSize = 14.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6)) {
+                    TodayRoutineCard(weekday = todayWeekday, haircut = haircutMode && (todayWeekday == 5 || todayWeekday == 6), dropoff = todayWeekday == 0 && dropOffOn, late = (todayWeekday == 5 || todayWeekday == 6) && lateOn && !haircutMode) {
                         val held = combinedToday.firstOrNull { it.title.contains("Held The Line", ignoreCase = true) }
                         if (held != null) {
                             HeldTheLineRow(quest = held, onCompleteToggle = { refreshTrigger++ })
@@ -515,6 +692,185 @@ data class RoutineQuest(
     val important: Boolean = false,
     val monthly: Boolean = false
 )
+
+// ─── CO2 tank tracker (SodaStream) ───────────────────────────────────────────
+@Composable
+fun Co2IconCanvas(modifier: Modifier = Modifier) {
+    val color = Color(0xFF7dd3fc)
+    androidx.compose.foundation.Canvas(modifier = modifier.size(20.dp)) {
+        val w = size.width; val h = size.height
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.09f)
+        drawRoundRect(color = color, topLeft = Offset(w * 0.25f, h * 0.28f), size = androidx.compose.ui.geometry.Size(w * 0.5f, h * 0.68f),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.18f, w * 0.18f), style = stroke)
+        drawLine(color = color, start = Offset(w * 0.42f, h * 0.28f), end = Offset(w * 0.42f, h * 0.10f), strokeWidth = w * 0.09f, cap = StrokeCap.Round)
+        drawLine(color = color, start = Offset(w * 0.58f, h * 0.28f), end = Offset(w * 0.58f, h * 0.10f), strokeWidth = w * 0.09f, cap = StrokeCap.Round)
+        drawLine(color = color, start = Offset(w * 0.34f, h * 0.10f), end = Offset(w * 0.66f, h * 0.10f), strokeWidth = w * 0.09f, cap = StrokeCap.Round)
+        drawLine(color = color, start = Offset(w * 0.32f, h * 0.62f), end = Offset(w * 0.68f, h * 0.62f), strokeWidth = w * 0.07f)
+    }
+}
+
+data class Co2Reading(val id: Int, val date: String, val weight: Double, val lbsLeft: Double, val note: String)
+data class Co2State(
+    val tare: Double, val full: Double, val capacity: Double, val readings: List<Co2Reading>,
+    val lbsLeft: Double?, val pctLeft: Int?, val lastDate: String?,
+    val lbsPerWeek: Double?, val daysLeft: Int?, val emptyDate: String?, val since: String?
+)
+
+fun parseCo2(text: String): Co2State? {
+    return try {
+        val o = org.json.JSONObject(text)
+        val arr = o.optJSONArray("readings")
+        val readings = if (arr == null) emptyList() else (0 until arr.length()).map {
+            val r = arr.getJSONObject(it)
+            Co2Reading(r.getInt("id"), r.getString("logged_date"), r.getDouble("weight_lbs"), r.getDouble("lbs_left"), r.optString("note", ""))
+        }
+        val cur = o.optJSONObject("current")
+        val est = o.optJSONObject("estimate")
+        Co2State(
+            o.getDouble("tare"), o.getDouble("full"), o.getDouble("capacity"), readings,
+            cur?.getDouble("lbs_left"), cur?.getInt("pct_left"), cur?.getString("date"),
+            est?.getDouble("lbs_per_week"), est?.getInt("days_left"), est?.getString("empty_date"), est?.getString("since")
+        )
+    } catch (e: Exception) { null }
+}
+
+fun co2Request(method: String, path: String, body: String? = null): Co2State? {
+    return try {
+        val url = java.net.URL("https://mysololeveling.us$path")
+        val conn = url.openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = method; conn.connectTimeout = 5000; conn.readTimeout = 5000
+        if (body != null) {
+            conn.doOutput = true; conn.setRequestProperty("Content-Type", "application/json")
+            conn.outputStream.use { it.write(body.toByteArray()) }
+        }
+        val text = conn.inputStream.bufferedReader().readText()
+        conn.disconnect()
+        parseCo2(text)
+    } catch (e: Exception) { null }
+}
+
+@Composable
+fun Co2Screen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    var state by remember { mutableStateOf<Co2State?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var showLogDialog by remember { mutableStateOf(false) }
+    var weightInput by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+    var errorMsg by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
+
+    fun reload() { scope.launch(Dispatchers.IO) { val r = co2Request("GET", "/api/co2"); if (r != null) state = r; loading = false } }
+    LaunchedEffect(Unit) { reload() }
+
+    if (showLogDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogDialog = false },
+            containerColor = Color(0xFF1a1a2e),
+            title = { Text("Weigh CO2 Tank", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Put the tank on the scale and enter the total weight in lbs (empty = 8.12, full = 13.12).", color = Color(0xFF94a3b8), fontSize = 13.sp)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(value = weightInput, onValueChange = { weightInput = it },
+                        label = { Text("Weight (lbs)") },
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = Color(0xFF7dd3fc), unfocusedBorderColor = Color(0xFF2a2a3a), focusedLabelColor = Color(0xFF7dd3fc), unfocusedLabelColor = Color(0xFF94a3b8)))
+                    if (errorMsg.isNotEmpty()) { Spacer(Modifier.height(6.dp)); Text(errorMsg, color = Color(0xFFf87171), fontSize = 12.sp) }
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val w = weightInput.trim().toDoubleOrNull()
+                    if (w == null || w < 5.0 || w > 25.0) { errorMsg = "Enter a valid weight (5 to 25 lbs)"; return@Button }
+                    saving = true
+                    scope.launch(Dispatchers.IO) {
+                        val r = co2Request("POST", "/api/co2", """{"weight_lbs":$w}""")
+                        if (r != null) { state = r; showLogDialog = false; weightInput = ""; errorMsg = "" } else { errorMsg = "Failed to save" }
+                        saving = false
+                    }
+                }, enabled = !saving, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0ea5e9))) {
+                    Text(if (saving) "Saving..." else "Save", color = Color.White, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton(onClick = { showLogDialog = false; weightInput = ""; errorMsg = "" }) { Text("Cancel", color = Color(0xFF94a3b8)) } }
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a)).systemBarsPadding()) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onBack) { Text("← Back", color = Color(0xFF7dd3fc), fontSize = 14.sp) }
+            Spacer(Modifier.weight(1f))
+            Text("CO2 Tank", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.weight(1f))
+            Button(onClick = { showLogDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0ea5e9)), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 14.dp, vertical = 6.dp)) {
+                Text("+ Weigh", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+        }
+        val st = state
+        if (loading && st == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color(0xFF7dd3fc)) }
+        } else if (st == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Could not load the CO2 tracker.", color = Color(0xFFf87171)) }
+        } else {
+            Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
+                val pct = st.pctLeft ?: 0
+                val barColor = if (pct > 40) Color(0xFF10b981) else if (pct > 15) Color(0xFFf59e0b) else Color(0xFFf87171)
+                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(12.dp)).padding(16.dp)) {
+                    Text("CO2 LEFT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text(if (st.lbsLeft != null) String.format("%.2f lbs", st.lbsLeft) else "No readings yet", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("$pct% of a ${st.capacity.toInt()} lb tank" + (if (st.lastDate != null) " · weighed " + st.lastDate else ""), fontSize = 13.sp, color = Color(0xFF94a3b8))
+                    Spacer(Modifier.height(12.dp))
+                    Box(modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xFF1f2937))) {
+                        Box(modifier = Modifier.fillMaxWidth(pct / 100f).fillMaxHeight().background(barColor))
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(12.dp)).padding(16.dp)) {
+                    Text("ESTIMATE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                    Spacer(Modifier.height(6.dp))
+                    if (st.daysLeft != null && st.emptyDate != null && st.lbsPerWeek != null) {
+                        val timeLeft = if (st.daysLeft >= 14) "about " + (st.daysLeft / 7) + " weeks" else if (st.daysLeft == 1) "about 1 day" else "about " + st.daysLeft + " days"
+                        Text(timeLeft + " left", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = barColor)
+                        Text("Empty around " + st.emptyDate, fontSize = 14.sp, color = Color.White)
+                        Spacer(Modifier.height(6.dp))
+                        Text(String.format("Using %.2f lbs/week (since %s)", st.lbsPerWeek, st.since ?: ""), fontSize = 12.sp, color = Color(0xFF94a3b8))
+                    } else {
+                        Text("Weigh it again in a few days to get an estimate.", fontSize = 14.sp, color = Color(0xFF94a3b8))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("Empty = " + st.tare + " lbs · Full = " + String.format("%.2f", st.full) + " lbs. Refill when it gets close to empty. A reading well above the last one counts as a refill.", fontSize = 11.sp, color = Color(0xFF64748b))
+                }
+                Spacer(Modifier.height(20.dp))
+                Text("READINGS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                Spacer(Modifier.height(10.dp))
+                if (st.readings.isEmpty()) {
+                    Text("No readings yet. Tap + Weigh.", color = Color(0xFF94a3b8), fontSize = 14.sp)
+                } else {
+                    st.readings.reversed().forEach { r ->
+                        Row(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(8.dp)).padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(r.date, color = Color(0xFF94a3b8), fontSize = 13.sp)
+                                if (r.note.isNotEmpty()) Text(r.note, color = Color(0xFF64748b), fontSize = 11.sp)
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("${r.weight} lbs", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                                Text(String.format("%.2f lbs CO2", r.lbsLeft), color = Color(0xFF7dd3fc), fontSize = 11.sp)
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            TextButton(onClick = { scope.launch(Dispatchers.IO) { val x = co2Request("DELETE", "/api/co2/${r.id}"); if (x != null) state = x } }, contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp)) {
+                                Text("✕", color = Color(0xFFa55555), fontSize = 16.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            }
+        }
+    }
+}
 
 @Composable
 fun RoutineScreen(onBack: () -> Unit) {
@@ -717,6 +1073,184 @@ fun RoutineQuestItem(q: RoutineQuest) {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+val RAVE_FALLBACK_ITEMS = listOf("Outfit", "Edible", "Lucy", "Bottle (If Needed)", "Water", "Glasses", "Plan Endgame")
+
+@Composable
+fun RaveIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui.unit.Dp = 22.dp) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(iconSize)) {
+        val w = this.size.width
+        val h = this.size.height
+        val purple = Color(0xFFc084fc)
+        val cx = w * 0.5f
+        val cy = h * 0.58f
+        val r = w * 0.36f
+        val line = w * 0.06f
+        drawLine(purple, androidx.compose.ui.geometry.Offset(cx, h * 0.02f), androidx.compose.ui.geometry.Offset(cx, cy - r), strokeWidth = line)
+        drawCircle(Color(0xFF3b1a5a), radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy))
+        drawCircle(purple, radius = r, center = androidx.compose.ui.geometry.Offset(cx, cy), style = androidx.compose.ui.graphics.drawscope.Stroke(width = line))
+        val thin = androidx.compose.ui.graphics.drawscope.Stroke(width = line * 0.6f)
+        drawOval(purple.copy(alpha = 0.85f), topLeft = androidx.compose.ui.geometry.Offset(cx - r, cy - r * 0.4f), size = androidx.compose.ui.geometry.Size(r * 2f, r * 0.8f), style = thin)
+        drawOval(purple.copy(alpha = 0.85f), topLeft = androidx.compose.ui.geometry.Offset(cx - r * 0.45f, cy - r), size = androidx.compose.ui.geometry.Size(r * 0.9f, r * 2f), style = thin)
+        drawLine(purple.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(cx - r, cy), androidx.compose.ui.geometry.Offset(cx + r, cy), strokeWidth = line * 0.6f)
+        drawCircle(Color(0xFFf0abfc), radius = w * 0.06f, center = androidx.compose.ui.geometry.Offset(cx - r * 0.35f, cy - r * 0.4f))
+        drawCircle(Color(0xFF67e8f9), radius = w * 0.05f, center = androidx.compose.ui.geometry.Offset(cx + r * 0.35f, cy + r * 0.45f))
+    }
+}
+
+// Rave button for the Routine screen's icon row (opens the Rave checklist + notepad).
+@Composable
+fun RaveButton(onClick: () -> Unit) {
+    RaveIcon(modifier = Modifier.clickable { onClick() }.padding(horizontal = 2.dp))
+}
+
+fun saveRaveNote(content: String) {
+    val url = URL("https://mysololeveling.us/api/rave-notepad")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "PATCH"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    try {
+        val payload = Gson().toJson(mapOf("content" to content))
+        conn.outputStream.use { it.write(payload.toByteArray()) }
+        conn.responseCode
+    } finally { conn.disconnect() }
+}
+
+@Composable
+fun RaveScreen(onBack: () -> Unit) {
+    BackHandler { onBack() }
+    var items by remember { mutableStateOf(RAVE_FALLBACK_ITEMS) }
+    var noteText by remember { mutableStateOf("") }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var status by remember { mutableStateOf("Saved") }
+    var loaded by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var lastSaved by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        try {
+            val response = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchFromApi("/api/rave") }
+            val obj = Gson().fromJson(response, Map::class.java)
+            val fetched = (obj["items"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            if (fetched.isNotEmpty()) items = fetched
+            noteText = obj["content"] as? String ?: ""
+            lastSaved = noteText
+            loaded = true
+            loading = false
+        } catch (e: Exception) {
+            error = e.message
+            loading = false
+        }
+    }
+
+    // Debounced autosave: 1.5s after the last edit
+    LaunchedEffect(noteText) {
+        if (!loaded) return@LaunchedEffect
+        if (noteText == lastSaved) return@LaunchedEffect
+        status = "Editing..."
+        kotlinx.coroutines.delay(1500)
+        status = "Saving..."
+        try {
+            kotlinx.coroutines.withContext(Dispatchers.IO) { saveRaveNote(noteText) }
+            lastSaved = noteText
+            status = "Saved"
+        } catch (e: Exception) {
+            status = "Save failed"
+        }
+    }
+
+    // Save on exit
+    DisposableEffect(Unit) {
+        onDispose {
+            if (loaded && noteText != lastSaved) {
+                val toSave = noteText
+                scope.launch(Dispatchers.IO) { try { saveRaveNote(toSave) } catch (e: Exception) {} }
+            }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
+        Column(
+            modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a))
+                .systemBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RaveIcon(iconSize = 30.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(text = "Rave", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
+                Text(
+                    text = "Back",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFFFFD700),
+                    modifier = Modifier.clickable { onBack() }
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(12.dp))
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                items.forEachIndexed { idx, item ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 13.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.size(8.dp).background(Color(0xFFc084fc), shape = RoundedCornerShape(4.dp)))
+                        Spacer(Modifier.width(14.dp))
+                        Text(text = item, fontSize = 17.sp, color = Color(0xFFe4e4e4))
+                    }
+                    if (idx < items.size - 1) {
+                        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF2a2a2a)))
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 8.dp, start = 4.dp, end = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = "NOTES", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFc084fc), letterSpacing = 2.sp)
+                Text(text = status, fontSize = 12.sp, color = if (status == "Save failed") Color(0xFFF87171) else Color(0xFF4CAF50))
+            }
+
+            when {
+                loading -> Box(modifier = Modifier.fillMaxWidth().height(120.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFFc084fc))
+                }
+                error != null -> Text("Could not load your note: $error", color = Color(0xFFF87171), fontSize = 14.sp)
+                else -> OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 280.dp),
+                    placeholder = { Text("Type your notes here...", color = Color(0xFF555577)) },
+                    textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 15.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFc084fc),
+                        unfocusedBorderColor = Color(0xFF2a2a3a),
+                        cursorColor = Color(0xFFc084fc)
+                    )
+                )
             }
         }
     }
@@ -1401,98 +1935,67 @@ fun UrgeCardScreen(onBack: () -> Unit) {
             .background(Color(0xFF0A0A0A))
             .systemBarsPadding()
             .padding(16.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
+        Row(verticalAlignment = Alignment.Top, modifier = Modifier.padding(bottom = 16.dp)) {
             Text(
-                text = "←",
+                text = "\u2190",
                 color = Color(0xFFFFD700),
                 fontSize = 24.sp,
                 modifier = Modifier.clickable { onBack() }
             )
             Spacer(Modifier.width(16.dp))
             Text(
-                "When The Urge Hits",
+                "Three Reasons Why You Do Not Want To Jack Off",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.White,
+                lineHeight = 30.sp,
+                modifier = Modifier.weight(1f)
             )
         }
-        Text(
-            text = "STAND UP → PAD",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFFFD700),
-            letterSpacing = 2.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            itemsIndexed(URGE_STEPS) { index, step ->
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            listOf(
+                "Browsing Porn Destroys Your Productivity. You Waste Way Too Much Time On It Instead Of Doing What You Are Supposed To Do.",
+                "It Makes You Want To Spend Over \$100.",
+                "Once You Fall Off, It Takes Days To Get Back On."
+            ).forEachIndexed { index, reason ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
-                        .padding(14.dp)
+                        .padding(vertical = 20.dp, horizontal = 16.dp)
                 ) {
                     Text(
                         text = "${index + 1}",
-                        fontSize = 16.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700),
-                        modifier = Modifier.padding(end = 12.dp)
+                        modifier = Modifier.padding(end = 14.dp)
                     )
-                    Text(
-                        text = step,
-                        fontSize = 15.sp,
-                        color = Color(0xFFDDDDDD),
-                        lineHeight = 22.sp
-                    )
+                    Text(text = reason, fontSize = 18.sp, color = Color(0xFFDDDDDD), lineHeight = 25.sp)
                 }
             }
-            item {
-                Text(
-                    text = "If you're not near the pad: leave the room. Change what you're looking at. Then come back to the pad.",
-                    fontSize = 14.sp,
-                    color = Color(0xFF999999),
-                    lineHeight = 21.sp,
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .height(androidx.compose.foundation.layout.IntrinsicSize.Min)
+                    .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+            ) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 6.dp)
-                        .background(Color(0xFF141414), shape = RoundedCornerShape(10.dp))
-                        .padding(14.dp)
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(Color(0xFFF87171), shape = RoundedCornerShape(topStart = 10.dp, bottomStart = 10.dp))
                 )
-            }
-            item {
                 Text(
-                    text = "REASONS TO PULL UP",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFFD700),
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.padding(top = 18.dp, bottom = 2.dp)
+                    text = "Even If You Only Look And Don't Jack Off, Stop Looking! Looking Will Always Lead To Jacking Off.",
+                    fontSize = 18.sp,
+                    color = Color(0xFFDDDDDD),
+                    lineHeight = 25.sp,
+                    modifier = Modifier.padding(16.dp)
                 )
-            }
-            items(URGE_REASONS, key = { it.headline }) { reason ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
-                        .padding(14.dp)
-                ) {
-                    Text(
-                        text = reason.headline,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFDDDDDD),
-                        lineHeight = 20.sp
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = reason.body,
-                        fontSize = 13.sp,
-                        color = Color(0xFF999999),
-                        lineHeight = 19.sp
-                    )
-                }
             }
         }
     }
@@ -1564,6 +2067,22 @@ fun HydrationScreen(onBack: () -> Unit) {
     }
 }
 
+/*WP_STREAKS_UI*/
+// Current and best day-streak for one habit.
+data class WpStreakRow(val name: String, val current: Int, val best: Int)
+
+suspend fun fetchWillpowerStreaks(): List<WpStreakRow> {
+    return try {
+        val body = fetchFromApi("/api/confidence/streaks")
+        val o = Gson().fromJson(body, Map::class.java)
+        fun row(label: String, key: String): WpStreakRow {
+            val m = o[key] as? Map<*, *>
+            return WpStreakRow(label, (m?.get("current") as? Number)?.toInt() ?: 0, (m?.get("best") as? Number)?.toInt() ?: 0)
+        }
+        listOf(row("Study", "study"), row("Hydrate", "water"), row("Meditate", "meditate"), row("Physical", "steps"), row("Diet", "diet"), row("Held The Line", "held"))
+    } catch (e: Exception) { emptyList() }
+}
+
 data class ConfidenceState(
     val value: Int,
     val max: Int,
@@ -1598,6 +2117,32 @@ suspend fun fetchWillpowerToday(): Set<String> {
         val o = Gson().fromJson(body, Map::class.java)
         ((o["types"] as? List<*>) ?: emptyList<Any?>()).map { it.toString() }.toSet()
     } catch (e: Exception) { emptySet() }
+}
+
+suspend fun fetchFootSoakCount(): Int {
+    return try {
+        val body = fetchFromApi("/api/foot-soak")
+        val o = Gson().fromJson(body, Map::class.java)
+        (o["count"] as? Number)?.toInt() ?: 0
+    } catch (e: Exception) { 0 }
+}
+
+// Logs today's foot soak (server allows one per day, max 21). Returns the new count, or -1 on failure.
+fun postFootSoak(): Int {
+    val url = URL("https://mysololeveling.us/api/foot-soak")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    return try {
+        conn.outputStream.use { it.write("{}".toByteArray()) }
+        if (conn.responseCode == 200) {
+            val o = Gson().fromJson(conn.inputStream.bufferedReader().readText(), Map::class.java)
+            (o["count"] as? Number)?.toInt() ?: -1
+        } else -1
+    } catch (e: Exception) { -1 } finally { conn.disconnect() }
 }
 
 fun postWillpowerWin(type: String, undo: Boolean = false): Boolean {
@@ -1653,11 +2198,51 @@ fun ShieldIconCanvas(modifier: Modifier = Modifier) {
     }
 }
 
+/*WP_FLIP_UI*/
+// One earlier day's result that can be changed. flip = "success" or "failed" (what it would become).
+data class WpHistoryItem(val id: Int, val label: String, val whenText: String, val flip: String)
+
+suspend fun fetchWillpowerHistory(): List<WpHistoryItem> {
+    return try {
+        val body = fetchFromApi("/api/confidence/history?n=40")
+        val o = Gson().fromJson(body, Map::class.java)
+        ((o["items"] as? List<*>) ?: emptyList<Any?>()).mapNotNull { r ->
+            val m = r as? Map<*, *> ?: return@mapNotNull null
+            val flip = m["flip"] as? String ?: return@mapNotNull null
+            val id = (m["id"] as? Number)?.toInt() ?: return@mapNotNull null
+            WpHistoryItem(id, m["label"].toString(), m["when"].toString(), flip)
+        }
+    } catch (e: Exception) { emptyList() }
+}
+
+fun postWillpowerFlip(id: Int): Boolean {
+    val url = URL("https://mysololeveling.us/api/confidence/flip")
+    val conn = url.openConnection() as HttpURLConnection
+    conn.requestMethod = "POST"
+    conn.setRequestProperty("Content-Type", "application/json")
+    conn.doOutput = true
+    conn.connectTimeout = 5000
+    conn.readTimeout = 5000
+    return try {
+        conn.outputStream.use { it.write("{\"id\":$id}".toByteArray()) }
+        conn.responseCode == 200
+    } catch (e: Exception) { false } finally { conn.disconnect() }
+}
+
 // 0-100 meter of recent wins over urges. Rises when logged, decays slowly.
 @Composable
 fun ConfidenceMeter(refreshKey: Int) {
     var state by remember { mutableStateOf<ConfidenceState?>(null) }
     var showWillpowerInfo by remember { mutableStateOf(false) }
+    var showWpStreaks by remember { mutableStateOf(false) }
+    var wpStreaks by remember { mutableStateOf<List<WpStreakRow>?>(null) }
+    val wpStreakScope = rememberCoroutineScope()
+    var showWpHistory by remember { mutableStateOf(false) }
+    var wpHistory by remember { mutableStateOf<List<WpHistoryItem>>(emptyList()) }
+    var wpPendingId by remember { mutableStateOf<Int?>(null) }
+    var wpBusy by remember { mutableStateOf(false) }
+    var wpMsg by remember { mutableStateOf<String?>(null) }
+    val wpScope = rememberCoroutineScope()
 
     LaunchedEffect(refreshKey, willpowerTick) {
         state = fetchConfidence()
@@ -1714,20 +2299,118 @@ fun ConfidenceMeter(refreshKey: Int) {
         }
     }
 
+    if (showWpStreaks) {
+        AlertDialog(
+            onDismissRequest = { showWpStreaks = false },
+            containerColor = Color(0xFF1A1A1A),
+            confirmButton = { TextButton(onClick = { showWpStreaks = false }) { Text("Close") } },
+            title = { Text("Streaks", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = {
+                val rows = wpStreaks
+                Column {
+                    if (rows == null) {
+                        Text("Loading...", fontSize = 13.sp, color = Color(0xFF8A8A8A))
+                    } else if (rows.isEmpty()) {
+                        Text("Could not load streaks. Check your connection.", fontSize = 13.sp, color = Color(0xFFF87171))
+                    } else {
+                        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
+                            Text("", modifier = Modifier.weight(1f))
+                            Text("NOW", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4FD1C5), letterSpacing = 1.5.sp, modifier = Modifier.width(64.dp))
+                            Text("BEST", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8A8A8A), letterSpacing = 1.5.sp, modifier = Modifier.width(56.dp))
+                        }
+                        rows.forEach { r ->
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text(r.name, fontSize = 15.sp, color = Color(0xFFD0D0D0), modifier = Modifier.weight(1f))
+                                Text(
+                                    (if (r.current > 0) "\uD83D\uDD25 " else "") + r.current,
+                                    fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                                    color = if (r.current > 0) Color(0xFF4FD1C5) else Color(0xFF8A8A8A),
+                                    modifier = Modifier.width(64.dp)
+                                )
+                                Text("${r.best}", fontSize = 15.sp, color = Color(0xFFD0D0D0), modifier = Modifier.width(56.dp))
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text("Days in a row with the win logged. Study skips Friday and Saturday (delivery days).", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                    }
+                }
+            }
+        )
+    }
+
     if (showWillpowerInfo) {
         AlertDialog(
-            onDismissRequest = { showWillpowerInfo = false },
+            onDismissRequest = { showWillpowerInfo = false; showWpHistory = false; wpPendingId = null; wpMsg = null },
             containerColor = Color(0xFF1A1A1A),
-            confirmButton = { TextButton(onClick = { showWillpowerInfo = false }) { Text("Close") } },
-            title = { Text("Willpower", color = Color.White, fontWeight = FontWeight.Bold) },
+            confirmButton = { TextButton(onClick = { showWillpowerInfo = false; showWpHistory = false; wpPendingId = null; wpMsg = null }) { Text("Close") } },
+            dismissButton = {
+                TextButton(onClick = {
+                    wpPendingId = null; wpMsg = null
+                    showWpHistory = !showWpHistory
+                    if (showWpHistory) wpScope.launch {
+                        wpHistory = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerHistory() }
+                    }
+                }) { Text(if (showWpHistory) "Back" else "Change previous status") }
+            },
+            title = { Text(if (showWpHistory) "Change previous status" else "Willpower", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
+              if (showWpHistory) {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    Text("Tap a button to flip an earlier day. Today's results change with a long-press.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                    if (wpMsg != null) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(wpMsg!!, fontSize = 12.sp, color = Color(0xFFFFD700))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    if (wpHistory.isEmpty()) {
+                        Text("Nothing from earlier days to change.", fontSize = 13.sp, color = Color(0xFFD0D0D0))
+                    }
+                    wpHistory.forEach { item ->
+                        val toSuccess = item.flip == "success"
+                        val accent = if (toSuccess) Color(0xFF4ADE80) else Color(0xFFF87171)
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.label, fontSize = 13.sp, color = Color(0xFFD0D0D0))
+                                Text(item.whenText, fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                            }
+                            Text(
+                                text = if (wpPendingId == item.id) "Confirm" else if (toSuccess) "Mark success" else "Mark failed",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = accent,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(accent.copy(alpha = if (wpPendingId == item.id) 0.30f else 0.12f))
+                                    .clickable(enabled = !wpBusy) {
+                                        if (wpPendingId != item.id) { wpPendingId = item.id }
+                                        else {
+                                            wpBusy = true
+                                            wpScope.launch {
+                                                val ok = kotlinx.coroutines.withContext(Dispatchers.IO) { postWillpowerFlip(item.id) }
+                                                wpPendingId = null
+                                                wpMsg = if (ok) "Changed." else "Could not change it. Check your connection."
+                                                if (ok) {
+                                                    wpHistory = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerHistory() }
+                                                    willpowerTick++
+                                                }
+                                                wpBusy = false
+                                            }
+                                        }
+                                    }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+              } else {
                 val adds = listOf(
                     "Each day you hold the line" to "+5",
-                    "Hunger / urge win logged" to "+5",
+                    "Weight loss logged (10 per lb lost)" to "+5 min",
                     "Study marked successful" to "+3",
                     "10,000 Steps marked successful" to "+3",
                     "Diet on plan all day (checked at midnight)" to "+3",
                     "Finished Water Flask marked successful" to "+3",
+                    "Meditation marked successful" to "+3",
                     "New gym PR (once per lift per day)" to "+5"
                 )
                 val cuts = listOf(
@@ -1736,9 +2419,26 @@ fun ConfidenceMeter(refreshKey: Int) {
                     "Day ends with no 10,000 Steps" to "-3",
                     "Diet marked failed (checked at midnight)" to "-3",
                     "Day ends with no Water flask" to "-3",
-                    "Every day that passes" to "-1"
+                    "Day ends with no Meditation" to "-3",
+                    "Every day that passes" to "-3"
                 )
                 Column {
+                    Text(
+                        text = "View streaks  \u203A",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4FD1C5),
+                        modifier = Modifier
+                            .padding(bottom = 12.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF4FD1C5).copy(alpha = 0.12f))
+                            .clickable {
+                                wpStreaks = null
+                                showWpStreaks = true
+                                wpStreakScope.launch { wpStreaks = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerStreaks() } }
+                            }
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    )
                     Text("ADDS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF4ADE80), letterSpacing = 1.5.sp)
                     adds.forEach { (what, pts) ->
                         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -1755,8 +2455,9 @@ fun ConfidenceMeter(refreshKey: Int) {
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    Text("Capped at 100, never below 0. Missed Study / Steps / Diet / Water and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
+                    Text("Capped at 100, never below 0. Missed Study / Steps / Diet / Water / Meditation and a reset streak are checked at midnight.", fontSize = 11.sp, color = Color(0xFF8A8A8A))
                 }
+              }
             }
         )
     }
@@ -1946,10 +2647,10 @@ fun TimerDialog(onDismiss: () -> Unit) {
 data class TodayRoutineRow(val time: String, val lines: List<String>)
 data class TodayRoutine(val label: String, val rows: List<TodayRoutineRow>, val study: List<String>)
 
-fun fetchRoutineToday(weekday: Int, haircut: Boolean): TodayRoutine? {
+fun fetchRoutineToday(weekday: Int, haircut: Boolean, dropoff: Boolean = false, late: Boolean = false): TodayRoutine? {
     return try {
         val flag = if (haircut) 1 else 0
-        val conn = java.net.URL("https://mysololeveling.us/api/routine-today?weekday=$weekday&haircut=$flag").openConnection() as java.net.HttpURLConnection
+        val conn = java.net.URL("https://mysololeveling.us/api/routine-today?weekday=$weekday&haircut=$flag" + (if (dropoff) "&dropoff=1" else "") + (if (late) "&late=1" else "")).openConnection() as java.net.HttpURLConnection
         conn.connectTimeout = 8000
         conn.readTimeout = 8000
         val body = conn.inputStream.bufferedReader().use { it.readText() }
@@ -2024,11 +2725,11 @@ fun HeldTheLineRow(quest: Quest, onCompleteToggle: () -> Unit) {
 }
 
 @Composable
-fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", readOnly: Boolean = false, extra: @Composable () -> Unit = {}) {
-    var data by remember(weekday, haircut) { mutableStateOf<TodayRoutine?>(null) }
+fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", readOnly: Boolean = false, dropoff: Boolean = false, late: Boolean = false, extra: @Composable () -> Unit = {}) {
+    var data by remember(weekday, haircut, dropoff, late) { mutableStateOf<TodayRoutine?>(null) }
 
-    LaunchedEffect(weekday, haircut) {
-        val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchRoutineToday(weekday, haircut) }
+    LaunchedEffect(weekday, haircut, dropoff, late) {
+        val fetched = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchRoutineToday(weekday, haircut, dropoff, late) }
         if (fetched != null) data = fetched
     }
 
@@ -2075,6 +2776,10 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                 LaunchedEffect(Unit) {
                     if (!readOnly) wpDone = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchWillpowerToday() }
                 }
+                var soakCount by remember { mutableStateOf(0) }
+                LaunchedEffect(Unit) {
+                    soakCount = kotlinx.coroutines.withContext(Dispatchers.IO) { fetchFootSoakCount() }
+                }
                 fun wpMark(type: String) {
                     if (readOnly) return
                     val undo = wpDone.contains(type)
@@ -2101,7 +2806,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                     Column {
                         d.study.forEach { s ->
                             Text(
-                                text = (if (wpDone.contains("study")) "\u2713 " else "") + (if (d.label.startsWith("Delivery")) "Bonus Study $s" else "Study Time ~ $s"),
+                                text = (if (wpDone.contains("study")) "\u2713 " else "") + "Study Time ~ $s",
                                 fontSize = 14.sp,
                                 color = if (wpDone.contains("study")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
                                 modifier = Modifier.pointerInput(Unit) {
@@ -2151,6 +2856,26 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                         }
                     )
                 }
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "MEDITATE",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Text(
+                        text = (if (wpDone.contains("meditate")) "\u2713 " else "") + "Meditation ~ 1 Minute",
+                        fontSize = 14.sp,
+                        color = if (wpDone.contains("meditate")) Color(0xFF4ade80) else Color(0xFFe0e0f0),
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = { wpMark("meditate") })
+                        }
+                    )
+                }
                 extra()
                 Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
                 Row(
@@ -2169,6 +2894,35 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                         color = if (wpDone.contains("dietfail")) Color(0xFFFF6B6B) else Color(0xFFe0e0f0),
                         modifier = Modifier.pointerInput(Unit) {
                             detectTapGestures(onLongPress = { wpMark("dietfail") })
+                        }
+                    )
+                }
+                Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF1c1c38)))
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = "FOOT SOAK",
+                        fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        color = Color(0xFF6b7bd6),
+                        modifier = Modifier.width(76.dp)
+                    )
+                    Text(
+                        text = "Foot Soak  $soakCount/21",
+                        fontSize = 14.sp,
+                        color = Color(0xFFe0e0f0),
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(onLongPress = {
+                                if (!readOnly) wpScope.launch {
+                                    val n = kotlinx.coroutines.withContext(Dispatchers.IO) { postFootSoak() }
+                                    if (n >= 0) {
+                                        val msg = if (n > soakCount) "Foot soak logged \u2713" else if (n < soakCount) "Foot soak undone" else "Plan complete"
+                                        soakCount = n
+                                        android.widget.Toast.makeText(wpContext, msg, android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            })
                         }
                     )
                 }
@@ -2693,6 +3447,51 @@ fun OathLanternIcon(modifier: Modifier = Modifier, iconSize: androidx.compose.ui
     }
 }
 
+// Page-break divider: a dashed rule with a small "page torn in two" icon in the middle.
+@Composable
+fun PageBreakIcon(modifier: Modifier = Modifier) {
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFF1f4d33)))
+        androidx.compose.foundation.Canvas(modifier = Modifier.padding(horizontal = 10.dp).size(width = 30.dp, height = 22.dp)) {
+            val w = this.size.width
+            val h = this.size.height
+            val green = Color(0xFF22e07a)
+            val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 1.6.dp.toPx())
+            drawRoundRect(
+                color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.22f, 0f),
+                size = androidx.compose.ui.geometry.Size(w * 0.56f, h * 0.36f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()), style = stroke
+            )
+            drawRoundRect(
+                color = green, topLeft = androidx.compose.ui.geometry.Offset(w * 0.22f, h * 0.64f),
+                size = androidx.compose.ui.geometry.Size(w * 0.56f, h * 0.36f),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(3.dp.toPx(), 3.dp.toPx()), style = stroke
+            )
+            drawLine(
+                color = green, start = androidx.compose.ui.geometry.Offset(0f, h * 0.5f), end = androidx.compose.ui.geometry.Offset(w, h * 0.5f),
+                strokeWidth = 1.6.dp.toPx(),
+                pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))
+            )
+        }
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFF1f4d33)))
+    }
+}
+
+// The "why" box (moved here from the Routine header).
+@Composable
+fun CcnaWhyCard() {
+    Box(
+        modifier = Modifier.fillMaxWidth().background(Color(0xFF0d1f0d), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
+    ) {
+        Column {
+            Text("I am getting my CCNA so I can:", color = Color(0xFF4ade80), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 6.dp))
+            Text("\u2022 Stop working two jobs", color = Color(0xFF86efac), fontSize = 13.sp)
+            Text("\u2022 Get my own place", color = Color(0xFF86efac), fontSize = 13.sp)
+            Text("\u2022 Leave Level 1 support behind", color = Color(0xFF86efac), fontSize = 13.sp)
+        }
+    }
+}
+
 // The lantern button for the Routine screen's icon row: tap to read the oath.
 @Composable
 fun OathLanternButton() {
@@ -2714,6 +3513,8 @@ fun OathLanternButton() {
                     OATH_LINES.forEach { line ->
                         Text(line, color = Color(0xFFe2e8f0), fontSize = 15.sp, lineHeight = 24.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 3.dp))
                     }
+                    PageBreakIcon(modifier = Modifier.padding(vertical = 14.dp))
+                    CcnaWhyCard()
                 }
             },
             confirmButton = {
@@ -3983,20 +4784,20 @@ val DELIVERY_BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake (Double)",
         mealType = "Breakfast",
-        macros = Macros(calories = 450, protein = 70, fat = 11, netCarbs = "21"),
+        macros = Macros(calories = 515, protein = 65, fat = 14, netCarbs = "31"),
         ingredients = listOf(
-            "4.5 scoops (approx. 88g) Premier Protein Vanilla Milkshake powder",
-            "1/2 banana (~60g), frozen",
+            "2.5 scoops (approx. 93g) RYSE Loaded Protein powder",
+            "1 whole banana (~120g peeled), frozen",
             "1 tbsp cocoa powder",
             "7g pecans (about 1 tbsp chopped, ~10 halves)",
             "Swerve sweetener, to taste (start with 1-2 tsp)",
             "8 to 12 oz cold water"
         ),
         steps = listOf(
-            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar. Thicker shake: 8 oz. More fluid: up to 12 oz."),
-            MealStep("Add Everything", "Add the frozen banana, 4.5 scoops Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
+            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar."),
+            MealStep("Add Everything", "Add the frozen banana, 2.5 scoops RYSE powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
             MealStep("Blend", "Blend 20-30 seconds until smooth."),
-            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink. The half scoop is approximate -- eyeball half a heaping scoop. Shake will be thicker than usual from the extra powder -- add a splash more water if needed.")
+            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink.\n\nWeigh the powder (93g) instead of eyeballing a half scoop. The shake will be thick from the extra powder and full banana, so add a splash more water if needed. RYSE already has cocoa in it, so taste first and cut back the added cocoa if it's rich enough.")
         )
     )
 )
@@ -4034,20 +4835,20 @@ val BREAKFAST_MEALS = listOf(
     Meal(
         name = "Protein Shake",
         mealType = "Breakfast",
-        macros = Macros(calories = 375, protein = 40, fat = 9, netCarbs = "24"),
+        macros = Macros(calories = 325, protein = 40, fat = 10, netCarbs = "17"),
         ingredients = listOf(
-            "2.5 scoops (approx. 49g) Premier Protein Vanilla Milkshake powder",
-            "1/2 banana (~60g), frozen",
+            "1.5 scoops (approx. 56g) RYSE Loaded Protein powder",
+            "1/2 banana (~60g peeled), frozen",
             "1 tbsp cocoa powder",
             "7g pecans (about 1 tbsp chopped, ~10 halves)",
             "Swerve sweetener, to taste (start with 1-2 tsp)",
             "8 to 12 oz cold water"
         ),
         steps = listOf(
-            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar. Thicker shake: 8 oz. More fluid: up to 12 oz."),
-            MealStep("Add Everything", "Add the frozen banana, 2.5 scoops Premier Protein powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
-            MealStep("Blend", "Secure the lid and blend 20-30 seconds until smooth."),
-            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink. The half scoop is approximate -- eyeball half a heaping scoop.")
+            MealStep("Measure the Base", "Pour 8 to 12 oz cold water into the Ninja blender jar."),
+            MealStep("Add Everything", "Add the frozen banana, 1.5 scoops RYSE powder, 1 tbsp cocoa powder, 7g pecans, and Swerve to taste."),
+            MealStep("Blend", "Blend 20-30 seconds until smooth."),
+            MealStep("Finish", "Let it sit 30 seconds for foam to settle, then pour and drink.\n\nWeigh the powder (56g) instead of eyeballing a half scoop. RYSE already has cocoa in it, so taste first and cut back the added cocoa if it's rich enough.")
         )
     )
 )
@@ -4190,6 +4991,26 @@ val BACKUP_DINNER_MEALS = listOf(
     )
 )
 
+val LATE_SNACK_MEAL = Meal(
+    name = "McDonald's Double Quarter Pounder with Cheese",
+    mealType = "Snack",
+    macros = Macros(calories = 820, protein = 48, fat = 51, netCarbs = "41"),
+    ingredients = listOf("Double Quarter Pounder with Cheese, no pickles, no mustard, add mayo"),
+    steps = listOf(
+        MealStep("The Order", "Double Quarter Pounder with Cheese, no pickles, no mustard, add mayo")
+    )
+)
+
+// Adds `add` to a displayed daily total such as "2,355" or "150g" (keeps the unit, re-adds the thousands comma).
+fun macroPlus(base: String, add: Double): String {
+    if (add == 0.0) return base
+    val suffix = base.filter { it.isLetter() }
+    val n = base.replace(",", "").filter { it.isDigit() || it == '.' }.toDoubleOrNull() ?: return base
+    val t = n + add
+    val txt = if (t % 1.0 == 0.0) String.format(java.util.Locale.US, "%,d", t.toLong()) else String.format(java.util.Locale.US, "%.1f", t)
+    return txt + suffix
+}
+
 @Composable
 fun DietScreen() {
     var selectedMeal by remember { mutableStateOf<Meal?>(null) }
@@ -4200,7 +5021,12 @@ fun DietScreen() {
             todayDow == java.util.Calendar.FRIDAY || todayDow == java.util.Calendar.SATURDAY
         )
     }
-    var backupDinner by remember { mutableStateOf(false) }
+    // Backup Dinner and Late Snack are remembered for today only; they reset the next day.
+    val dietContext = LocalContext.current
+    val dietPrefs = remember { dietContext.getSharedPreferences("diet_toggles", android.content.Context.MODE_PRIVATE) }
+    val dietToday = remember { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date()) }
+    var backupDinner by remember { mutableStateOf(dietPrefs.getString("date", "") == dietToday && dietPrefs.getBoolean("backup", false)) }
+    var lateSnack by remember { mutableStateOf(dietPrefs.getString("date", "") == dietToday && dietPrefs.getBoolean("snack", false)) }
 
     BackHandler(enabled = selectedMeal != null) {
         selectedMeal = null
@@ -4212,7 +5038,15 @@ fun DietScreen() {
             deliveryDiet = deliveryDiet,
             onToggleDiet = { deliveryDiet = !deliveryDiet },
             backupDinner = backupDinner,
-            onToggleBackup = { backupDinner = !backupDinner },
+            onToggleBackup = {
+                backupDinner = !backupDinner
+                dietPrefs.edit().putString("date", dietToday).putBoolean("backup", backupDinner).putBoolean("snack", lateSnack).apply()
+            },
+            lateSnack = lateSnack,
+            onToggleLateSnack = {
+                lateSnack = !lateSnack
+                dietPrefs.edit().putString("date", dietToday).putBoolean("backup", backupDinner).putBoolean("snack", lateSnack).apply()
+            },
             onMealSelected = { selectedMeal = it }
         )
     } else {
@@ -4235,7 +5069,7 @@ fun MacroBox(label: String, value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner: Boolean, onToggleBackup: () -> Unit, onMealSelected: (Meal) -> Unit) {
+fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner: Boolean, onToggleBackup: () -> Unit, lateSnack: Boolean, onToggleLateSnack: () -> Unit, onMealSelected: (Meal) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -4301,10 +5135,10 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MacroBox("Calories", if (deliveryDiet && backupDinner) "2,395" else if (deliveryDiet) "2,345" else if (backupDinner) "2,115" else "2,085", Modifier.weight(1f))
-                    MacroBox("Protein", if (deliveryDiet && backupDinner) "163g" else if (deliveryDiet) "160g" else if (backupDinner) "155g" else "155g", Modifier.weight(1f))
-                    MacroBox("Fat", if (deliveryDiet && backupDinner) "118g" else if (deliveryDiet) "117g" else if (backupDinner) "107g" else "110g", Modifier.weight(1f))
-                    MacroBox("Net Carbs", if (deliveryDiet && backupDinner) "162g" else if (deliveryDiet) "138g" else if (backupDinner) "111.5g" else "90.5g", Modifier.weight(1f))
+                    MacroBox("Calories", macroPlus(if (deliveryDiet && backupDinner) "2,385" else if (deliveryDiet) "2,355" else if (backupDinner) "2,065" else "2,035", if (deliveryDiet && lateSnack) 820.0 else 0.0), Modifier.weight(1f))
+                    MacroBox("Protein", macroPlus(if (deliveryDiet && backupDinner) "150g" else if (deliveryDiet) "150g" else if (backupDinner) "155g" else "155g", if (deliveryDiet && lateSnack) 48.0 else 0.0), Modifier.weight(1f))
+                    MacroBox("Fat", macroPlus(if (deliveryDiet && backupDinner) "120g" else if (deliveryDiet) "123g" else if (backupDinner) "108g" else "111g", if (deliveryDiet && lateSnack) 51.0 else 0.0), Modifier.weight(1f))
+                    MacroBox("Net Carbs", macroPlus(if (deliveryDiet && backupDinner) "170g" else if (deliveryDiet) "149g" else if (backupDinner) "104.5g" else "83.5g", if (deliveryDiet && lateSnack) 41.0 else 0.0), Modifier.weight(1f))
                 }
             }
         }
@@ -4370,6 +5204,40 @@ fun DietListScreen(deliveryDiet: Boolean, onToggleDiet: () -> Unit, backupDinner
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(text = meal.name, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                }
+            }
+            if (deliveryDiet) {
+                item(key = "late_snack_header") {
+                    Text(
+                        text = "Late Snack (Optional)",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF999999),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+                item(key = "late_snack_row") {
+                    Row(modifier = Modifier.fillMaxWidth().height(56.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { onMealSelected(LATE_SNACK_MEAL) },
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1a1a1a)),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(text = LATE_SNACK_MEAL.name, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color.White, textAlign = TextAlign.Center)
+                        }
+                        Box(
+                            modifier = Modifier
+                                .width(56.dp)
+                                .fillMaxHeight()
+                                .background(if (lateSnack) Color(0xFF3a2200) else Color(0xFF1a1a1a), shape = RoundedCornerShape(8.dp))
+                                .clickable { onToggleLateSnack() },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "\u2713", fontSize = 26.sp, fontWeight = FontWeight.Bold, color = if (lateSnack) Color(0xFFFF8C00) else Color(0xFF555555))
+                        }
+                    }
                 }
             }
             item {
@@ -4507,7 +5375,6 @@ fun SupplementsScreen() {
                             category = "Capsule",
                             supplements = listOf(
                                 "Caffeine" to "200 mg",
-                                "Alpha-GPC" to "600 mg",
                                 "One A Day Multivitamin for Men" to "1 tablet",
                                 "Allergy Relief" to "1 tablet"
                             )
@@ -4520,7 +5387,8 @@ fun SupplementsScreen() {
                                 "Betaine Anhydrous" to "3g",
                                 "Creatine" to "5g",
                                 "L-Theanine" to "400 mg",
-                                "L-Tyrosine" to "1000 mg"
+                                "L-Tyrosine" to "1000 mg",
+                                "Alpha-GPC" to "600 mg"
                             )
                         )
                     )
@@ -4560,7 +5428,6 @@ fun SupplementsScreen() {
                         SupplementGroup(
                             category = "Capsule",
                             supplements = listOf(
-                                "Magnesium Glycinate" to "210 mg",
                                 "Ashwagandha" to "600 mg",
                                 "Chamomile" to "750 mg",
                                 "Valerian Root" to "500 mg"
@@ -4569,11 +5436,111 @@ fun SupplementsScreen() {
                         SupplementGroup(
                             category = "Powder",
                             supplements = listOf(
-                                "L-Theanine" to "200 mg"
+                                "L-Theanine" to "200 mg",
+                                "Magnesium Glycinate" to "210 mg"
                             )
                         )
                     )
                 )
+            }
+
+            item {
+                PsylliumRampSection()
+            }
+        }
+    }
+}
+
+@Composable
+private fun PsylliumRampSection() {
+    val weeks = listOf(
+        Triple("Week 1", "1 scoop/day" to "~2g fiber", listOf("1 level scoop in 12 oz water at ~6 PM")),
+        Triple("Week 2", "2 scoops/day" to "~4g fiber", listOf("1 scoop midday + 1 scoop at ~6 PM")),
+        Triple("Week 3", "3 scoops/day" to "~6g fiber", listOf("1 scoop midday + 2 scoops at ~6 PM (or the other way around)")),
+        Triple("Week 4 and on", "4 scoops/day" to "~8g fiber", listOf("2 scoops midday + 2 scoops at ~6 PM", "Hold here"))
+    )
+    val rules = listOf(
+        "Level each scoop off, don't heap it",
+        "Water first, then the scoop, shake 20-30 seconds, drink right away",
+        "12 oz of water per dose, and go up to 16 oz if it's thick",
+        "Keep it 1-2 hours away from your supplements and the Allergy Relief tablet",
+        "Keep drinking your full half gallon a day",
+        "Move up only after a week that felt normal. If you get gas, bloating, or cramping, stay at that step or go back one",
+        "Hard stools or constipation means more water per dose"
+    )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "Psyllium Ramp: Nutricost",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Text(
+            text = "Using the 1/2 tsp (~2g) matcha scoop",
+            fontSize = 13.sp,
+            color = Color(0xFF999999),
+            modifier = Modifier.padding(bottom = 10.dp)
+        )
+        weeks.forEach { (label, head, bullets) ->
+            PsylliumCard(label, head.first, head.second, bullets)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+        PsylliumCard("Rules", "", "", rules)
+    }
+}
+
+@Composable
+private fun PsylliumCard(label: String, headline: String, value: String, bullets: List<String>) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color(0xFF2a2a2a), shape = RoundedCornerShape(8.dp))
+            .padding(12.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = label,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF999999),
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            if (headline.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = headline,
+                        fontSize = 14.sp,
+                        color = Color.White
+                    )
+                    Text(
+                        text = value,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF999999)
+                    )
+                }
+            }
+            bullets.forEach { line ->
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp)) {
+                    Text(
+                        text = "\u2022",
+                        fontSize = 14.sp,
+                        color = Color(0xFF999999),
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = line,
+                        fontSize = 14.sp,
+                        color = Color(0xFFDDDDDD),
+                        lineHeight = 20.sp
+                    )
+                }
             }
         }
     }
