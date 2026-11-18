@@ -721,18 +721,10 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
         if (letter.isEmpty()) { n++; labels.add(n.toString()) } else labels.add(letter)
     }
     Column(modifier = Modifier.fillMaxWidth().background(TR_CARD, RoundedCornerShape(10.dp)).padding(12.dp)) {
-        var showDemo by remember { mutableStateOf(false) }
-        val demoId = ex.exerciseId
-        val hasDemo by produceState(false, demoId) { value = demoId != null && TrMedia.frames(demoId).isNotEmpty() }
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f).clickable { val id = ex.exerciseId; if (id != null) onOpenDetail(id) }
-            )
-            if (hasDemo) Text("▶ Demo", color = TR_GREEN, fontSize = 12.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp).clickable { showDemo = true })
-        }
-        if (showDemo && demoId != null) TrDemoDialog(demoId, ex.title) { showDemo = false }
+        Text(
+            ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.clickable { val id = ex.exerciseId; if (id != null) onOpenDetail(id) }
+        )
         val muscles = ArrayList<String>()
         if (ex.primary != null) muscles.add(trTitleCase(ex.primary))
         ex.secondary.forEach { muscles.add(trTitleCase(it)) }
@@ -1494,12 +1486,8 @@ private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, 
 
     Column(modifier = Modifier.fillMaxWidth().background(TR_CARD, RoundedCornerShape(10.dp)).padding(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            /*TR_DEMO3*/
-            var showDemo by remember { mutableStateOf(false) }
-            val hasDemo by produceState(false, ex.exerciseId) { value = TrMedia.frames(ex.exerciseId).isNotEmpty() }
+            /*TR_DEMO4*/
             Text(ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clickable { onOpenDetail() })
-            if (hasDemo) Text("▶ Demo", color = TR_GREEN, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showDemo = true }.padding(8.dp))
-            if (showDemo) TrDemoDialog(ex.exerciseId, ex.title) { showDemo = false }
             Text("▲", color = if (index > 0) TR_GOLD else Color(0xFF3a3a4a), fontSize = 16.sp, modifier = Modifier.clickable { if (index > 0) onMove(-1) }.padding(8.dp))
             Text("▼", color = if (index < count - 1) TR_GOLD else Color(0xFF3a3a4a), fontSize = 16.sp, modifier = Modifier.clickable { if (index < count - 1) onMove(1) }.padding(8.dp))
             Text("✕", color = Color(0xFFf87171), fontSize = 16.sp, modifier = Modifier.clickable { onRemove() }.padding(8.dp))
