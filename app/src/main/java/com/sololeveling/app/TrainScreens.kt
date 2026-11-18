@@ -443,6 +443,11 @@ fun TrRoutinesTab(reloadKey: Int, rotation: BlockRotation?, active: TrSessionUi?
     val expandedIds = remember { mutableStateListOf<String>() }
     var starting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    /*TR_CRUD*/
+    var blockFolderId by remember { mutableStateOf("") }
+    var newFor by remember { mutableStateOf<String?>(null) }
+    var newName by remember { mutableStateOf("") }
+    var creating by remember { mutableStateOf(false) }
 
     LaunchedEffect(reloadKey, showAll) {
         loading = true
@@ -450,6 +455,7 @@ fun TrRoutinesTab(reloadKey: Int, rotation: BlockRotation?, active: TrSessionUi?
             val t = withContext(Dispatchers.IO) { trainCall("GET", "/api/train/routines" + (if (showAll) "?all=1" else "")) }
             val m = trJson(t)
             blockTitle = ((m["block"] as? Map<*, *>)?.get("title") as? String) ?: ""
+            blockFolderId = ((m["block"] as? Map<*, *>)?.get("folder_id") as? String) ?: ""
             routines = (m["routines"] as? List<*>)?.mapNotNull { it as? Map<*, *> } ?: emptyList()
             folders = (m["folders"] as? List<*>)?.mapNotNull { it as? Map<*, *> } ?: emptyList()
             val st = trJson(withContext(Dispatchers.IO) { trainCall("GET", "/api/train/streak") })
@@ -485,6 +491,27 @@ fun TrRoutinesTab(reloadKey: Int, rotation: BlockRotation?, active: TrSessionUi?
             }
         }
     }
+    val createRoutine: () -> Unit = {
+        val fid = newFor
+        val nm = newName.trim()
+        if (fid != null && nm.isNotEmpty() && !creating) {
+            creating = true
+            scope.launch {
+                try {
+                    val t = withContext(Dispatchers.IO) { trainCall("POST", "/api/train/routine", mapOf("title" to nm, "folder_id" to fid)) }
+                    val rid = trJson(t)["routine_id"] as? String
+                    newFor = null
+                    newName = ""
+                    if (rid != null) onEdit(rid)
+                } catch (e: Exception) {
+                    error = e.message
+                    newFor = null
+                } finally {
+                    creating = false
+                }
+            }
+        }
+    }
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -511,6 +538,7 @@ fun TrRoutinesTab(reloadKey: Int, rotation: BlockRotation?, active: TrSessionUi?
         }
         if (!showAll || folders.isEmpty()) {
             items(routines) { r -> TrRoutineCard(r, startRoutine, onEdit) }
+            if (blockFolderId.isNotEmpty()) item { TrNewRoutineButton { newName = ""; newFor = blockFolderId } }
         } else {
             folders.forEachIndexed { fi, f ->
                 val fid = (f["folder_id"] as? String) ?: ""
@@ -530,11 +558,49 @@ fun TrRoutinesTab(reloadKey: Int, rotation: BlockRotation?, active: TrSessionUi?
                         Text(if (isCollapsed) "▸" else "▾", color = TR_GOLD, fontSize = 18.sp)
                     }
                 }
-                if (!isCollapsed) items(group) { r -> TrRoutineCard(r, startRoutine, onEdit) }
+                if (!isCollapsed) {
+                    items(group) { r -> TrRoutineCard(r, startRoutine, onEdit) }
+                    item { TrNewRoutineButton { newName = ""; newFor = fid } }
+                }
             }
         }
         item { Spacer(Modifier.height(16.dp)) }
     }
+    if (newFor != null) {
+        AlertDialog(
+            onDismissRequest = { newFor = null },
+            containerColor = Color(0xFF1a1a1a),
+            title = { Text("New routine", color = Color.White) },
+            text = {
+                BasicTextField(
+                    value = newName,
+                    onValueChange = { if (it.length <= 60) newName = it },
+                    singleLine = true,
+                    textStyle = TextStyle(color = Color.White, fontSize = 16.sp),
+                    cursorBrush = SolidColor(TR_GOLD),
+                    modifier = Modifier.fillMaxWidth().background(Color(0xFF1f2937), RoundedCornerShape(6.dp)).padding(12.dp),
+                    decorationBox = { inner ->
+                        Box {
+                            if (newName.isEmpty()) Text("Routine name", color = TR_MUTED, fontSize = 16.sp)
+                            inner()
+                        }
+                    }
+                )
+            },
+            confirmButton = { TextButton(onClick = { createRoutine() }) { Text(if (creating) "Creating..." else "Create", color = TR_GOLD, fontWeight = FontWeight.Bold) } },
+            dismissButton = { TextButton(onClick = { newFor = null }) { Text("Cancel", color = TR_MUTED) } }
+        )
+    }
+}
+
+@Composable
+private fun TrNewRoutineButton(onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1e1e3a)),
+        border = BorderStroke(1.dp, Color(0xFF3a3a5a)),
+        modifier = Modifier.fillMaxWidth()
+    ) { Text("+ New routine", color = Color(0xFFa78bfa), fontWeight = FontWeight.Bold) }
 }
 
 @Composable
@@ -1262,6 +1328,7 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
     var removeTarget by remember { mutableStateOf<TrREx?>(null) }
     var confirmLeave by remember { mutableStateOf(false) }
     var detailId by remember { mutableStateOf<String?>(null) }
+    var confirmDelete by remember { mutableStateOf(false) }
 
     val dirty = loaded && trDraftSig(title, exs) != baseline
 
@@ -1438,6 +1505,15 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                 ) { Text("+ Add Exercise", color = Color(0xFFa78bfa), fontWeight = FontWeight.Bold) }
                 Spacer(Modifier.height(24.dp))
             }
+            item {
+                Button(
+                    onClick = { confirmDelete = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2a1010)),
+                    border = BorderStroke(1.dp, Color(0xFF5b2a2a)),
+                    modifier = Modifier.fillMaxWidth()
+                ) { Text("Delete routine", color = Color(0xFFf87171), fontWeight = FontWeight.Bold) }
+                Spacer(Modifier.height(32.dp))
+            }
         }
     }
 
@@ -1455,6 +1531,29 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                 }) { Text("Remove", color = Color(0xFFf87171), fontWeight = FontWeight.Bold) }
             },
             dismissButton = { TextButton(onClick = { removeTarget = null }) { Text("Keep", color = TR_MUTED) } }
+        )
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            containerColor = Color(0xFF1a1a1a),
+            title = { Text("Delete routine?", color = Color.White) },
+            text = { Text("\"" + title + "\" will be removed. Past workouts stay in your history.", color = Color(0xFFcdd6e2)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) { trainCall("DELETE", "/api/train/routine/" + routineId) }
+                            onBack()
+                        } catch (e: Exception) {
+                            error = "Could not delete: " + (e.message ?: "unknown error")
+                        }
+                    }
+                }) { Text("Delete", color = Color(0xFFf87171), fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Keep", color = TR_MUTED) } }
         )
     }
 
