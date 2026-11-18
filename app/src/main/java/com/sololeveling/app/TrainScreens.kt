@@ -1,5 +1,12 @@
 package com.sololeveling.app
 
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
+import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -93,6 +100,70 @@ fun trainCall(method: String, path: String, body: Map<String, Any?>? = null): St
     } finally {
         conn.disconnect()
     }
+}
+
+// ─── Train: exercise demo animation (two photos looped, served by the Pi) ─── /*TR_DEMO*/
+object TrMedia {
+    private var map: Map<String, List<String>>? = null
+    private val bitmaps = HashMap<String, ImageBitmap>()
+
+    suspend fun frames(id: String): List<String> {
+        if (map == null) {
+            map = try {
+                withContext(Dispatchers.IO) {
+                    val m = trJson(trainCall("GET", "/api/train/exercise-media"))
+                    val out = HashMap<String, List<String>>()
+                    for ((k, v) in m) out[k.toString()] = (v as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+                    out as Map<String, List<String>>
+                }
+            } catch (e: Exception) { null }
+        }
+        return map?.get(id) ?: emptyList()
+    }
+
+    suspend fun bitmap(path: String): ImageBitmap? {
+        synchronized(bitmaps) { bitmaps[path]?.let { return it } }
+        val bmp = try {
+            withContext(Dispatchers.IO) {
+                URL(TR_BASE + path).openStream().use { BitmapFactory.decodeStream(it) }?.asImageBitmap()
+            }
+        } catch (e: Exception) { null }
+        if (bmp != null) synchronized(bitmaps) { bitmaps[path] = bmp }
+        return bmp
+    }
+}
+
+@Composable
+fun TrDemoAnim(exerciseId: String, modifier: Modifier = Modifier) {
+    val frames by produceState<List<ImageBitmap>>(emptyList(), exerciseId) {
+        value = TrMedia.frames(exerciseId).mapNotNull { TrMedia.bitmap(it) }
+    }
+    if (frames.size >= 2) {
+        var i by remember(exerciseId) { mutableStateOf(0) }
+        LaunchedEffect(frames) {
+            while (true) {
+                delay(900)
+                i = (i + 1) % frames.size
+            }
+        }
+        Image(
+            bitmap = frames[i % frames.size],
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+        )
+    }
+}
+
+@Composable
+fun TrDemoDialog(exerciseId: String, title: String, onClose: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onClose,
+        containerColor = Color(0xFF1a1a1a),
+        title = { Text(title, color = TR_GOLD) },
+        text = { TrDemoAnim(exerciseId) },
+        confirmButton = { TextButton(onClick = onClose) { Text("Close", color = TR_GOLD) } }
+    )
 }
 
 private fun trJson(text: String): Map<*, *> = (Gson().fromJson(text, Map::class.java) as? Map<*, *>) ?: emptyMap<Any, Any>()
@@ -650,10 +721,18 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
         if (letter.isEmpty()) { n++; labels.add(n.toString()) } else labels.add(letter)
     }
     Column(modifier = Modifier.fillMaxWidth().background(TR_CARD, RoundedCornerShape(10.dp)).padding(12.dp)) {
-        Text(
-            ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.clickable { val id = ex.exerciseId; if (id != null) onOpenDetail(id) }
-        )
+        var showDemo by remember { mutableStateOf(false) }
+        val demoId = ex.exerciseId
+        val hasDemo by produceState(false, demoId) { value = demoId != null && TrMedia.frames(demoId).isNotEmpty() }
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f).clickable { val id = ex.exerciseId; if (id != null) onOpenDetail(id) }
+            )
+            if (hasDemo) Text("▶ Demo", color = TR_GREEN, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 8.dp).clickable { showDemo = true })
+        }
+        if (showDemo && demoId != null) TrDemoDialog(demoId, ex.title) { showDemo = false }
         val muscles = ArrayList<String>()
         if (ex.primary != null) muscles.add(trTitleCase(ex.primary))
         ex.secondary.forEach { muscles.add(trTitleCase(it)) }
@@ -991,6 +1070,7 @@ fun TrExerciseDetail(exerciseId: String, onBack: () -> Unit) {
         val pr = d["prs_computed"] as? Map<*, *>
         val secondary = (d["secondary_muscles"] as? List<*>)?.filterIsInstance<String>() ?: emptyList()
         LazyColumn(modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            item { TrDemoAnim(exerciseId, Modifier.padding(top = 12.dp)) }
             item {
                 Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp).background(TR_CARD, RoundedCornerShape(8.dp)).padding(12.dp)) {
                     Text("MUSCLES", fontSize = 10.sp, color = TR_MUTED, letterSpacing = 1.5.sp)
@@ -1189,6 +1269,7 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
     var showPicker by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<TrREx?>(null) }
     var confirmLeave by remember { mutableStateOf(false) }
+    var detailId by remember { mutableStateOf<String?>(null) }
 
     val dirty = loaded && trDraftSig(title, exs) != baseline
 
@@ -1294,6 +1375,13 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
         return
     }
 
+    val openDetail = detailId
+    if (openDetail != null) {
+        BackHandler { detailId = null }
+        TrExerciseDetail(openDetail, onBack = { detailId = null })
+        return
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0a))) {
         Row(
             modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a1a)).systemBarsPadding().padding(horizontal = 8.dp, vertical = 12.dp),
@@ -1345,7 +1433,8 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                             exs.add(j, ex)
                         }
                     },
-                    onRemove = { removeTarget = ex }
+                    onRemove = { removeTarget = ex },
+                    onOpenDetail = { detailId = ex.exerciseId }
                 )
             }
             item {
@@ -1395,7 +1484,7 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
 }
 
 @Composable
-private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, onRemove: () -> Unit) {
+private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, onRemove: () -> Unit, onOpenDetail: () -> Unit) {
     val labels = ArrayList<String>()
     var n = 0
     ex.sets.forEach { s ->
@@ -1405,7 +1494,12 @@ private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, 
 
     Column(modifier = Modifier.fillMaxWidth().background(TR_CARD, RoundedCornerShape(10.dp)).padding(12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+            /*TR_DEMO3*/
+            var showDemo by remember { mutableStateOf(false) }
+            val hasDemo by produceState(false, ex.exerciseId) { value = TrMedia.frames(ex.exerciseId).isNotEmpty() }
+            Text(ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).clickable { onOpenDetail() })
+            if (hasDemo) Text("▶ Demo", color = TR_GREEN, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { showDemo = true }.padding(8.dp))
+            if (showDemo) TrDemoDialog(ex.exerciseId, ex.title) { showDemo = false }
             Text("▲", color = if (index > 0) TR_GOLD else Color(0xFF3a3a4a), fontSize = 16.sp, modifier = Modifier.clickable { if (index > 0) onMove(-1) }.padding(8.dp))
             Text("▼", color = if (index < count - 1) TR_GOLD else Color(0xFF3a3a4a), fontSize = 16.sp, modifier = Modifier.clickable { if (index < count - 1) onMove(1) }.padding(8.dp))
             Text("✕", color = Color(0xFFf87171), fontSize = 16.sp, modifier = Modifier.clickable { onRemove() }.padding(8.dp))
