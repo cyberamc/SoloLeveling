@@ -101,6 +101,12 @@ class MorningAlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        // "Silence" (bedtime alarm only): stops the sound directly, without opening the app, so it works from the lock screen.
+        val silencePi = PendingIntent.getService(
+            this, 4, Intent(this, MorningAlarmService::class.java).apply { action = ACTION_DISMISS },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         // Open app intent for notification tap
         val openIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -133,6 +139,7 @@ class MorningAlarmService : Service() {
             .setContentIntent(openPi)
             .setFullScreenIntent(fullScreenPi, true)
             .addAction(android.R.drawable.ic_delete, "Dismiss", dismissPi)
+            .also { if (alarmType == TYPE_EVENING) it.addAction(android.R.drawable.ic_lock_silent_mode, "Silence", silencePi) }
             .also { notifBuilder = it }
             .build()
 

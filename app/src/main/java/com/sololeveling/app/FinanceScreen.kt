@@ -1092,6 +1092,45 @@ fun StepBtn(sym: String, onClick: () -> Unit) {
     }
 }
 
+/** Free-text note shown on delivery days. Saved on the phone with today's date and erased the first time it is opened on a later day. */
+@Composable
+fun DeliveryDayNote() {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember { context.getSharedPreferences("delivery_day_note", android.content.Context.MODE_PRIVATE) }
+    val today = remember { SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date()) }
+    var text by remember {
+        if (prefs.getString("date", "") != today) {
+            prefs.edit().putString("date", today).putString("text", "").apply()
+        }
+        mutableStateOf(prefs.getString("text", "") ?: "")
+    }
+    Column(
+        modifier = Modifier.fillMaxWidth()
+            .background(Color(0xFF12122A), RoundedCornerShape(10.dp))
+            .padding(14.dp)
+    ) {
+        Text("\uD83D\uDCDD Today's Note", color = Color(0xFF7B9CD8), fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = text,
+            onValueChange = {
+                text = it
+                prefs.edit().putString("date", today).putString("text", it).apply()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 2,
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp, color = Color(0xFFE2E8F0)),
+            placeholder = { Text("Notes for today...", color = Color(0xFF7A7A99), fontSize = 14.sp) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFF7B8CDE),
+                unfocusedBorderColor = Color(0xFF2A2A3A),
+                cursorColor = Color(0xFF7B8CDE)
+            )
+        )
+        Text("Cleared automatically tomorrow", fontSize = 11.sp, color = Color(0xFF7A7A99), modifier = Modifier.padding(top = 6.dp))
+    }
+}
+
 @Composable
 fun FinanceScreen(baseUrl: String) {
     var currentView by remember { mutableStateOf<String?>(null) }
@@ -1101,6 +1140,8 @@ fun FinanceScreen(baseUrl: String) {
     when (currentView) {
         "delivery" -> DeliveryTrackerScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "bookkeeping" -> BookkeepingScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        "spending" -> SpendingScreen(baseUrl = baseUrl, onBack = { currentView = null })
+        "loans" -> LoansScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "speedxchecks" -> SpeedxChecksScreen(baseUrl = baseUrl, onBack = { currentView = null })
         "deliveryhistory" -> DeliveryHistoryScreen(baseUrl = baseUrl, onBack = { currentView = null })
         else -> {
@@ -1112,20 +1153,15 @@ fun FinanceScreen(baseUrl: String) {
                 // Delivery-day reminder. Fri (6) / Sat (7) in Calendar's 1-based days.
                 val todayDow = Calendar.getInstance().get(Calendar.DAY_OF_WEEK)
                 if (todayDow == Calendar.FRIDAY || todayDow == Calendar.SATURDAY) {
-Row(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .background(Color(0x26F59E0B), shape = RoundedCornerShape(8.dp))
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("\uD83D\uDCE6", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Never do more than 130 packages",
-                            color = Color(0xFFF59E0B),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("\u26A0", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
+                        Text("Always Look At Address!", color = Color(0xFFF59E0B), fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(10.dp))
                     Row(
@@ -1133,52 +1169,40 @@ Row(
                             .fillMaxWidth()
                             .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
                             .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("⚠", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Route 122 — avoid 8210 Hwy 6",
-                            color = Color(0xFFF87171),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("⚠", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Route 117 — avoid 415 Grand Ave & C section / the end",
-                            color = Color(0xFFF87171),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0x26F87171), shape = RoundedCornerShape(8.dp))
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Top
                     ) {
                         Text("\u26A0", fontSize = 16.sp, modifier = Modifier.padding(end = 10.dp))
-                        Text(
-                            "Never do Galveston — too many apartments",
-                            color = Color(0xFFF87171),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Column {
+                            Text("Route 121 / Galveston:", color = Color(0xFFF87171), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.height(8.dp))
+                            Text("Avoid:", color = Color(0xFFF87171), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            listOf("Market", "N Holiday Dr", "Seawall", "FM 3000 Rd", "20th Street", "East Beach", "Strand Street").forEach { street ->
+                                Text("\u2022 " + street, color = Color(0xFFF87171), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(Modifier.height(8.dp))
+                            Text("Approved Apartment:", color = Color(0xFF4ADE80), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                            Text("\u2022 500 Ferry Road", color = Color(0xFF4ADE80), fontSize = 14.sp, lineHeight = 21.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
+                    Spacer(Modifier.height(10.dp))
+                    DeliveryDayNote()
                     Spacer(Modifier.height(12.dp))
                     TodayDeliveryTracker(baseUrl = baseUrl)
                     Spacer(Modifier.height(12.dp))
                 }
+
+                /*SPENDING_HUB*/ SpendingCard(baseUrl = baseUrl, onOpen = { currentView = "spending" })
+                Spacer(Modifier.height(12.dp))
+                /*LOANS_HUB*/ Button(
+                    onClick = { currentView = "loans" },
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF12122A)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("\uD83D\uDCB3  Loans", color = Color.White, fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold)
+                }
+                Spacer(Modifier.height(12.dp))
 
                 Button(
                     onClick = { currentView = "delivery" },

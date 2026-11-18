@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit
  */
 object UserReminder {
     const val CHANNEL_ID = "user_reminder"
+    const val HOLD_CHANNEL_ID = "hold_the_line_v2" /*HOLD_SOUND*/
 
     private const val BASE_URL = "https://mysololeveling.us"
     private const val WORK_NAME = "user_reminder_poll"
@@ -57,6 +58,7 @@ object UserReminder {
     const val ACTION_FIRE = "com.sololeveling.app.USER_REMINDER_FIRE"
     const val EXTRA_ID = "reminder_id"
     const val EXTRA_TITLE = "reminder_title"
+    const val ACTION_HOLD_REPOST = "com.sololeveling.app.HOLD_THE_LINE_REPOST"
 
     fun createChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -67,6 +69,23 @@ object UserReminder {
             ).apply { description = "Your scheduled one-time reminders" }
             val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             mgr.createNotificationChannel(channel)
+            // "Hold The Line" reminders get their own louder, distinct channel.
+            val hold = NotificationChannel(HOLD_CHANNEL_ID, "Hold The Line", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Hold The Line reminders"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 700, 250, 700, 250, 1000)
+                enableLights(true)
+                lightColor = android.graphics.Color.RED
+                setSound(
+                    android.net.Uri.parse("android.resource://" + context.packageName + "/raw/pain_speech"),
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+            }
+            mgr.deleteNotificationChannel("hold_the_line")
+            mgr.createNotificationChannel(hold)
         }
     }
 
@@ -186,7 +205,53 @@ object UserReminder {
         }
     }
 
+    /** True for reminders about holding the line (the title can be a whole sentence). */
+    fun isHoldTheLine(title: String): Boolean =
+        Regex("(?i)\\b(hold|held) the line\\b").containsMatchIn(title)
+
+    fun showHoldTheLine(context: Context, id: Int, title: String, silent: Boolean = false) { /*HOLD_REPOST*/
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val contentPi = PendingIntent.getActivity(
+            context, NOTIF_BASE + id, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val heading = "Hold The Line, Aaron"
+        // Drop a leading "Hold The Line, Aaron." from the message: the heading already says it. /*HOLD_STRIP_PREFIX*/
+        val stripped = title.trim().replace(Regex("(?i)^(hold|held) the line[,.:!\\s-]*(aaron)?[,.:!\\s-]*"), "")
+        val text = (if (stripped.isBlank()) "The willpower you earn from your other streaks is almost erased by a failed Held The Line. Remember your oath." else stripped).split(" ").joinToString(" ") { w -> w.replaceFirstChar { c -> c.uppercase() } } /*HOLD_TITLE_CASE*/
+        val repostIntent = Intent(context, UserReminderReceiver::class.java).apply {
+            action = ACTION_HOLD_REPOST
+            putExtra(EXTRA_ID, id)
+            putExtra(EXTRA_TITLE, title)
+        }
+        val deletePi = PendingIntent.getBroadcast(
+            context, REQ_BASE + 100000 + id, repostIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, HOLD_CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(heading)
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().setBigContentTitle(heading).bigText(text))
+            .setColor(0xFFDC2626.toInt())
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVibrate(longArrayOf(0, 700, 250, 700, 250, 1000))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setAutoCancel(true)
+            .setOngoing(true)
+            .setSilent(silent)
+            .setDeleteIntent(deletePi)
+            .setContentIntent(contentPi)
+            .build()
+        val mgr = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        mgr.notify(NOTIF_BASE + id, notification)
+    }
+
     fun showNotification(context: Context, id: Int, title: String) {
+        if (isHoldTheLine(title)) { showHoldTheLine(context, id, title); return }
         val openIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -226,6 +291,12 @@ class ReminderPollWorker(
 
 class UserReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == UserReminder.ACTION_HOLD_REPOST) {
+            val rid = intent.getIntExtra(UserReminder.EXTRA_ID, -1)
+            val rtitle = intent.getStringExtra(UserReminder.EXTRA_TITLE) ?: ""
+            if (rid >= 0) UserReminder.showHoldTheLine(context, rid, rtitle, true)
+            return
+        }
         if (intent.action != UserReminder.ACTION_FIRE) return
         val id = intent.getIntExtra(UserReminder.EXTRA_ID, -1)
         val title = intent.getStringExtra(UserReminder.EXTRA_TITLE) ?: ""

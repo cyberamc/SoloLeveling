@@ -13,3 +13,6 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+*.kt.bak*
+*.kt.before_*
