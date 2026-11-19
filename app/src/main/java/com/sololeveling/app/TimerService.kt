@@ -22,6 +22,7 @@ import androidx.core.app.NotificationCompat
 class TimerService : Service() {
 
     private var countDown: CountDownTimer? = null
+    private var dismissed = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -30,6 +31,16 @@ class TimerService : Service() {
         if (action == ACTION_STOP) {
             stopEverything()
             return START_NOT_STICKY
+        }
+
+        if (action == ACTION_DISMISSED) {
+            // You swiped the running timer away: keep counting silently and only show the "time's up" alert at the end.
+            if (countDown == null) {
+                stopEverything()
+                return START_NOT_STICKY
+            }
+            dismissed = true
+            return START_STICKY
         }
 
         val label = intent?.getStringExtra(EXTRA_LABEL) ?: "Timer"
@@ -41,6 +52,7 @@ class TimerService : Service() {
             return START_NOT_STICKY
         }
 
+        dismissed = false
         createChannel(this)
         // Show the initial pinned notification and enter foreground.
         startForeground(ONGOING_ID, buildOngoing(label, totalSeconds))
@@ -50,7 +62,7 @@ class TimerService : Service() {
             override fun onTick(msLeft: Long) {
                 val secLeft = (msLeft / 1000L).toInt()
                 val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                nm.notify(ONGOING_ID, buildOngoing(label, secLeft))
+                if (!dismissed) nm.notify(ONGOING_ID, buildOngoing(label, secLeft))
             }
 
             override fun onFinish() {
@@ -115,9 +127,16 @@ class TimerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val dismissIntent = Intent(this, TimerService::class.java).apply { action = ACTION_DISMISSED }
+        val dismissPending = PendingIntent.getService(
+            this, 2, dismissIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(this, QUIET_CHANNEL_ID)
             .setContentTitle(label)
             .setContentText(timeStr)
+            .setDeleteIntent(dismissPending)
             .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -141,6 +160,8 @@ class TimerService : Service() {
 
     companion object {
         const val CHANNEL_ID = "timer_channel"
+        const val QUIET_CHANNEL_ID = "timer_channel_quiet"
+        const val ACTION_DISMISSED = "com.sololeveling.app.TIMER_DISMISSED"
         const val ONGOING_ID = 5101
         const val DONE_ID = 5102
         const val ACTION_STOP = "com.sololeveling.app.TIMER_STOP"
@@ -156,6 +177,11 @@ class TimerService : Service() {
                 ).apply { description = "Meditation and activity timers" }
                 val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
                 nm.createNotificationChannel(ch)
+                // The running countdown lives on its own quiet channel so it never pops up as a banner; only the "time's up" alert uses the loud one.
+                nm.createNotificationChannel(
+                    NotificationChannel(QUIET_CHANNEL_ID, "Timers (running)", NotificationManager.IMPORTANCE_LOW)
+                        .apply { description = "Live countdown shown while a timer runs" }
+                )
             }
         }
 

@@ -1,5 +1,6 @@
 package com.sololeveling.app
 
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.ImageBitmap
@@ -237,19 +238,24 @@ class TrSetUi(val id: Long, type0: String, weight0: String, reps0: String, done0
     var weight by mutableStateOf(weight0)
     var reps by mutableStateOf(reps0)
     var done by mutableStateOf(done0)
+    var isPr by mutableStateOf(false)
 }
 
 class TrExUi(
     val id: Long,
     val exerciseId: String?,
     val title: String,
-    val notes: String,
+    notes0: String,
     val rest: Int,
     val primary: String?,
     val secondary: List<String>,
     val previous: List<String>,
-    val sets: SnapshotStateList<TrSetUi>
-)
+    val sets: SnapshotStateList<TrSetUi>,
+    val exType: String? = null,
+    val supersetId: Int? = null
+) {
+    var notes by mutableStateOf(notes0)
+}
 
 class TrSessionUi(val id: String, val routineTitle: String, val startMs: Long, val exercises: List<TrExUi>)
 
@@ -292,7 +298,9 @@ private fun trParseSession(m: Map<*, *>): TrSessionUi {
                     em["primary_muscle"] as? String,
                     sec,
                     prev,
-                    sets
+                    sets,
+                    em["ex_type"] as? String,
+                    (em["superset_id"] as? Number)?.toInt()
                 )
             )
         }
@@ -698,9 +706,19 @@ fun TrSessionScreen(
         ) {
             item { Spacer(Modifier.height(2.dp)) }
             items(session.exercises) { ex ->
+                /*TR_SUPERSET*/
+                val pos = session.exercises.indexOf(ex)
+                val ssId = ex.supersetId
+                val prevSame = ssId != null && pos > 0 && session.exercises[pos - 1].supersetId == ssId
+                val nextSame = ssId != null && pos < session.exercises.size - 1 && session.exercises[pos + 1].supersetId == ssId
+                val ssTag: String? = if (!prevSame && !nextSame) null
+                    else if (nextSame) "⚡ SUPERSET  ·  then " + session.exercises[pos + 1].title
+                    else "⚡ SUPERSET  ·  rest after this one"
                 TrExerciseCard(
                     ex = ex,
                     sessionId = session.id,
+                    supersetTag = ssTag,
+                    restAfter = !nextSame,
                     onOpenDetail = onOpenDetail,
                     onRestStart = { secs ->
                         TimerService.start(context, "Rest · " + ex.title, secs, "Rest over — next set", true)
@@ -777,8 +795,16 @@ fun TrSessionScreen(
 }
 
 @Composable
-fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit, onRestStart: (Int) -> Unit) {
+fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit, onRestStart: (Int) -> Unit, supersetTag: String? = null, restAfter: Boolean = true) {
     val scope = rememberCoroutineScope()
+    /*TR_SESSION2*/
+    val hideW = ex.exType == "reps_only"
+    var prMsg by remember { mutableStateOf<String?>(null) }
+    var editNote by remember { mutableStateOf(false) }
+    var noteDraft by remember { mutableStateOf("") }
+    var noteBusy by remember { mutableStateOf(false) }
+    var noteErr by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(prMsg) { if (prMsg != null) { delay(6000); prMsg = null } }
     // Normal sets are numbered; W / F / D are lettered (like Hevy).
     val labels = ArrayList<String>()
     var n = 0
@@ -787,6 +813,7 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
         if (letter.isEmpty()) { n++; labels.add(n.toString()) } else labels.add(letter)
     }
     Column(modifier = Modifier.fillMaxWidth().background(TR_CARD, RoundedCornerShape(10.dp)).padding(12.dp)) {
+        if (supersetTag != null) Text(supersetTag, color = Color(0xFFa78bfa), fontSize = 11.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp))
         Text(
             ex.title, color = TR_GOLD, fontSize = 16.sp, fontWeight = FontWeight.Bold,
             modifier = Modifier.clickable { val id = ex.exerciseId; if (id != null) onOpenDetail(id) }
@@ -796,20 +823,68 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
         ex.secondary.forEach { muscles.add(trTitleCase(it)) }
         if (muscles.isNotEmpty()) Text(muscles.joinToString(" · "), color = TR_MUTED, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp))
         if (ex.notes.isNotBlank()) {
-            Text(ex.notes, color = Color(0xFFfbbf24), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+            Text(ex.notes, color = Color(0xFFfbbf24), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp).clickable { noteDraft = ex.notes; noteErr = null; editNote = true })
+            Text("✎ Edit note", color = TR_MUTED, fontSize = 11.sp, modifier = Modifier.padding(top = 2.dp).clickable { noteDraft = ex.notes; noteErr = null; editNote = true })
+        } else {
+            Text("+ Add note", color = TR_MUTED, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp).clickable { noteDraft = ""; noteErr = null; editNote = true })
+        }
+        if (editNote) {
+            AlertDialog(
+                onDismissRequest = { if (!noteBusy) editNote = false },
+                containerColor = Color(0xFF1a1a1a),
+                title = { Text("Note · " + ex.title, color = Color.White, fontSize = 16.sp) },
+                text = {
+                    Column {
+                        BasicTextField(
+                            value = noteDraft,
+                            onValueChange = { if (it.length <= 5000) noteDraft = it },
+                            textStyle = TextStyle(color = Color.White, fontSize = 14.sp),
+                            cursorBrush = SolidColor(TR_GOLD),
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 280.dp).background(Color(0xFF1f2937), RoundedCornerShape(6.dp)).padding(12.dp)
+                        )
+                        if (noteErr != null) Text(noteErr ?: "", color = Color(0xFFf87171), fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
+                        Text("Saved on this workout and on the routine for next time.", color = TR_MUTED, fontSize = 11.sp, modifier = Modifier.padding(top = 6.dp))
+                    }
+                },
+                confirmButton = {
+                    TextButton(enabled = !noteBusy, onClick = {
+                        noteBusy = true
+                        noteErr = null
+                        scope.launch {
+                            try {
+                                val t = withContext(Dispatchers.IO) { trainCall("PATCH", "/api/train/session-exercise/" + ex.id, mapOf("notes" to noteDraft)) }
+                                ex.notes = (trJson(t)["notes"] as? String) ?: ""
+                                editNote = false
+                            } catch (e: Exception) {
+                                noteErr = "Could not save: " + (e.message ?: "unknown error")
+                            } finally {
+                                noteBusy = false
+                            }
+                        }
+                    }) { Text(if (noteBusy) "Saving..." else "Save", color = TR_GOLD, fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton(enabled = !noteBusy, onClick = { editNote = false }) { Text("Cancel", color = TR_MUTED) } }
+            )
         }
         if (ex.rest > 0) Text("Rest " + trFmtClock(ex.rest.toLong()), color = Color(0xFFa78bfa), fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
         Spacer(Modifier.height(8.dp))
+        if (prMsg != null) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp).background(Color(0xFF3a2f00), RoundedCornerShape(8.dp))
+                    .clickable { prMsg = null }.padding(horizontal = 12.dp, vertical = 10.dp)
+            ) { Text(prMsg ?: "", color = TR_GOLD, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+        }
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("SET", color = TR_MUTED, fontSize = 10.sp, modifier = Modifier.width(40.dp), textAlign = TextAlign.Center)
             Text("PREVIOUS", color = TR_MUTED, fontSize = 10.sp, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
-            Text("LBS", color = TR_MUTED, fontSize = 10.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            if (hideW) Spacer(Modifier.weight(1f)) else Text("LBS", color = TR_MUTED, fontSize = 10.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             Text("REPS", color = TR_MUTED, fontSize = 10.sp, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
             Spacer(Modifier.width(44.dp))
         }
         ex.sets.forEachIndexed { i, s ->
             TrSetRow(
                 set = s,
+                hideWeight = hideW,
                 label = if (i < labels.size) labels[i] else "",
                 prev = if (i < ex.previous.size) ex.previous[i] else "—",
                 onToggle = { newDone ->
@@ -822,8 +897,18 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
                             body["type"] = s.type
                             body["done"] = newDone
                             val t = withContext(Dispatchers.IO) { trainCall("PATCH", "/api/train/set/" + s.id, body) }
-                            val rest = (trJson(t)["rest_seconds"] as? Number)?.toInt() ?: 0
-                            if (newDone && rest > 0) onRestStart(rest)
+                            val j = trJson(t)
+                            val rest = (j["rest_seconds"] as? Number)?.toInt() ?: 0
+                            if (newDone && j["is_pr"] == true) {
+                                s.isPr = true
+                                val pm = j["pr"] as? Map<*, *>
+                                prMsg = if (pm != null) {
+                                    "🏆 New PR!  " + ((pm["kind"] as? String) ?: "") + ": " + ((pm["value"] as? Number)?.toInt() ?: 0) + " " + ((pm["unit"] as? String) ?: "") +
+                                        "  (was " + ((pm["previous"] as? Number)?.toInt() ?: 0) + ")"
+                                } else "🏆 New PR!"
+                            }
+                            if (!newDone) s.isPr = false
+                            if (newDone && rest > 0 && restAfter) onRestStart(rest)
                         } catch (e: Exception) {
                             s.done = !newDone
                         }
@@ -859,7 +944,7 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
 }
 
 @Composable
-fun TrSetRow(set: TrSetUi, label: String, prev: String, onToggle: (Boolean) -> Unit, onDelete: () -> Unit) {
+fun TrSetRow(set: TrSetUi, label: String, prev: String, onToggle: (Boolean) -> Unit, onDelete: () -> Unit, hideWeight: Boolean = false) {
     var menu by remember { mutableStateOf(false) }
     var first by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
@@ -885,7 +970,7 @@ fun TrSetRow(set: TrSetUi, label: String, prev: String, onToggle: (Boolean) -> U
     ) {
         Box(modifier = Modifier.width(40.dp), contentAlignment = Alignment.Center) {
             Text(
-                label, color = trTypeColor(set.type), fontSize = 15.sp, fontWeight = FontWeight.Bold,
+                if (set.isPr && set.done) "🏆" else label, color = trTypeColor(set.type), fontSize = 15.sp, fontWeight = FontWeight.Bold,
                 modifier = Modifier.clickable { menu = true }.padding(horizontal = 10.dp, vertical = 8.dp)
             )
             DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -897,7 +982,7 @@ fun TrSetRow(set: TrSetUi, label: String, prev: String, onToggle: (Boolean) -> U
             }
         }
         Text(prev, color = TR_MUTED, fontSize = 12.sp, modifier = Modifier.weight(1.3f), textAlign = TextAlign.Center)
-        TrNumField(set.weight, { set.weight = it }, true, set.done, Modifier.weight(1f).padding(horizontal = 4.dp))
+        if (hideWeight) Spacer(Modifier.weight(1f)) else TrNumField(set.weight, { set.weight = it }, true, set.done, Modifier.weight(1f).padding(horizontal = 4.dp))
         TrNumField(set.reps, { set.reps = it }, false, set.done, Modifier.weight(1f).padding(horizontal = 4.dp))
         Box(
             modifier = Modifier.width(44.dp).height(36.dp).padding(horizontal = 6.dp)
