@@ -713,7 +713,9 @@ data class Co2Reading(val id: Int, val date: String, val weight: Double, val lbs
 data class Co2State(
     val tare: Double, val full: Double, val capacity: Double, val readings: List<Co2Reading>,
     val lbsLeft: Double?, val pctLeft: Int?, val lastDate: String?,
-    val lbsPerWeek: Double?, val daysLeft: Int?, val emptyDate: String?, val since: String?
+    val lbsPerWeek: Double?, val daysLeft: Int?, val emptyDate: String?, val since: String?,
+    val refillNow: Boolean = false, val refillBy: String? = null, val refillDays: Int? = null /*CO2_REFILL*/,
+    val reminders: List<Pair<String, String>> = emptyList() /*CO2_REMLIST*/
 )
 
 fun parseCo2(text: String): Co2State? {
@@ -729,7 +731,9 @@ fun parseCo2(text: String): Co2State? {
         Co2State(
             o.getDouble("tare"), o.getDouble("full"), o.getDouble("capacity"), readings,
             cur?.getDouble("lbs_left"), cur?.getInt("pct_left"), cur?.getString("date"),
-            est?.getDouble("lbs_per_week"), est?.getInt("days_left"), est?.getString("empty_date"), est?.getString("since")
+            est?.getDouble("lbs_per_week"), est?.getInt("days_left"), est?.getString("empty_date"), est?.getString("since"),
+            cur?.optBoolean("refill_now", false) ?: false, est?.optString("refill_by", "")?.ifEmpty { null }, est?.optInt("refill_days", -1)?.takeIf { it >= 0 },
+            (o.optJSONArray("reminders")?.let { ra -> (0 until ra.length()).map { k -> ra.getJSONObject(k).let { x -> Pair(x.getString("remind_at"), x.getString("title")) } } } ?: emptyList())
         )
     } catch (e: Exception) { null }
 }
@@ -770,7 +774,7 @@ fun Co2Screen(onBack: () -> Unit) {
             title = { Text("Weigh CO2 Tank", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Put the tank on the scale and enter the total weight in lbs (empty = 8.12, full = 13.12).", color = Color(0xFF94a3b8), fontSize = 13.sp)
+                    Text("Put the tank on the scale and enter the total weight in lbs (empty = 8.75, full = 13.75).", color = Color(0xFF94a3b8), fontSize = 13.sp)
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(value = weightInput, onValueChange = { weightInput = it },
                         label = { Text("Weight (lbs)") },
@@ -816,7 +820,7 @@ fun Co2Screen(onBack: () -> Unit) {
         } else {
             Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp)) {
                 val pct = st.pctLeft ?: 0
-                val barColor = if (pct > 40) Color(0xFF10b981) else if (pct > 15) Color(0xFFf59e0b) else Color(0xFFf87171)
+                val barColor = if (st.refillNow) Color(0xFFf87171) else if (pct > 40) Color(0xFF10b981) else if (pct > 15) Color(0xFFf59e0b) else Color(0xFFf87171)
                 Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(12.dp)).padding(16.dp)) {
                     Text("CO2 LEFT", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
                     Spacer(Modifier.height(6.dp))
@@ -833,15 +837,33 @@ fun Co2Screen(onBack: () -> Unit) {
                     Spacer(Modifier.height(6.dp))
                     if (st.daysLeft != null && st.emptyDate != null && st.lbsPerWeek != null) {
                         val timeLeft = if (st.daysLeft >= 14) "about " + (st.daysLeft / 7) + " weeks" else if (st.daysLeft == 1) "about 1 day" else "about " + st.daysLeft + " days"
-                        Text(timeLeft + " left", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = barColor)
-                        Text("Empty around " + st.emptyDate, fontSize = 14.sp, color = Color.White)
+                        if (st.refillNow) {
+                            Text("Refill now", fontSize = 22.sp, fontWeight = FontWeight.Bold, color = barColor)
+                            Text("About 1 lb or less left, so carbonation is weak. Fully empty around " + st.emptyDate, fontSize = 14.sp, color = Color.White)
+                        } else {
+                            val rd = st.refillDays ?: st.daysLeft
+                            val refillText = if (rd >= 14) "about " + (rd / 7) + " weeks" else if (rd == 1) "about 1 day" else "about " + rd + " days"
+                            Text("Refill in " + refillText, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = barColor)
+                            Text("Refill by " + (st.refillBy ?: st.emptyDate) + " (fully empty around " + st.emptyDate + ")", fontSize = 14.sp, color = Color.White)
+                        }
                         Spacer(Modifier.height(6.dp))
                         Text(String.format("Using %.2f lbs/week (since %s)", st.lbsPerWeek, st.since ?: ""), fontSize = 12.sp, color = Color(0xFF94a3b8))
                     } else {
                         Text("Weigh it again in a few days to get an estimate.", fontSize = 14.sp, color = Color(0xFF94a3b8))
                     }
                     Spacer(Modifier.height(8.dp))
-                    Text("Empty = " + st.tare + " lbs · Full = " + String.format("%.2f", st.full) + " lbs. Refill when it gets close to empty. A reading well above the last one counts as a refill.", fontSize = 11.sp, color = Color(0xFF64748b))
+                    Text("Empty = " + st.tare + " lbs · Full = " + String.format("%.2f", st.full) + " lbs. Refill at about 1 lb left; below that the carbonation gets weak. A reading well above the last one counts as a refill.", fontSize = 11.sp, color = Color(0xFF64748b))
+                }
+                if (st.reminders.isNotEmpty()) {
+                    Spacer(Modifier.height(12.dp))
+                    Column(modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = RoundedCornerShape(12.dp)).padding(16.dp)) {
+                        Text("REMINDERS SET", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
+                        Spacer(Modifier.height(8.dp))
+                        st.reminders.forEach { rm ->
+                            val whenText = try { java.text.SimpleDateFormat("EEE M/d · h:mm a", java.util.Locale.US).format(java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US).parse(rm.first)!!) } catch (e: Exception) { rm.first }
+                            Text("\u2713 " + whenText + " · " + rm.second, fontSize = 14.sp, color = Color(0xFF4ade80), modifier = Modifier.padding(bottom = 4.dp))
+                        }
+                    }
                 }
                 Spacer(Modifier.height(20.dp))
                 Text("READINGS", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF94a3b8), letterSpacing = 2.sp)
@@ -1996,6 +2018,32 @@ fun UrgeCardScreen(onBack: () -> Unit) {
                     lineHeight = 25.sp,
                     modifier = Modifier.padding(16.dp)
                 )
+            }
+            /*URGE_STEPS2*/
+            Text(
+                text = "If You Get The Urge, You Must Do The Following:",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFFD700),
+                lineHeight = 26.sp,
+                modifier = Modifier.padding(top = 18.dp, bottom = 2.dp)
+            )
+            listOf("Wall Sit", "Push Up", "Pull Up", "5 Minutes Toby Walk").forEachIndexed { index, step ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF1a1a1a), shape = RoundedCornerShape(10.dp))
+                        .padding(vertical = 20.dp, horizontal = 16.dp)
+                ) {
+                    Text(
+                        text = "Step " + (index + 1) + ":",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                    Text(text = step, fontSize = 18.sp, color = Color(0xFFDDDDDD), lineHeight = 25.sp)
+                }
             }
         }
     }
