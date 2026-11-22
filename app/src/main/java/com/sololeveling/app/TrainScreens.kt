@@ -239,6 +239,7 @@ class TrSetUi(val id: Long, type0: String, weight0: String, reps0: String, done0
     var reps by mutableStateOf(reps0)
     var done by mutableStateOf(done0)
     var isPr by mutableStateOf(false)
+    var prText by mutableStateOf<String?>(null)
 }
 
 class TrExUi(
@@ -275,7 +276,7 @@ private fun trParseSession(m: Map<*, *>): TrSessionUi {
                             trFmtW((sm["weight_lbs"] as? Number)?.toDouble()),
                             (sm["reps"] as? Number)?.toInt()?.toString() ?: "",
                             (sm["done"] as? Boolean) ?: false
-                        )
+                        ).also { ts -> if (sm["is_pr"] == true) { ts.isPr = true; ts.prText = trPrText(sm["pr"] as? Map<*, *>) } }
                     )
                 }
             }
@@ -721,7 +722,7 @@ fun TrSessionScreen(
                     restAfter = !nextSame,
                     onOpenDetail = onOpenDetail,
                     onRestStart = { secs ->
-                        TimerService.start(context, "Rest · " + ex.title, secs, "Rest over — next set", true)
+                        TimerService.start(context, "Rest · " + ex.title, secs, "Rest over — next set", true, "gym") /*TR_GYMTAB*/
                         restEnd = System.currentTimeMillis() + secs * 1000L
                         restLabel = ex.title
                     }
@@ -798,13 +799,13 @@ fun TrSessionScreen(
 fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit, onRestStart: (Int) -> Unit, supersetTag: String? = null, restAfter: Boolean = true) {
     val scope = rememberCoroutineScope()
     /*TR_SESSION2*/
+    /*TR_PR2*/
+    val prCtx = LocalContext.current
     val hideW = ex.exType == "reps_only"
-    var prMsg by remember { mutableStateOf<String?>(null) }
     var editNote by remember { mutableStateOf(false) }
     var noteDraft by remember { mutableStateOf("") }
     var noteBusy by remember { mutableStateOf(false) }
     var noteErr by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(prMsg) { if (prMsg != null) { delay(6000); prMsg = null } }
     // Normal sets are numbered; W / F / D are lettered (like Hevy).
     val labels = ArrayList<String>()
     var n = 0
@@ -868,11 +869,14 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
         }
         if (ex.rest > 0) Text("Rest " + trFmtClock(ex.rest.toLong()), color = Color(0xFFa78bfa), fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
         Spacer(Modifier.height(8.dp))
-        if (prMsg != null) {
-            Box(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp).background(Color(0xFF3a2f00), RoundedCornerShape(8.dp))
-                    .clickable { prMsg = null }.padding(horizontal = 12.dp, vertical = 10.dp)
-            ) { Text(prMsg ?: "", color = TR_GOLD, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+        ex.sets.forEach { ps ->
+            val prT = ps.prText
+            if (ps.isPr && ps.done && prT != null) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp).background(Color(0xFF3a2f00), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                ) { Text(prT, color = TR_GOLD, fontSize = 14.sp, fontWeight = FontWeight.Bold) }
+            }
         }
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("SET", color = TR_MUTED, fontSize = 10.sp, modifier = Modifier.width(40.dp), textAlign = TextAlign.Center)
@@ -901,13 +905,10 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
                             val rest = (j["rest_seconds"] as? Number)?.toInt() ?: 0
                             if (newDone && j["is_pr"] == true) {
                                 s.isPr = true
-                                val pm = j["pr"] as? Map<*, *>
-                                prMsg = if (pm != null) {
-                                    "🏆 New PR!  " + ((pm["kind"] as? String) ?: "") + ": " + ((pm["value"] as? Number)?.toInt() ?: 0) + " " + ((pm["unit"] as? String) ?: "") +
-                                        "  (was " + ((pm["previous"] as? Number)?.toInt() ?: 0) + ")"
-                                } else "🏆 New PR!"
+                                s.prText = trPrText(j["pr"] as? Map<*, *>)
+                                trPrAlert(prCtx)
                             }
-                            if (!newDone) s.isPr = false
+                            if (!newDone) { s.isPr = false; s.prText = null }
                             if (newDone && rest > 0 && restAfter) onRestStart(rest)
                         } catch (e: Exception) {
                             s.done = !newDone
@@ -943,6 +944,35 @@ fun TrExerciseCard(ex: TrExUi, sessionId: String, onOpenDetail: (String) -> Unit
     }
 }
 
+/*TR_PR2_HELPERS*/
+private var trPrRingtone: android.media.Ringtone? = null
+
+private fun trPrText(pm: Map<*, *>?): String {
+    if (pm == null) return "🏆 New PR!"
+    return "🏆 New PR!  " + ((pm["kind"] as? String) ?: "") + ": " + ((pm["value"] as? Number)?.toInt() ?: 0) + " " + ((pm["unit"] as? String) ?: "") +
+        "  (was " + ((pm["previous"] as? Number)?.toInt() ?: 0) + ")"
+}
+
+// Short celebratory sound + double-pulse vibration when you log a PR.
+@Suppress("DEPRECATION")
+private fun trPrAlert(ctx: android.content.Context) {
+    try {
+        trPrRingtone?.stop()
+        val uri = android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION)
+        val rt = android.media.RingtoneManager.getRingtone(ctx, uri)
+        trPrRingtone = rt
+        rt?.play()
+    } catch (e: Exception) {
+    }
+    try {
+        val v = ctx.getSystemService(android.content.Context.VIBRATOR_SERVICE) as android.os.Vibrator
+        val pattern = longArrayOf(0, 120, 80, 120, 80, 350)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) v.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1))
+        else v.vibrate(pattern, -1)
+    } catch (e: Exception) {
+    }
+}
+
 @Composable
 fun TrSetRow(set: TrSetUi, label: String, prev: String, onToggle: (Boolean) -> Unit, onDelete: () -> Unit, hideWeight: Boolean = false) {
     var menu by remember { mutableStateOf(false) }
@@ -952,13 +982,19 @@ fun TrSetRow(set: TrSetUi, label: String, prev: String, onToggle: (Boolean) -> U
     // Edits are saved ~1s after you stop typing (so an app kill never loses a half-filled set).
     LaunchedEffect(set.weight, set.reps, set.type) {
         if (first) { first = false; return@LaunchedEffect }
+        if (set.isPr) { set.isPr = false; set.prText = null }
         delay(900)
         try {
             val body = HashMap<String, Any?>()
             body["weight_lbs"] = set.weight.toDoubleOrNull()
             body["reps"] = set.reps.toIntOrNull()
             body["type"] = set.type
-            withContext(Dispatchers.IO) { trainCall("PATCH", "/api/train/set/" + set.id, body) }
+            val saved = withContext(Dispatchers.IO) { trainCall("PATCH", "/api/train/set/" + set.id, body) }
+            if (set.done) {
+                val sj = trJson(saved)
+                set.isPr = sj["is_pr"] == true
+                set.prText = if (set.isPr) trPrText(sj["pr"] as? Map<*, *>) else null
+            }
         } catch (e: Exception) {
         }
     }
@@ -1308,7 +1344,8 @@ class TrRSet(val key: Long, val id: Long?, type0: String, weight0: String, reps0
     var reps by mutableStateOf(reps0)
 }
 
-class TrREx(val key: Long, val id: Long?, val exerciseId: String, val title: String, rest0: String, notes0: String, val sets: SnapshotStateList<TrRSet>) {
+class TrREx(val key: Long, val id: Long?, val exerciseId: String, val title: String, rest0: String, notes0: String, val sets: SnapshotStateList<TrRSet>, ss0: Int? = null) {
+    var ss by mutableStateOf(ss0)
     var rest by mutableStateOf(rest0)
     var notes by mutableStateOf(notes0)
 }
@@ -1346,7 +1383,7 @@ private fun trDraftSig(title: String, exs: List<TrREx>): String {
     val sb = StringBuilder()
     sb.append(title.trim()).append('\u0001')
     for (ex in exs) {
-        sb.append(ex.id?.toString() ?: ("n" + ex.key)).append('|').append(ex.rest).append('|').append(ex.notes).append('\u0002')
+        sb.append(ex.id?.toString() ?: ("n" + ex.key)).append('|').append(ex.rest).append('|').append(ex.notes).append('|').append(ex.ss).append('\u0002')
         for (s in ex.sets) sb.append(s.type).append(':').append(s.weight).append(':').append(s.reps).append(';')
         sb.append('\u0003')
     }
@@ -1358,6 +1395,19 @@ private fun trBuildPayload(title: String, exs: List<TrREx>): Pair<Map<String, An
     val t = title.trim()
     if (t.isEmpty()) return Pair(null, "Give the routine a name.")
     val list = ArrayList<Map<String, Any?>>()
+    /*TR_LINK*/
+    // Superset groups: only runs of 2+ neighbouring exercises count; renumbered 0,1,2... so ids never collide.
+    val ssOut = HashMap<Long, Int>()
+    var runNo = -1
+    var si = 0
+    while (si < exs.size) {
+        val g = exs[si].ss
+        if (g == null) { si++; continue }
+        var sj = si
+        while (sj + 1 < exs.size && exs[sj + 1].ss == g) sj++
+        if (sj > si) { runNo++; for (sk in si..sj) ssOut[exs[sk].key] = runNo }
+        si = sj + 1
+    }
     for (ex in exs) {
         val rest = if (ex.rest.isBlank()) 0 else (ex.rest.toIntOrNull() ?: return Pair(null, ex.title + ": rest time must be a whole number."))
         if (rest > 3600) return Pair(null, ex.title + ": rest can be at most 3600 seconds.")
@@ -1390,6 +1440,7 @@ private fun trBuildPayload(title: String, exs: List<TrREx>): Pair<Map<String, An
         if (ex.id != null) em["id"] = ex.id
         em["exercise_id"] = ex.exerciseId
         em["rest_seconds"] = rest
+        em["superset_id"] = ssOut[ex.key]
         em["notes"] = if (ex.notes.isBlank()) null else ex.notes
         em["sets"] = sets
         list.add(em)
@@ -1477,7 +1528,8 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                             (em["title"] as? String) ?: "Exercise",
                             ((em["rest_seconds"] as? Number)?.toInt() ?: 0).toString(),
                             (em["notes"] as? String) ?: "",
-                            sets
+                            sets,
+                            (em["superset_id"] as? Number)?.toInt()
                         )
                     )
                 }
@@ -1578,7 +1630,29 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
                         }
                     },
                     onRemove = { removeTarget = ex },
-                    onOpenDetail = { detailId = ex.exerciseId }
+                    onOpenDetail = { detailId = ex.exerciseId },
+                    linkedToPrev = exs.indexOf(ex) > 0 && ex.ss != null && exs[exs.indexOf(ex) - 1].ss == ex.ss,
+                    startsGroup = exs.indexOf(ex) < exs.size - 1 && ex.ss != null && exs[exs.indexOf(ex) + 1].ss == ex.ss && (exs.indexOf(ex) == 0 || exs[exs.indexOf(ex) - 1].ss != ex.ss),
+                    onToggleLink = {
+                        val i = exs.indexOf(ex)
+                        if (i > 0) {
+                            val prev = exs[i - 1]
+                            val old = ex.ss
+                            val tail = ArrayList<TrREx>()
+                            var j = i + 1
+                            while (old != null && j < exs.size && exs[j].ss == old) { tail.add(exs[j]); j++ }
+                            val fresh = (exs.maxOfOrNull { it.ss ?: -1 } ?: -1) + 1
+                            if (old != null && old == prev.ss) {
+                                ex.ss = fresh
+                                tail.forEach { it.ss = fresh }
+                            } else {
+                                var g = prev.ss
+                                if (g == null) { g = fresh; prev.ss = g }
+                                ex.ss = g
+                                tail.forEach { it.ss = g }
+                            }
+                        }
+                    }
                 )
             }
             item {
@@ -1660,7 +1734,7 @@ fun TrRoutineEditor(routineId: String, onBack: () -> Unit) {
 }
 
 @Composable
-private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, onRemove: () -> Unit, onOpenDetail: () -> Unit) {
+private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, onRemove: () -> Unit, onOpenDetail: () -> Unit, linkedToPrev: Boolean, startsGroup: Boolean, onToggleLink: () -> Unit) {
     val labels = ArrayList<String>()
     var n = 0
     ex.sets.forEach { s ->
@@ -1676,6 +1750,9 @@ private fun TrRExCard(ex: TrREx, index: Int, count: Int, onMove: (Int) -> Unit, 
             Text("▼", color = if (index < count - 1) TR_GOLD else Color(0xFF3a3a4a), fontSize = 16.sp, modifier = Modifier.clickable { if (index < count - 1) onMove(1) }.padding(8.dp))
             Text("✕", color = Color(0xFFf87171), fontSize = 16.sp, modifier = Modifier.clickable { onRemove() }.padding(8.dp))
         }
+        if (linkedToPrev) Text("⚡ Superset with the exercise above  ·  tap to unlink", color = Color(0xFFa78bfa), fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().clickable { onToggleLink() }.padding(top = 6.dp, bottom = 2.dp))
+        else if (index > 0) Text((if (startsGroup) "⚡ Superset starts here  ·  " else "") + "+ Superset with the exercise above", color = if (startsGroup) Color(0xFFa78bfa) else TR_MUTED, fontSize = 12.sp, modifier = Modifier.fillMaxWidth().clickable { onToggleLink() }.padding(top = 6.dp, bottom = 2.dp))
+        else if (startsGroup) Text("⚡ Superset starts here", color = Color(0xFFa78bfa), fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp, bottom = 2.dp))
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Rest (sec)", color = TR_MUTED, fontSize = 12.sp)

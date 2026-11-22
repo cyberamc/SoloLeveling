@@ -4669,7 +4669,14 @@ fun WeightScreen(onBack: () -> Unit) {
 
 @Composable
 fun MainTabScreen() {
-    var selectedTab by remember { mutableStateOf(TabType.QUESTS) }
+    var selectedTab by remember { mutableStateOf(if (NavigationState.pendingNavigation.value == "gym") TabType.GYM else TabType.QUESTS) }
+    val gymNavKey = NavigationState.pendingNavigation.value
+    LaunchedEffect(gymNavKey) {
+        if (gymNavKey == "gym") {
+            selectedTab = TabType.GYM
+            NavigationState.pendingNavigation.value = null
+        }
+    }
     val context = LocalContext.current
     var showMorningBrief by remember { mutableStateOf(
         NavigationState.pendingNavigation.value == "morning_brief"

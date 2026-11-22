@@ -22,6 +22,7 @@ import androidx.core.app.NotificationCompat
 class TimerService : Service() {
 
     private var countDown: CountDownTimer? = null
+    private var openTab: String? = null
     private var dismissed = false
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -47,6 +48,7 @@ class TimerService : Service() {
         val doneText = intent?.getStringExtra(EXTRA_DONE_TEXT) ?: "Time's up"
         val totalSeconds = intent?.getIntExtra(EXTRA_SECONDS, 0) ?: 0
         val vibrate = intent?.getBooleanExtra(EXTRA_VIBRATE, false) ?: false
+        openTab = intent?.getStringExtra(EXTRA_OPEN_TAB)
         if (totalSeconds <= 0) {
             stopEverything()
             return START_NOT_STICKY
@@ -109,6 +111,7 @@ class TimerService : Service() {
     private fun openAppIntent(): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            if (openTab != null) putExtra("navigate_to", openTab)
         }
         return PendingIntent.getActivity(
             this, 0, intent,
@@ -169,6 +172,7 @@ class TimerService : Service() {
         const val EXTRA_SECONDS = "seconds"
         const val EXTRA_DONE_TEXT = "done_text"
         const val EXTRA_VIBRATE = "vibrate"
+        const val EXTRA_OPEN_TAB = "open_tab"
 
         fun createChannel(context: Context) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -185,12 +189,13 @@ class TimerService : Service() {
             }
         }
 
-        fun start(context: Context, label: String, seconds: Int, doneText: String, vibrate: Boolean = false) {
+        fun start(context: Context, label: String, seconds: Int, doneText: String, vibrate: Boolean = false, openTab: String? = null) {
             val intent = Intent(context, TimerService::class.java).apply {
                 putExtra(EXTRA_LABEL, label)
                 putExtra(EXTRA_SECONDS, seconds)
                 putExtra(EXTRA_DONE_TEXT, doneText)
                 putExtra(EXTRA_VIBRATE, vibrate)
+                if (openTab != null) putExtra(EXTRA_OPEN_TAB, openTab)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
