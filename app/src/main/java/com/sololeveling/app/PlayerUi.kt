@@ -2951,13 +2951,13 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                     verticalAlignment = Alignment.Top
                 ) {
                     Text(
-                        text = "FOOT SOAK",
+                        text = "FOOT CARE",
                         fontSize = 12.sp, fontWeight = FontWeight.Bold,
                         color = Color(0xFF6b7bd6),
                         modifier = Modifier.width(76.dp)
                     )
                     Text(
-                        text = "Foot Soak  $soakCount/21",
+                        text = "Foot Cream & Powder  $soakCount/28",
                         fontSize = 14.sp,
                         color = Color(0xFFe0e0f0),
                         modifier = Modifier.pointerInput(Unit) {
@@ -2965,7 +2965,7 @@ fun TodayRoutineCard(weekday: Int, haircut: Boolean, titlePrefix: String = "", r
                                 if (!readOnly) wpScope.launch {
                                     val n = kotlinx.coroutines.withContext(Dispatchers.IO) { postFootSoak() }
                                     if (n >= 0) {
-                                        val msg = if (n > soakCount) "Foot soak logged \u2713" else if (n < soakCount) "Foot soak undone" else "Plan complete"
+                                        val msg = if (n > soakCount) "Foot care logged \u2713" else if (n < soakCount) "Foot care undone" else "Plan complete"
                                         soakCount = n
                                         android.widget.Toast.makeText(wpContext, msg, android.widget.Toast.LENGTH_SHORT).show()
                                     }
