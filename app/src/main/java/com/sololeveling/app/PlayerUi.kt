@@ -3596,97 +3596,165 @@ fun OathCard() {
     }
 }
 
+/*BRIEF_V2*/
+// Morning brief: willpower streaks + a short window of today's routine.
+data class BriefRoutineRow(val time: String, val text: String)
+
+fun briefTimeToMinutes(t: String): Int {
+    val m = Regex("(\\d{1,2})(?::(\\d{2}))?\\s*(AM|PM)", RegexOption.IGNORE_CASE).find(t) ?: return -1
+    var h = m.groupValues[1].toInt()
+    val min = m.groupValues[2].ifEmpty { "0" }.toInt()
+    val ap = m.groupValues[3].uppercase()
+    if (ap == "PM" && h != 12) h += 12
+    if (ap == "AM" && h == 12) h = 0
+    return h * 60 + min
+}
+
+// Gym days: after "Head To Gym" through Study HR 1. Rest days: 5:45 AM - 8:30 AM. Delivery days: 5 PM - 7 PM.
+fun briefWindow(section: String, rows: List<BriefRoutineRow>): List<BriefRoutineRow> {
+    fun inRange(lo: Int, hi: Int): List<BriefRoutineRow> = rows.filter { briefTimeToMinutes(it.time) in lo..hi }
+    return when (section) {
+        "gym" -> {
+            val head = rows.indexOfFirst { it.text.contains("head to gym", ignoreCase = true) }
+            val study = rows.indexOfFirst { it.text.contains("study hr 1", ignoreCase = true) }
+            if (head >= 0 && study > head) rows.subList(head + 1, study + 1) else inRange(390, 510)
+        }
+        "rest" -> inRange(345, 510)
+        else -> inRange(1020, 1140)
+    }
+}
+
+suspend fun fetchBriefRoutine(): Pair<String, List<BriefRoutineRow>> {
+    return try {
+        val o = com.google.gson.Gson().fromJson(fetchFromApi("/api/routine-today"), Map::class.java)
+        val section = (o["section"] as? String) ?: ""
+        val label = (o["label"] as? String) ?: ""
+        val rows = (o["rows"] as? List<*>)?.mapNotNull { r ->
+            val m = r as? Map<*, *> ?: return@mapNotNull null
+            val time = m["time"] as? String ?: return@mapNotNull null
+            val lines = (m["lines"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            BriefRoutineRow(time, lines.joinToString(" / "))
+        } ?: emptyList()
+        Pair(label, briefWindow(section, rows))
+    } catch (e: Exception) {
+        Pair("", emptyList())
+    }
+}
+
+@Composable
+fun BriefSectionLabel(text: String) {
+    Text(
+        text, color = Color(0xFF94a3b8), fontSize = 12.sp, fontWeight = FontWeight.Bold,
+        letterSpacing = 2.sp, modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+    )
+}
+
+@Composable
+fun BriefStreakLine(name: String, value: String, extra: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(name, color = Color(0xFFe2e8f0), fontSize = 15.sp, modifier = Modifier.weight(1f))
+        if (extra.isNotEmpty()) {
+            Text(extra, color = Color(0xFF64748b), fontSize = 12.sp)
+            Spacer(Modifier.width(10.dp))
+        }
+        Text(value, color = Color(0xFFF59E0B), fontSize = 15.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
 @Composable
 fun MorningBriefOverlay(onDismiss: () -> Unit) {
-    var streak by remember { mutableIntStateOf(0) }
-    var previousStreak by remember { mutableIntStateOf(0) }
-    val scope = rememberCoroutineScope()
+    var streaks by remember { mutableStateOf<List<WpStreakRow>?>(null) }
+    var footDays by remember { mutableIntStateOf(-1) }
+    var routineLabel by remember { mutableStateOf("") }
+    var routineRows by remember { mutableStateOf<List<BriefRoutineRow>?>(null) }
 
     LaunchedEffect(Unit) {
-        scope.launch(Dispatchers.IO) {
-            try {
-                val playerResponse = fetchFromApi("/api/player")
-                val playerData = com.google.gson.Gson().fromJson(playerResponse, Map::class.java)
-                streak = (playerData["nofapStreak"] as? Number)?.toInt() ?: 0
-                previousStreak = (playerData["previousStreak"] as? Number)?.toInt() ?: 0
-            } catch (e: Exception) {}
+        kotlinx.coroutines.withContext(Dispatchers.IO) {
+            streaks = fetchWillpowerStreaks()
+            footDays = try { fetchFootSoakCount() } catch (e: Exception) { -1 }
+            val r = fetchBriefRoutine()
+            routineLabel = r.first
+            routineRows = r.second
         }
     }
+
+    val dayName = remember { java.text.SimpleDateFormat("EEEE", java.util.Locale.US).format(java.util.Date()) }
+    val cardShape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
 
     Box(
         modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a0f)),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(28.dp),
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 32.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("🔥 $streak Day Streak", fontSize = 15.sp, color = Color(0xFFF59E0B), fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(10.dp))
-            if (previousStreak > 0) {
-                Text(
-                    "Beat Previous Streak: $previousStreak Days",
-                    color = Color(0xFFfbbf24), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
-                    modifier = Modifier.background(Color(0xFF2a2208), shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).padding(horizontal = 12.dp, vertical = 5.dp)
-                )
-                Spacer(Modifier.height(10.dp))
+            Text(dayName, fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            if (routineLabel.isNotEmpty()) {
+                Text(routineLabel, fontSize = 13.sp, color = Color(0xFF94a3b8))
             }
-            Text(
-                "Don\u2019t Look. You\u2019ll Edge. You\u2019ll Slip.",
-                color = Color(0xFFcbd5e1), fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center,
-                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-            )
-            Spacer(Modifier.height(10.dp))
-            Text("Remember Why: Self-Improvement & It\u2019s Immoral.", color = Color(0xFFf87171), fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(14.dp))
-            val riskWeekday = java.util.Calendar.getInstance().get(java.util.Calendar.DAY_OF_WEEK) - 1
-            val riskNotes = when (riskWeekday) {
-                0 -> listOf("High Urge Risk. Stay Alert Today" to Color(0xFFc084fc), "High Overeating Risk. Stick To The Plan" to Color(0xFF22d3ee))
-                1, 2, 3 -> listOf("High Urge Risk. Stay Alert Today" to Color(0xFFc084fc))
-                4 -> listOf("Low Risk Day. Final WFH Weekday" to Color(0xFF4ade80))
-                else -> listOf("High Overeating Risk. Stick To The Plan" to Color(0xFF22d3ee))
+            Spacer(Modifier.height(22.dp))
+
+            BriefSectionLabel("WILLPOWER STREAKS")
+            Column(
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = cardShape).padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                val s = streaks
+                if (s == null) {
+                    Text("Loading\u2026", color = Color(0xFF94a3b8), fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
+                } else if (s.isEmpty()) {
+                    Text("Could not load streaks.", color = Color(0xFFF87171), fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
+                } else {
+                    s.forEach { row ->
+                        BriefStreakLine(
+                            row.name,
+                            if (row.current == 1) "1 day" else "${row.current} days",
+                            if (row.best > 0) "best ${row.best}" else ""
+                        )
+                    }
+                    if (footDays >= 0) {
+                        BriefStreakLine("Foot Care", "$footDays / 28", "")
+                    }
+                }
             }
-            riskNotes.forEach { (riskMsg, riskColor) ->
-                Text(riskMsg, color = riskColor, fontSize = 13.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+
+            Spacer(Modifier.height(22.dp))
+            BriefSectionLabel("TODAY")
+            Column(
+                modifier = Modifier.fillMaxWidth().background(Color(0xFF111827), shape = cardShape).padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                val r = routineRows
+                if (r == null) {
+                    Text("Loading\u2026", color = Color(0xFF94a3b8), fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
+                } else if (r.isEmpty()) {
+                    Text("Nothing scheduled in this window.", color = Color(0xFF94a3b8), fontSize = 14.sp, modifier = Modifier.padding(vertical = 8.dp))
+                } else {
+                    r.forEach { row ->
+                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.Top) {
+                            Text(row.time, color = Color(0xFF7b8cde), fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.width(76.dp))
+                            Text(row.text, color = Color(0xFFcfcfe0), fontSize = 14.sp, lineHeight = 20.sp, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
             }
-            Spacer(Modifier.height(14.dp))
-            val streakMsg = when {
-                streak == 0 -> "Today Is Day One. You Don\u2019t Need A Perfect Streak \u2014 You Just Need Today. One Day Without. That\u2019s It."
-                streak == 1 -> "One Day In. The Hardest Part Is Behind You. Keep It Moving."
-                streak < 7 -> "Day ${streak + 1}. You\u2019re Building Something Real. Don\u2019t Give It Up For Five Minutes Of Nothing."
-                streak < 14 -> "$streak Days. A Week-Plus Of Discipline. You\u2019re Rewiring Your Brain \u2014 That\u2019s Not Small."
-                streak < 30 -> "$streak Days Strong. The Urges Are Quieter Now. That\u2019s You Taking Your Power Back."
-                streak < 60 -> "$streak Days. A Month Of Clarity. The Version Of You From Day 0 Would Be Proud."
-                streak < 90 -> "$streak Days. Two Months In. You\u2019re Not The Same Person Who Started This."
-                else -> "$streak Days. This Is Who You Are Now. Protect It."
-            }
-            Box(modifier = Modifier.fillMaxWidth().background(Color(0xFF1a1a0a), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)) {
-                Text(streakMsg, color = Color(0xFFF59E0B), fontSize = 13.sp, lineHeight = 20.sp, textAlign = TextAlign.Center)
-            }
-            Spacer(Modifier.height(24.dp))
-            Box(modifier = Modifier.width(40.dp).height(3.dp).background(Color(0xFF3b82f6),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)))
-            Spacer(Modifier.height(20.dp))
-            Text(
-                text = "Break The Pattern Today\nOr The Loop Will Repeat Tomorrow.",
-                fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White,
-                textAlign = TextAlign.Center, lineHeight = 32.sp
-            )
-            Spacer(Modifier.height(20.dp))
-            OathCard()
-            Spacer(Modifier.height(52.dp))
+
+            Spacer(Modifier.height(32.dp))
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth().height(54.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3b82f6)),
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp)
             ) {
-                Text("Let's Go →", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Let\u2019s Go \u2192", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
 }
+
 
 
 @Composable
