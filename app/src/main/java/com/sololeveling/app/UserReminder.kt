@@ -294,7 +294,7 @@ class UserReminderReceiver : BroadcastReceiver() {
         if (intent.action == UserReminder.ACTION_HOLD_REPOST) {
             val rid = intent.getIntExtra(UserReminder.EXTRA_ID, -1)
             val rtitle = intent.getStringExtra(UserReminder.EXTRA_TITLE) ?: ""
-            if (rid >= 0) UserReminder.showHoldTheLine(context, rid, rtitle, true)
+            // Swiping the Hold The Line reminder away now counts as dismissing it: no re-post. /*HOLD_NO_REPOST*/
             return
         }
         if (intent.action != UserReminder.ACTION_FIRE) return
