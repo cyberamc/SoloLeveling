@@ -3757,34 +3757,25 @@ fun MorningBriefOverlay(onDismiss: () -> Unit) {
 
 
 
+/*BRIEF_EVENING_V1*/
 @Composable
 fun EveningBriefOverlay(onDismiss: () -> Unit) {
     BackHandler { onDismiss() }
     Box(
         modifier = Modifier.fillMaxSize().background(Color(0xFF0a0a1a)),
-        contentAlignment = Alignment.TopCenter
+        contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(top = 48.dp, bottom = 32.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Good Night", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA5B4FC), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            Spacer(Modifier.height(6.dp))
-            Text("Wind down. Same sequence every night.", fontSize = 14.sp, color = Color(0xFF94a3b8), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-            Spacer(Modifier.height(24.dp))
-            PRE_SLEEP_STEPS.forEachIndexed { index, step ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp).background(Color(0xFF111827), shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(14.dp)
-                ) {
-                    Text("${index + 1}", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA5B4FC), modifier = Modifier.padding(end = 12.dp))
-                    Column {
-                        Text(step.title, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFFDDDDDD), lineHeight = 21.sp)
-                        Spacer(Modifier.height(3.dp))
-                        Text(step.detail, fontSize = 13.sp, color = Color(0xFF999999), lineHeight = 19.sp)
-                    }
-                }
-            }
-            Spacer(Modifier.height(24.dp))
+            Text(
+                "Time to turn off TV and go to bed by 9:45 PM for optimal rest.",
+                fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color(0xFFA5B4FC),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center, lineHeight = 36.sp
+            )
+            Spacer(Modifier.height(40.dp))
             Button(
                 onClick = onDismiss,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFA5B4FC)),
